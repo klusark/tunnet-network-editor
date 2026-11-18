@@ -1,0 +1,4475 @@
+{
+ "source": "FUN_1402f9a40 emulated in Ghidra, story state from live game",
+ "ticks_emulated": 2048,
+ "errors": {
+  "panic/alloc-failure at 1423ab9f0": 512
+ },
+ "endpoints": {
+  "0.0.0.0": {
+   "cycle": 96,
+   "sends_per_cycle": 45,
+   "color": "71aa34",
+   "slots": {
+    "0": {
+     "dst": "0.1.0.0",
+     "messages": [
+      "Mainframe update",
+      "Please forward to your endpoints",
+      "Status report"
+     ],
+     "color": "71aa34"
+    },
+    "2": {
+     "dst": "0.0.0.1",
+     "messages": [
+      "Firmware update",
+      "Test",
+      "Contribute to science",
+      "[PATCH] Fix netcode"
+     ],
+     "color": "71aa34"
+    },
+    "4": {
+     "dst": "0.0.0.2",
+     "messages": [
+      "Firmware update",
+      "Test",
+      "Contribute to science",
+      "[PATCH] Fix netcode"
+     ],
+     "color": "71aa34"
+    },
+    "6": {
+     "dst": "0.0.0.3",
+     "messages": [
+      "Firmware update",
+      "Test",
+      "Contribute to science",
+      "[PATCH] Fix netcode"
+     ],
+     "color": "71aa34"
+    },
+    "8": {
+     "dst": "0.0.1.0",
+     "messages": [
+      "Firmware update",
+      "Test",
+      "Contribute to science",
+      "[PATCH] Fix netcode"
+     ],
+     "color": "71aa34"
+    },
+    "10": {
+     "dst": "0.0.1.1",
+     "messages": [
+      "Firmware update",
+      "Test",
+      "Contribute to science",
+      "[PATCH] Fix netcode"
+     ],
+     "color": "71aa34"
+    },
+    "12": {
+     "dst": "0.0.1.2",
+     "messages": [
+      "Firmware update",
+      "Test",
+      "Contribute to science",
+      "[PATCH] Fix netcode"
+     ],
+     "color": "71aa34"
+    },
+    "14": {
+     "dst": "0.0.1.3",
+     "messages": [
+      "Firmware update",
+      "Test",
+      "Contribute to science",
+      "[PATCH] Fix netcode"
+     ],
+     "color": "71aa34"
+    },
+    "18": {
+     "dst": "0.0.0.1",
+     "messages": [
+      "Firmware update",
+      "Test",
+      "Contribute to science",
+      "[PATCH] Fix netcode"
+     ],
+     "color": "71aa34"
+    },
+    "20": {
+     "dst": "0.0.0.2",
+     "messages": [
+      "Firmware update",
+      "Test",
+      "Contribute to science",
+      "[PATCH] Fix netcode"
+     ],
+     "color": "71aa34"
+    },
+    "22": {
+     "dst": "0.0.0.3",
+     "messages": [
+      "Firmware update",
+      "Test",
+      "Contribute to science",
+      "[PATCH] Fix netcode"
+     ],
+     "color": "71aa34"
+    },
+    "24": {
+     "dst": "0.0.3.0",
+     "messages": [
+      "Firmware update",
+      "Test",
+      "Contribute to science",
+      "[PATCH] Fix netcode"
+     ],
+     "color": "71aa34"
+    },
+    "26": {
+     "dst": "0.0.3.1",
+     "messages": [
+      "Firmware update",
+      "Test",
+      "Contribute to science",
+      "[PATCH] Fix netcode"
+     ],
+     "color": "71aa34"
+    },
+    "28": {
+     "dst": "0.0.3.2",
+     "messages": [
+      "Firmware update",
+      "Test",
+      "Contribute to science",
+      "[PATCH] Fix netcode"
+     ],
+     "color": "71aa34"
+    },
+    "30": {
+     "dst": "0.0.3.3",
+     "messages": [
+      "Firmware update",
+      "Test",
+      "Contribute to science",
+      "[PATCH] Fix netcode"
+     ],
+     "color": "71aa34"
+    },
+    "32": {
+     "dst": "0.2.0.0",
+     "messages": [
+      "Mainframe update",
+      "Please forward to your endpoints",
+      "Status report"
+     ],
+     "color": "71aa34"
+    },
+    "34": {
+     "dst": "0.0.0.1",
+     "messages": [
+      "Firmware update",
+      "Test",
+      "Contribute to science",
+      "[PATCH] Fix netcode"
+     ],
+     "color": "71aa34"
+    },
+    "36": {
+     "dst": "0.0.0.2",
+     "messages": [
+      "Firmware update",
+      "Test",
+      "Contribute to science",
+      "[PATCH] Fix netcode"
+     ],
+     "color": "71aa34"
+    },
+    "38": {
+     "dst": "0.0.0.3",
+     "messages": [
+      "Firmware update",
+      "Test",
+      "Contribute to science",
+      "[PATCH] Fix netcode"
+     ],
+     "color": "71aa34"
+    },
+    "40": {
+     "dst": "0.0.1.0",
+     "messages": [
+      "Firmware update",
+      "Test",
+      "Contribute to science",
+      "[PATCH] Fix netcode"
+     ],
+     "color": "71aa34"
+    },
+    "42": {
+     "dst": "0.0.1.1",
+     "messages": [
+      "Firmware update",
+      "Test",
+      "Contribute to science",
+      "[PATCH] Fix netcode"
+     ],
+     "color": "71aa34"
+    },
+    "44": {
+     "dst": "0.0.1.2",
+     "messages": [
+      "Firmware update",
+      "Test",
+      "Contribute to science",
+      "[PATCH] Fix netcode"
+     ],
+     "color": "71aa34"
+    },
+    "46": {
+     "dst": "0.0.1.3",
+     "messages": [
+      "Firmware update",
+      "Test",
+      "Contribute to science",
+      "[PATCH] Fix netcode"
+     ],
+     "color": "71aa34"
+    },
+    "50": {
+     "dst": "0.0.0.1",
+     "messages": [
+      "Firmware update",
+      "Test",
+      "Contribute to science",
+      "[PATCH] Fix netcode"
+     ],
+     "color": "71aa34"
+    },
+    "52": {
+     "dst": "0.0.0.2",
+     "messages": [
+      "Firmware update",
+      "Test",
+      "Contribute to science",
+      "[PATCH] Fix netcode"
+     ],
+     "color": "71aa34"
+    },
+    "54": {
+     "dst": "0.0.0.3",
+     "messages": [
+      "Firmware update",
+      "Test",
+      "Contribute to science",
+      "[PATCH] Fix netcode"
+     ],
+     "color": "71aa34"
+    },
+    "56": {
+     "dst": "0.0.3.0",
+     "messages": [
+      "Firmware update",
+      "Test",
+      "Contribute to science",
+      "[PATCH] Fix netcode"
+     ],
+     "color": "71aa34"
+    },
+    "58": {
+     "dst": "0.0.3.1",
+     "messages": [
+      "Firmware update",
+      "Test",
+      "Contribute to science",
+      "[PATCH] Fix netcode"
+     ],
+     "color": "71aa34"
+    },
+    "60": {
+     "dst": "0.0.3.2",
+     "messages": [
+      "Firmware update",
+      "Test",
+      "Contribute to science",
+      "[PATCH] Fix netcode"
+     ],
+     "color": "71aa34"
+    },
+    "62": {
+     "dst": "0.0.3.3",
+     "messages": [
+      "Firmware update",
+      "Test",
+      "Contribute to science",
+      "[PATCH] Fix netcode"
+     ],
+     "color": "71aa34"
+    },
+    "64": {
+     "dst": "0.3.0.0",
+     "messages": [
+      "Mainframe update",
+      "Please forward to your endpoints",
+      "Status report"
+     ],
+     "color": "71aa34"
+    },
+    "66": {
+     "dst": "0.0.0.1",
+     "messages": [
+      "Firmware update",
+      "Test",
+      "Contribute to science",
+      "[PATCH] Fix netcode"
+     ],
+     "color": "71aa34"
+    },
+    "68": {
+     "dst": "0.0.0.2",
+     "messages": [
+      "Firmware update",
+      "Test",
+      "Contribute to science",
+      "[PATCH] Fix netcode"
+     ],
+     "color": "71aa34"
+    },
+    "70": {
+     "dst": "0.0.0.3",
+     "messages": [
+      "Firmware update",
+      "Test",
+      "Contribute to science",
+      "[PATCH] Fix netcode"
+     ],
+     "color": "71aa34"
+    },
+    "72": {
+     "dst": "0.0.1.0",
+     "messages": [
+      "Firmware update",
+      "Test",
+      "Contribute to science",
+      "[PATCH] Fix netcode"
+     ],
+     "color": "71aa34"
+    },
+    "74": {
+     "dst": "0.0.1.1",
+     "messages": [
+      "Firmware update",
+      "Test",
+      "Contribute to science",
+      "[PATCH] Fix netcode"
+     ],
+     "color": "71aa34"
+    },
+    "76": {
+     "dst": "0.0.1.2",
+     "messages": [
+      "Firmware update",
+      "Test",
+      "Contribute to science",
+      "[PATCH] Fix netcode"
+     ],
+     "color": "71aa34"
+    },
+    "78": {
+     "dst": "0.0.1.3",
+     "messages": [
+      "Firmware update",
+      "Test",
+      "Contribute to science",
+      "[PATCH] Fix netcode"
+     ],
+     "color": "71aa34"
+    },
+    "82": {
+     "dst": "0.0.0.1",
+     "messages": [
+      "Firmware update",
+      "Test",
+      "Contribute to science",
+      "[PATCH] Fix netcode"
+     ],
+     "color": "71aa34"
+    },
+    "84": {
+     "dst": "0.0.0.2",
+     "messages": [
+      "Firmware update",
+      "Test",
+      "Contribute to science",
+      "[PATCH] Fix netcode"
+     ],
+     "color": "71aa34"
+    },
+    "86": {
+     "dst": "0.0.0.3",
+     "messages": [
+      "Firmware update",
+      "Test",
+      "Contribute to science",
+      "[PATCH] Fix netcode"
+     ],
+     "color": "71aa34"
+    },
+    "88": {
+     "dst": "0.0.3.0",
+     "messages": [
+      "Firmware update",
+      "Test",
+      "Contribute to science",
+      "[PATCH] Fix netcode"
+     ],
+     "color": "71aa34"
+    },
+    "90": {
+     "dst": "0.0.3.1",
+     "messages": [
+      "Firmware update",
+      "Test",
+      "Contribute to science",
+      "[PATCH] Fix netcode"
+     ],
+     "color": "71aa34"
+    },
+    "92": {
+     "dst": "0.0.3.2",
+     "messages": [
+      "Firmware update",
+      "Test",
+      "Contribute to science",
+      "[PATCH] Fix netcode"
+     ],
+     "color": "71aa34"
+    },
+    "94": {
+     "dst": "0.0.3.3",
+     "messages": [
+      "Firmware update",
+      "Test",
+      "Contribute to science",
+      "[PATCH] Fix netcode"
+     ],
+     "color": "71aa34"
+    }
+   }
+  },
+  "0.0.0.1": {
+   "cycle": 1,
+   "sends_per_cycle": 0,
+   "color": [],
+   "slots": {}
+  },
+  "0.0.0.2": {
+   "cycle": 1,
+   "sends_per_cycle": 0,
+   "color": [],
+   "slots": {}
+  },
+  "0.0.0.3": {
+   "cycle": 1,
+   "sends_per_cycle": 0,
+   "color": [],
+   "slots": {}
+  },
+  "0.0.1.1": {
+   "cycle": 1,
+   "sends_per_cycle": 0,
+   "color": [],
+   "slots": {}
+  },
+  "0.0.1.2": {
+   "cycle": 1,
+   "sends_per_cycle": 0,
+   "color": [],
+   "slots": {}
+  },
+  "0.0.1.3": {
+   "cycle": 1,
+   "sends_per_cycle": 0,
+   "color": [],
+   "slots": {}
+  },
+  "0.0.3.0": {
+   "cycle": 1,
+   "sends_per_cycle": 0,
+   "color": [],
+   "slots": {}
+  },
+  "0.0.3.1": {
+   "cycle": 2048,
+   "sends_per_cycle": 32,
+   "color": "28ccdf",
+   "slots": {
+    "0": {
+     "dst": "0.0.0.0",
+     "messages": [
+      "BEST PRICES",
+      "HUGE DISCOUNT!",
+      "SALES"
+     ],
+     "color": "28ccdf"
+    },
+    "8": {
+     "dst": "0.0.1.1",
+     "messages": [
+      "Purchase Order"
+     ],
+     "color": "28ccdf"
+    },
+    "128": {
+     "dst": "0.0.0.1",
+     "messages": [
+      "BEST PRICES",
+      "HUGE DISCOUNT!",
+      "SALES"
+     ],
+     "color": "28ccdf"
+    },
+    "136": {
+     "dst": "0.0.1.1",
+     "messages": [
+      "Purchase Order"
+     ],
+     "color": "28ccdf"
+    },
+    "256": {
+     "dst": "0.0.0.2",
+     "messages": [
+      "BEST PRICES",
+      "HUGE DISCOUNT!",
+      "SALES"
+     ],
+     "color": "28ccdf"
+    },
+    "264": {
+     "dst": "0.0.1.1",
+     "messages": [
+      "Purchase Order"
+     ],
+     "color": "28ccdf"
+    },
+    "384": {
+     "dst": "0.0.0.3",
+     "messages": [
+      "BEST PRICES",
+      "HUGE DISCOUNT!",
+      "SALES"
+     ],
+     "color": "28ccdf"
+    },
+    "392": {
+     "dst": "0.0.1.1",
+     "messages": [
+      "Purchase Order"
+     ],
+     "color": "28ccdf"
+    },
+    "512": {
+     "dst": "0.0.1.0",
+     "messages": [
+      "BEST PRICES",
+      "HUGE DISCOUNT!",
+      "SALES"
+     ],
+     "color": "28ccdf"
+    },
+    "520": {
+     "dst": "0.0.1.1",
+     "messages": [
+      "Purchase Order"
+     ],
+     "color": "28ccdf"
+    },
+    "640": {
+     "dst": "0.0.1.1",
+     "messages": [
+      "BEST PRICES",
+      "HUGE DISCOUNT!",
+      "SALES"
+     ],
+     "color": "28ccdf"
+    },
+    "648": {
+     "dst": "0.0.1.1",
+     "messages": [
+      "Purchase Order"
+     ],
+     "color": "28ccdf"
+    },
+    "768": {
+     "dst": "0.0.1.2",
+     "messages": [
+      "BEST PRICES",
+      "HUGE DISCOUNT!",
+      "SALES"
+     ],
+     "color": "28ccdf"
+    },
+    "776": {
+     "dst": "0.0.1.1",
+     "messages": [
+      "Purchase Order"
+     ],
+     "color": "28ccdf"
+    },
+    "896": {
+     "dst": "0.0.1.3",
+     "messages": [
+      "BEST PRICES",
+      "HUGE DISCOUNT!",
+      "SALES"
+     ],
+     "color": "28ccdf"
+    },
+    "904": {
+     "dst": "0.0.1.1",
+     "messages": [
+      "Purchase Order"
+     ],
+     "color": "28ccdf"
+    },
+    "1024": {
+     "dst": "0.0.2.0",
+     "messages": [
+      "BEST PRICES",
+      "HUGE DISCOUNT!",
+      "SALES"
+     ],
+     "color": "28ccdf"
+    },
+    "1032": {
+     "dst": "0.0.1.1",
+     "messages": [
+      "Purchase Order"
+     ],
+     "color": "28ccdf"
+    },
+    "1152": {
+     "dst": "0.0.2.1",
+     "messages": [
+      "BEST PRICES",
+      "HUGE DISCOUNT!",
+      "SALES"
+     ],
+     "color": "28ccdf"
+    },
+    "1160": {
+     "dst": "0.0.1.1",
+     "messages": [
+      "Purchase Order"
+     ],
+     "color": "28ccdf"
+    },
+    "1280": {
+     "dst": "0.0.2.2",
+     "messages": [
+      "BEST PRICES",
+      "HUGE DISCOUNT!",
+      "SALES"
+     ],
+     "color": "28ccdf"
+    },
+    "1288": {
+     "dst": "0.0.1.1",
+     "messages": [
+      "Purchase Order"
+     ],
+     "color": "28ccdf"
+    },
+    "1408": {
+     "dst": "0.0.2.3",
+     "messages": [
+      "BEST PRICES",
+      "HUGE DISCOUNT!",
+      "SALES"
+     ],
+     "color": "28ccdf"
+    },
+    "1416": {
+     "dst": "0.0.1.1",
+     "messages": [
+      "Purchase Order"
+     ],
+     "color": "28ccdf"
+    },
+    "1536": {
+     "dst": "0.0.3.0",
+     "messages": [
+      "BEST PRICES",
+      "HUGE DISCOUNT!",
+      "SALES"
+     ],
+     "color": "28ccdf"
+    },
+    "1544": {
+     "dst": "0.0.1.1",
+     "messages": [
+      "Purchase Order"
+     ],
+     "color": "28ccdf"
+    },
+    "1664": {
+     "dst": "0.0.3.1",
+     "messages": [
+      "BEST PRICES",
+      "HUGE DISCOUNT!",
+      "SALES"
+     ],
+     "color": "28ccdf"
+    },
+    "1672": {
+     "dst": "0.0.1.1",
+     "messages": [
+      "Purchase Order"
+     ],
+     "color": "28ccdf"
+    },
+    "1792": {
+     "dst": "0.0.3.2",
+     "messages": [
+      "BEST PRICES",
+      "HUGE DISCOUNT!",
+      "SALES"
+     ],
+     "color": "28ccdf"
+    },
+    "1800": {
+     "dst": "0.0.1.1",
+     "messages": [
+      "Purchase Order"
+     ],
+     "color": "28ccdf"
+    },
+    "1920": {
+     "dst": "0.0.3.3",
+     "messages": [
+      "BEST PRICES",
+      "HUGE DISCOUNT!",
+      "SALES"
+     ],
+     "color": "28ccdf"
+    },
+    "1928": {
+     "dst": "0.0.1.1",
+     "messages": [
+      "Purchase Order"
+     ],
+     "color": "28ccdf"
+    }
+   }
+  },
+  "0.0.3.2": {
+   "cycle": 1,
+   "sends_per_cycle": 0,
+   "color": [],
+   "slots": {}
+  },
+  "0.0.3.3": {
+   "cycle": 1,
+   "sends_per_cycle": 0,
+   "color": [],
+   "slots": {}
+  },
+  "0.1.0.0": {
+   "cycle": 128,
+   "sends_per_cycle": 64,
+   "color": "cfc6b8",
+   "slots": {
+    "0": {
+     "dst": "0.0.2.2",
+     "messages": [
+      "TOP SECRET",
+      "CONFIDENTIAL"
+     ],
+     "color": "cfc6b8",
+     "no_bounce": true
+    },
+    "2": {
+     "dst": "0.1.0.1",
+     "messages": [
+      "Emergency Announcement",
+      "We Want You!"
+     ],
+     "color": "cfc6b8",
+     "no_bounce": true
+    },
+    "4": {
+     "dst": "0.1.0.2",
+     "messages": [
+      "Emergency Announcement",
+      "We Want You!"
+     ],
+     "color": "cfc6b8",
+     "no_bounce": true
+    },
+    "6": {
+     "dst": "0.1.0.3",
+     "messages": [
+      "Emergency Announcement",
+      "We Want You!"
+     ],
+     "color": "cfc6b8",
+     "no_bounce": true
+    },
+    "8": {
+     "dst": "0.1.1.0",
+     "messages": [
+      "Emergency Announcement",
+      "We Want You!"
+     ],
+     "color": "cfc6b8",
+     "no_bounce": true
+    },
+    "10": {
+     "dst": "0.1.1.1",
+     "messages": [
+      "Emergency Announcement",
+      "We Want You!"
+     ],
+     "color": "cfc6b8",
+     "no_bounce": true
+    },
+    "12": {
+     "dst": "0.1.1.2",
+     "messages": [
+      "Emergency Announcement",
+      "We Want You!"
+     ],
+     "color": "cfc6b8",
+     "no_bounce": true
+    },
+    "14": {
+     "dst": "0.1.1.3",
+     "messages": [
+      "Emergency Announcement",
+      "We Want You!"
+     ],
+     "color": "cfc6b8",
+     "no_bounce": true
+    },
+    "16": {
+     "dst": "0.1.2.0",
+     "messages": [
+      "Emergency Announcement",
+      "We Want You!"
+     ],
+     "color": "cfc6b8",
+     "no_bounce": true
+    },
+    "18": {
+     "dst": "0.1.2.1",
+     "messages": [
+      "Emergency Announcement",
+      "We Want You!"
+     ],
+     "color": "cfc6b8",
+     "no_bounce": true
+    },
+    "20": {
+     "dst": "0.1.2.2",
+     "messages": [
+      "Emergency Announcement",
+      "We Want You!"
+     ],
+     "color": "cfc6b8",
+     "no_bounce": true
+    },
+    "22": {
+     "dst": "0.1.2.3",
+     "messages": [
+      "Emergency Announcement",
+      "We Want You!"
+     ],
+     "color": "cfc6b8",
+     "no_bounce": true
+    },
+    "24": {
+     "dst": "0.1.3.0",
+     "messages": [
+      "Emergency Announcement",
+      "We Want You!"
+     ],
+     "color": "cfc6b8",
+     "no_bounce": true
+    },
+    "26": {
+     "dst": "0.1.3.1",
+     "messages": [
+      "Emergency Announcement",
+      "We Want You!"
+     ],
+     "color": "cfc6b8",
+     "no_bounce": true
+    },
+    "28": {
+     "dst": "0.1.3.2",
+     "messages": [
+      "Emergency Announcement",
+      "We Want You!"
+     ],
+     "color": "cfc6b8",
+     "no_bounce": true
+    },
+    "30": {
+     "dst": "0.1.3.3",
+     "messages": [
+      "Emergency Announcement",
+      "We Want You!"
+     ],
+     "color": "cfc6b8",
+     "no_bounce": true
+    },
+    "32": {
+     "dst": "0.1.2.2",
+     "messages": [
+      "TOP SECRET",
+      "CONFIDENTIAL"
+     ],
+     "color": "cfc6b8",
+     "no_bounce": true
+    },
+    "34": {
+     "dst": "0.1.0.1",
+     "messages": [
+      "Emergency Announcement",
+      "We Want You!"
+     ],
+     "color": "cfc6b8",
+     "no_bounce": true
+    },
+    "36": {
+     "dst": "0.1.0.2",
+     "messages": [
+      "Emergency Announcement",
+      "We Want You!"
+     ],
+     "color": "cfc6b8",
+     "no_bounce": true
+    },
+    "38": {
+     "dst": "0.1.0.3",
+     "messages": [
+      "Emergency Announcement",
+      "We Want You!"
+     ],
+     "color": "cfc6b8",
+     "no_bounce": true
+    },
+    "40": {
+     "dst": "0.1.1.0",
+     "messages": [
+      "Emergency Announcement",
+      "We Want You!"
+     ],
+     "color": "cfc6b8",
+     "no_bounce": true
+    },
+    "42": {
+     "dst": "0.1.1.1",
+     "messages": [
+      "Emergency Announcement",
+      "We Want You!"
+     ],
+     "color": "cfc6b8",
+     "no_bounce": true
+    },
+    "44": {
+     "dst": "0.1.1.2",
+     "messages": [
+      "Emergency Announcement",
+      "We Want You!"
+     ],
+     "color": "cfc6b8",
+     "no_bounce": true
+    },
+    "46": {
+     "dst": "0.1.1.3",
+     "messages": [
+      "Emergency Announcement",
+      "We Want You!"
+     ],
+     "color": "cfc6b8",
+     "no_bounce": true
+    },
+    "48": {
+     "dst": "0.1.2.0",
+     "messages": [
+      "Emergency Announcement",
+      "We Want You!"
+     ],
+     "color": "cfc6b8",
+     "no_bounce": true
+    },
+    "50": {
+     "dst": "0.1.2.1",
+     "messages": [
+      "Emergency Announcement",
+      "We Want You!"
+     ],
+     "color": "cfc6b8",
+     "no_bounce": true
+    },
+    "52": {
+     "dst": "0.1.2.2",
+     "messages": [
+      "Emergency Announcement",
+      "We Want You!"
+     ],
+     "color": "cfc6b8",
+     "no_bounce": true
+    },
+    "54": {
+     "dst": "0.1.2.3",
+     "messages": [
+      "Emergency Announcement",
+      "We Want You!"
+     ],
+     "color": "cfc6b8",
+     "no_bounce": true
+    },
+    "56": {
+     "dst": "0.1.3.0",
+     "messages": [
+      "Emergency Announcement",
+      "We Want You!"
+     ],
+     "color": "cfc6b8",
+     "no_bounce": true
+    },
+    "58": {
+     "dst": "0.1.3.1",
+     "messages": [
+      "Emergency Announcement",
+      "We Want You!"
+     ],
+     "color": "cfc6b8",
+     "no_bounce": true
+    },
+    "60": {
+     "dst": "0.1.3.2",
+     "messages": [
+      "Emergency Announcement",
+      "We Want You!"
+     ],
+     "color": "cfc6b8",
+     "no_bounce": true
+    },
+    "62": {
+     "dst": "0.1.3.3",
+     "messages": [
+      "Emergency Announcement",
+      "We Want You!"
+     ],
+     "color": "cfc6b8",
+     "no_bounce": true
+    },
+    "64": {
+     "dst": "0.2.2.2",
+     "messages": [
+      "TOP SECRET",
+      "CONFIDENTIAL"
+     ],
+     "color": "cfc6b8",
+     "no_bounce": true
+    },
+    "66": {
+     "dst": "0.1.0.1",
+     "messages": [
+      "Emergency Announcement",
+      "We Want You!"
+     ],
+     "color": "cfc6b8",
+     "no_bounce": true
+    },
+    "68": {
+     "dst": "0.1.0.2",
+     "messages": [
+      "Emergency Announcement",
+      "We Want You!"
+     ],
+     "color": "cfc6b8",
+     "no_bounce": true
+    },
+    "70": {
+     "dst": "0.1.0.3",
+     "messages": [
+      "Emergency Announcement",
+      "We Want You!"
+     ],
+     "color": "cfc6b8",
+     "no_bounce": true
+    },
+    "72": {
+     "dst": "0.1.1.0",
+     "messages": [
+      "Emergency Announcement",
+      "We Want You!"
+     ],
+     "color": "cfc6b8",
+     "no_bounce": true
+    },
+    "74": {
+     "dst": "0.1.1.1",
+     "messages": [
+      "Emergency Announcement",
+      "We Want You!"
+     ],
+     "color": "cfc6b8",
+     "no_bounce": true
+    },
+    "76": {
+     "dst": "0.1.1.2",
+     "messages": [
+      "Emergency Announcement",
+      "We Want You!"
+     ],
+     "color": "cfc6b8",
+     "no_bounce": true
+    },
+    "78": {
+     "dst": "0.1.1.3",
+     "messages": [
+      "Emergency Announcement",
+      "We Want You!"
+     ],
+     "color": "cfc6b8",
+     "no_bounce": true
+    },
+    "80": {
+     "dst": "0.1.2.0",
+     "messages": [
+      "Emergency Announcement",
+      "We Want You!"
+     ],
+     "color": "cfc6b8",
+     "no_bounce": true
+    },
+    "82": {
+     "dst": "0.1.2.1",
+     "messages": [
+      "Emergency Announcement",
+      "We Want You!"
+     ],
+     "color": "cfc6b8",
+     "no_bounce": true
+    },
+    "84": {
+     "dst": "0.1.2.2",
+     "messages": [
+      "Emergency Announcement",
+      "We Want You!"
+     ],
+     "color": "cfc6b8",
+     "no_bounce": true
+    },
+    "86": {
+     "dst": "0.1.2.3",
+     "messages": [
+      "Emergency Announcement",
+      "We Want You!"
+     ],
+     "color": "cfc6b8",
+     "no_bounce": true
+    },
+    "88": {
+     "dst": "0.1.3.0",
+     "messages": [
+      "Emergency Announcement",
+      "We Want You!"
+     ],
+     "color": "cfc6b8",
+     "no_bounce": true
+    },
+    "90": {
+     "dst": "0.1.3.1",
+     "messages": [
+      "Emergency Announcement",
+      "We Want You!"
+     ],
+     "color": "cfc6b8",
+     "no_bounce": true
+    },
+    "92": {
+     "dst": "0.1.3.2",
+     "messages": [
+      "Emergency Announcement",
+      "We Want You!"
+     ],
+     "color": "cfc6b8",
+     "no_bounce": true
+    },
+    "94": {
+     "dst": "0.1.3.3",
+     "messages": [
+      "Emergency Announcement",
+      "We Want You!"
+     ],
+     "color": "cfc6b8",
+     "no_bounce": true
+    },
+    "96": {
+     "dst": "0.3.2.2",
+     "messages": [
+      "TOP SECRET",
+      "CONFIDENTIAL"
+     ],
+     "color": "cfc6b8",
+     "no_bounce": true
+    },
+    "98": {
+     "dst": "0.1.0.1",
+     "messages": [
+      "Emergency Announcement",
+      "We Want You!"
+     ],
+     "color": "cfc6b8",
+     "no_bounce": true
+    },
+    "100": {
+     "dst": "0.1.0.2",
+     "messages": [
+      "Emergency Announcement",
+      "We Want You!"
+     ],
+     "color": "cfc6b8",
+     "no_bounce": true
+    },
+    "102": {
+     "dst": "0.1.0.3",
+     "messages": [
+      "Emergency Announcement",
+      "We Want You!"
+     ],
+     "color": "cfc6b8",
+     "no_bounce": true
+    },
+    "104": {
+     "dst": "0.1.1.0",
+     "messages": [
+      "Emergency Announcement",
+      "We Want You!"
+     ],
+     "color": "cfc6b8",
+     "no_bounce": true
+    },
+    "106": {
+     "dst": "0.1.1.1",
+     "messages": [
+      "Emergency Announcement",
+      "We Want You!"
+     ],
+     "color": "cfc6b8",
+     "no_bounce": true
+    },
+    "108": {
+     "dst": "0.1.1.2",
+     "messages": [
+      "Emergency Announcement",
+      "We Want You!"
+     ],
+     "color": "cfc6b8",
+     "no_bounce": true
+    },
+    "110": {
+     "dst": "0.1.1.3",
+     "messages": [
+      "Emergency Announcement",
+      "We Want You!"
+     ],
+     "color": "cfc6b8",
+     "no_bounce": true
+    },
+    "112": {
+     "dst": "0.1.2.0",
+     "messages": [
+      "Emergency Announcement",
+      "We Want You!"
+     ],
+     "color": "cfc6b8",
+     "no_bounce": true
+    },
+    "114": {
+     "dst": "0.1.2.1",
+     "messages": [
+      "Emergency Announcement",
+      "We Want You!"
+     ],
+     "color": "cfc6b8",
+     "no_bounce": true
+    },
+    "116": {
+     "dst": "0.1.2.2",
+     "messages": [
+      "Emergency Announcement",
+      "We Want You!"
+     ],
+     "color": "cfc6b8",
+     "no_bounce": true
+    },
+    "118": {
+     "dst": "0.1.2.3",
+     "messages": [
+      "Emergency Announcement",
+      "We Want You!"
+     ],
+     "color": "cfc6b8",
+     "no_bounce": true
+    },
+    "120": {
+     "dst": "0.1.3.0",
+     "messages": [
+      "Emergency Announcement",
+      "We Want You!"
+     ],
+     "color": "cfc6b8",
+     "no_bounce": true
+    },
+    "122": {
+     "dst": "0.1.3.1",
+     "messages": [
+      "Emergency Announcement",
+      "We Want You!"
+     ],
+     "color": "cfc6b8",
+     "no_bounce": true
+    },
+    "124": {
+     "dst": "0.1.3.2",
+     "messages": [
+      "Emergency Announcement",
+      "We Want You!"
+     ],
+     "color": "cfc6b8",
+     "no_bounce": true
+    },
+    "126": {
+     "dst": "0.1.3.3",
+     "messages": [
+      "Emergency Announcement",
+      "We Want You!"
+     ],
+     "color": "cfc6b8",
+     "no_bounce": true
+    }
+   }
+  },
+  "0.1.0.1": {
+   "cycle": 8,
+   "sends_per_cycle": 4,
+   "color": "eea160",
+   "slots": {
+    "0": {
+     "dst": "0.2.0.0",
+     "messages": [
+      "Search request"
+     ],
+     "color": "eea160"
+    },
+    "2": {
+     "dst": "0.1.2.0",
+     "messages": [
+      "Search query"
+     ],
+     "color": "eea160"
+    },
+    "4": {
+     "dst": "0.1.1.0",
+     "messages": [
+      "Where are the Architects?",
+      "Did anyone survive the Apocalypse?",
+      "Who are the Architects?",
+      "Where is everyone?"
+     ],
+     "color": "eea160"
+    },
+    "6": {
+     "dst": "0.1.1.1",
+     "messages": [
+      "I need {}kg of corn"
+     ],
+     "color": "eea160",
+     "random_number": "1..4"
+    }
+   }
+  },
+  "0.1.0.2": {
+   "cycle": 16,
+   "sends_per_cycle": 8,
+   "color": "5e3643",
+   "slots": {
+    "0": {
+     "dst": "0.1.1.0",
+     "messages": [
+      "What's 6 * 7?",
+      "Do my homework"
+     ],
+     "color": "5e3643"
+    },
+    "2": {
+     "dst": "0.0.0.2",
+     "messages": [
+      "Student Exchange Program"
+     ],
+     "color": "5e3643"
+    },
+    "4": {
+     "dst": "0.1.1.0",
+     "messages": [
+      "What's 6 * 7?",
+      "Do my homework"
+     ],
+     "color": "5e3643"
+    },
+    "6": {
+     "dst": "0.1.0.2",
+     "messages": [
+      "Student Exchange Program"
+     ],
+     "color": "5e3643"
+    },
+    "8": {
+     "dst": "0.1.1.0",
+     "messages": [
+      "What's 6 * 7?",
+      "Do my homework"
+     ],
+     "color": "5e3643"
+    },
+    "10": {
+     "dst": "0.2.0.2",
+     "messages": [
+      "Student Exchange Program"
+     ],
+     "color": "5e3643"
+    },
+    "12": {
+     "dst": "0.1.1.0",
+     "messages": [
+      "What's 6 * 7?",
+      "Do my homework"
+     ],
+     "color": "5e3643"
+    },
+    "14": {
+     "dst": "0.3.0.2",
+     "messages": [
+      "Student Exchange Program"
+     ],
+     "color": "5e3643"
+    }
+   }
+  },
+  "0.1.0.3": {
+   "cycle": 1,
+   "sends_per_cycle": 0,
+   "color": [],
+   "slots": {}
+  },
+  "0.1.1.1": {
+   "cycle": 1,
+   "sends_per_cycle": 0,
+   "color": [],
+   "slots": {}
+  },
+  "0.1.1.2": {
+   "cycle": 8,
+   "sends_per_cycle": 4,
+   "color": "71aa34",
+   "slots": {
+    "0": {
+     "dst": "0.1.3.1",
+     "messages": [
+      "One battery, please",
+      "One bottle of corn oil, please"
+     ],
+     "color": "71aa34"
+    },
+    "2": {
+     "dst": "0.1.1.0",
+     "messages": [
+      "hello",
+      "how do i use the computer?",
+      "family pictures",
+      "I have lost 6 pounds since June",
+      "Good morning",
+      "Bless you!!!",
+      "3615 TUNNET",
+      "do you get these messages?",
+      "need corn oil",
+      ":)",
+      "how to recharge battery?",
+      "happy birthday?",
+      "teddy bear pattern",
+      "how do I delete this",
+      "corn bread recipe"
+     ],
+     "color": "71aa34"
+    },
+    "4": {
+     "dst": "0.1.1.0",
+     "messages": [
+      "hello",
+      "how do i use the computer?",
+      "family pictures",
+      "I have lost 6 pounds since June",
+      "Good morning",
+      "Bless you!!!",
+      "3615 TUNNET",
+      "do you get these messages?",
+      "need corn oil",
+      ":)",
+      "how to recharge battery?",
+      "happy birthday?",
+      "teddy bear pattern",
+      "how do I delete this",
+      "corn bread recipe"
+     ],
+     "color": "71aa34"
+    },
+    "6": {
+     "dst": "0.1.1.0",
+     "messages": [
+      "hello",
+      "how do i use the computer?",
+      "family pictures",
+      "I have lost 6 pounds since June",
+      "Good morning",
+      "Bless you!!!",
+      "3615 TUNNET",
+      "do you get these messages?",
+      "need corn oil",
+      ":)",
+      "how to recharge battery?",
+      "happy birthday?",
+      "teddy bear pattern",
+      "how do I delete this",
+      "corn bread recipe"
+     ],
+     "color": "71aa34"
+    }
+   }
+  },
+  "0.1.1.3": {
+   "cycle": 1,
+   "sends_per_cycle": 0,
+   "color": [],
+   "slots": {}
+  },
+  "0.1.2.0": {
+   "cycle": 1,
+   "sends_per_cycle": 0,
+   "color": [],
+   "slots": {}
+  },
+  "0.1.2.1": {
+   "cycle": 2048,
+   "sends_per_cycle": 16,
+   "color": "7d7071",
+   "slots": {
+    "0": {
+     "dst": "0.1.0.0",
+     "messages": [
+      "Online CNC Machining Service"
+     ],
+     "color": "7d7071"
+    },
+    "128": {
+     "dst": "0.1.1.0",
+     "messages": [
+      "Online CNC Machining Service"
+     ],
+     "color": "7d7071"
+    },
+    "256": {
+     "dst": "0.1.2.0",
+     "messages": [
+      "Online CNC Machining Service"
+     ],
+     "color": "7d7071"
+    },
+    "384": {
+     "dst": "0.1.3.0",
+     "messages": [
+      "Online CNC Machining Service"
+     ],
+     "color": "7d7071"
+    },
+    "512": {
+     "dst": "0.1.0.1",
+     "messages": [
+      "Online CNC Machining Service"
+     ],
+     "color": "7d7071"
+    },
+    "640": {
+     "dst": "0.1.1.1",
+     "messages": [
+      "Online CNC Machining Service"
+     ],
+     "color": "7d7071"
+    },
+    "768": {
+     "dst": "0.1.2.1",
+     "messages": [
+      "Online CNC Machining Service"
+     ],
+     "color": "7d7071"
+    },
+    "896": {
+     "dst": "0.1.3.1",
+     "messages": [
+      "Online CNC Machining Service"
+     ],
+     "color": "7d7071"
+    },
+    "1024": {
+     "dst": "0.1.0.2",
+     "messages": [
+      "Online CNC Machining Service"
+     ],
+     "color": "7d7071"
+    },
+    "1152": {
+     "dst": "0.1.1.2",
+     "messages": [
+      "Online CNC Machining Service"
+     ],
+     "color": "7d7071"
+    },
+    "1280": {
+     "dst": "0.1.2.2",
+     "messages": [
+      "Online CNC Machining Service"
+     ],
+     "color": "7d7071"
+    },
+    "1408": {
+     "dst": "0.1.3.2",
+     "messages": [
+      "Online CNC Machining Service"
+     ],
+     "color": "7d7071"
+    },
+    "1536": {
+     "dst": "0.1.0.3",
+     "messages": [
+      "Online CNC Machining Service"
+     ],
+     "color": "7d7071"
+    },
+    "1664": {
+     "dst": "0.1.1.3",
+     "messages": [
+      "Online CNC Machining Service"
+     ],
+     "color": "7d7071"
+    },
+    "1792": {
+     "dst": "0.1.2.3",
+     "messages": [
+      "Online CNC Machining Service"
+     ],
+     "color": "7d7071"
+    },
+    "1920": {
+     "dst": "0.1.3.3",
+     "messages": [
+      "Online CNC Machining Service"
+     ],
+     "color": "7d7071"
+    }
+   }
+  },
+  "0.1.2.2": {
+   "cycle": 6,
+   "sends_per_cycle": 3,
+   "color": "a05b53",
+   "slots": {
+    "0": {
+     "dst": "0.1.2.1",
+     "messages": [
+      "We need ammunition"
+     ],
+     "color": "a05b53",
+     "no_bounce": true
+    },
+    "2": {
+     "dst": "0.1.3.1",
+     "messages": [
+      "We need field rations"
+     ],
+     "color": "a05b53",
+     "no_bounce": true
+    },
+    "4": {
+     "dst": "0.1.0.0",
+     "messages": [
+      "TOP SECRET",
+      "CONFIDENTIAL"
+     ],
+     "color": "a05b53",
+     "no_bounce": true
+    }
+   }
+  },
+  "0.1.2.3": {
+   "cycle": 1,
+   "sends_per_cycle": 0,
+   "color": [],
+   "slots": {}
+  },
+  "0.1.3.0": {
+   "cycle": 1,
+   "sends_per_cycle": 0,
+   "color": [],
+   "slots": {}
+  },
+  "0.1.3.1": {
+   "cycle": 2048,
+   "sends_per_cycle": 32,
+   "color": "7a444a",
+   "slots": {
+    "0": {
+     "dst": "0.1.0.0",
+     "messages": [
+      "BEST PRICES",
+      "HUGE DISCOUNT!",
+      "SALES"
+     ],
+     "color": "7a444a"
+    },
+    "8": {
+     "dst": "0.1.1.1",
+     "messages": [
+      "Purchase Order"
+     ],
+     "color": "7a444a"
+    },
+    "128": {
+     "dst": "0.1.0.1",
+     "messages": [
+      "BEST PRICES",
+      "HUGE DISCOUNT!",
+      "SALES"
+     ],
+     "color": "7a444a"
+    },
+    "136": {
+     "dst": "0.1.1.1",
+     "messages": [
+      "Purchase Order"
+     ],
+     "color": "7a444a"
+    },
+    "256": {
+     "dst": "0.1.0.2",
+     "messages": [
+      "BEST PRICES",
+      "HUGE DISCOUNT!",
+      "SALES"
+     ],
+     "color": "7a444a"
+    },
+    "264": {
+     "dst": "0.1.1.1",
+     "messages": [
+      "Purchase Order"
+     ],
+     "color": "7a444a"
+    },
+    "384": {
+     "dst": "0.1.0.3",
+     "messages": [
+      "BEST PRICES",
+      "HUGE DISCOUNT!",
+      "SALES"
+     ],
+     "color": "7a444a"
+    },
+    "392": {
+     "dst": "0.1.1.1",
+     "messages": [
+      "Purchase Order"
+     ],
+     "color": "7a444a"
+    },
+    "512": {
+     "dst": "0.1.1.0",
+     "messages": [
+      "BEST PRICES",
+      "HUGE DISCOUNT!",
+      "SALES"
+     ],
+     "color": "7a444a"
+    },
+    "520": {
+     "dst": "0.1.1.1",
+     "messages": [
+      "Purchase Order"
+     ],
+     "color": "7a444a"
+    },
+    "640": {
+     "dst": "0.1.1.1",
+     "messages": [
+      "BEST PRICES",
+      "HUGE DISCOUNT!",
+      "SALES"
+     ],
+     "color": "7a444a"
+    },
+    "648": {
+     "dst": "0.1.1.1",
+     "messages": [
+      "Purchase Order"
+     ],
+     "color": "7a444a"
+    },
+    "768": {
+     "dst": "0.1.1.2",
+     "messages": [
+      "BEST PRICES",
+      "HUGE DISCOUNT!",
+      "SALES"
+     ],
+     "color": "7a444a"
+    },
+    "776": {
+     "dst": "0.1.1.1",
+     "messages": [
+      "Purchase Order"
+     ],
+     "color": "7a444a"
+    },
+    "896": {
+     "dst": "0.1.1.3",
+     "messages": [
+      "BEST PRICES",
+      "HUGE DISCOUNT!",
+      "SALES"
+     ],
+     "color": "7a444a"
+    },
+    "904": {
+     "dst": "0.1.1.1",
+     "messages": [
+      "Purchase Order"
+     ],
+     "color": "7a444a"
+    },
+    "1024": {
+     "dst": "0.1.2.0",
+     "messages": [
+      "BEST PRICES",
+      "HUGE DISCOUNT!",
+      "SALES"
+     ],
+     "color": "7a444a"
+    },
+    "1032": {
+     "dst": "0.1.1.1",
+     "messages": [
+      "Purchase Order"
+     ],
+     "color": "7a444a"
+    },
+    "1152": {
+     "dst": "0.1.2.1",
+     "messages": [
+      "BEST PRICES",
+      "HUGE DISCOUNT!",
+      "SALES"
+     ],
+     "color": "7a444a"
+    },
+    "1160": {
+     "dst": "0.1.1.1",
+     "messages": [
+      "Purchase Order"
+     ],
+     "color": "7a444a"
+    },
+    "1280": {
+     "dst": "0.1.2.2",
+     "messages": [
+      "BEST PRICES",
+      "HUGE DISCOUNT!",
+      "SALES"
+     ],
+     "color": "7a444a"
+    },
+    "1288": {
+     "dst": "0.1.1.1",
+     "messages": [
+      "Purchase Order"
+     ],
+     "color": "7a444a"
+    },
+    "1408": {
+     "dst": "0.1.2.3",
+     "messages": [
+      "BEST PRICES",
+      "HUGE DISCOUNT!",
+      "SALES"
+     ],
+     "color": "7a444a"
+    },
+    "1416": {
+     "dst": "0.1.1.1",
+     "messages": [
+      "Purchase Order"
+     ],
+     "color": "7a444a"
+    },
+    "1536": {
+     "dst": "0.1.3.0",
+     "messages": [
+      "BEST PRICES",
+      "HUGE DISCOUNT!",
+      "SALES"
+     ],
+     "color": "7a444a"
+    },
+    "1544": {
+     "dst": "0.1.1.1",
+     "messages": [
+      "Purchase Order"
+     ],
+     "color": "7a444a"
+    },
+    "1664": {
+     "dst": "0.1.3.1",
+     "messages": [
+      "BEST PRICES",
+      "HUGE DISCOUNT!",
+      "SALES"
+     ],
+     "color": "7a444a"
+    },
+    "1672": {
+     "dst": "0.1.1.1",
+     "messages": [
+      "Purchase Order"
+     ],
+     "color": "7a444a"
+    },
+    "1792": {
+     "dst": "0.1.3.2",
+     "messages": [
+      "BEST PRICES",
+      "HUGE DISCOUNT!",
+      "SALES"
+     ],
+     "color": "7a444a"
+    },
+    "1800": {
+     "dst": "0.1.1.1",
+     "messages": [
+      "Purchase Order"
+     ],
+     "color": "7a444a"
+    },
+    "1920": {
+     "dst": "0.1.3.3",
+     "messages": [
+      "BEST PRICES",
+      "HUGE DISCOUNT!",
+      "SALES"
+     ],
+     "color": "7a444a"
+    },
+    "1928": {
+     "dst": "0.1.1.1",
+     "messages": [
+      "Purchase Order"
+     ],
+     "color": "7a444a"
+    }
+   }
+  },
+  "0.1.3.2": {
+   "cycle": 32,
+   "sends_per_cycle": 16,
+   "color": "394778",
+   "slots": {
+    "0": {
+     "dst": "0.0.1.1",
+     "messages": [
+      "My money is working for me",
+      "Economists hate this simple trick",
+      "INVEST NOW!"
+     ],
+     "color": "394778"
+    },
+    "2": {
+     "dst": "0.1.3.0",
+     "messages": [
+      "TX {}"
+     ],
+     "color": "394778"
+    },
+    "4": {
+     "dst": "0.1.3.0",
+     "messages": [
+      "TX {}"
+     ],
+     "color": "394778"
+    },
+    "6": {
+     "dst": "0.1.3.0",
+     "messages": [
+      "TX {}"
+     ],
+     "color": "394778"
+    },
+    "8": {
+     "dst": "0.1.1.1",
+     "messages": [
+      "My money is working for me",
+      "Economists hate this simple trick",
+      "INVEST NOW!"
+     ],
+     "color": "394778"
+    },
+    "10": {
+     "dst": "0.1.3.0",
+     "messages": [
+      "TX {}"
+     ],
+     "color": "394778"
+    },
+    "12": {
+     "dst": "0.1.3.0",
+     "messages": [
+      "TX {}"
+     ],
+     "color": "394778"
+    },
+    "14": {
+     "dst": "0.1.3.0",
+     "messages": [
+      "TX {}"
+     ],
+     "color": "394778"
+    },
+    "16": {
+     "dst": "0.2.1.1",
+     "messages": [
+      "My money is working for me",
+      "Economists hate this simple trick",
+      "INVEST NOW!"
+     ],
+     "color": "394778"
+    },
+    "18": {
+     "dst": "0.1.3.0",
+     "messages": [
+      "TX {}"
+     ],
+     "color": "394778"
+    },
+    "20": {
+     "dst": "0.1.3.0",
+     "messages": [
+      "TX {}"
+     ],
+     "color": "394778"
+    },
+    "22": {
+     "dst": "0.1.3.0",
+     "messages": [
+      "TX {}"
+     ],
+     "color": "394778"
+    },
+    "24": {
+     "dst": "0.3.1.1",
+     "messages": [
+      "My money is working for me",
+      "Economists hate this simple trick",
+      "INVEST NOW!"
+     ],
+     "color": "394778"
+    },
+    "26": {
+     "dst": "0.1.3.0",
+     "messages": [
+      "TX {}"
+     ],
+     "color": "394778"
+    },
+    "28": {
+     "dst": "0.1.3.0",
+     "messages": [
+      "TX {}"
+     ],
+     "color": "394778"
+    },
+    "30": {
+     "dst": "0.1.3.0",
+     "messages": [
+      "TX {}"
+     ],
+     "color": "394778"
+    }
+   }
+  },
+  "0.1.3.3": {
+   "cycle": 16,
+   "sends_per_cycle": 8,
+   "color": "8aebf1",
+   "slots": {
+    "0": {
+     "dst": "0.1.0.0",
+     "messages": [
+      "Status Report"
+     ],
+     "color": "8aebf1"
+    },
+    "2": {
+     "dst": "0.0.3.3",
+     "messages": [
+      "Meeting minutes"
+     ],
+     "color": "8aebf1"
+    },
+    "4": {
+     "dst": "0.1.0.0",
+     "messages": [
+      "Status Report"
+     ],
+     "color": "8aebf1"
+    },
+    "6": {
+     "dst": "0.1.3.3",
+     "messages": [
+      "Meeting minutes"
+     ],
+     "color": "8aebf1"
+    },
+    "8": {
+     "dst": "0.1.0.0",
+     "messages": [
+      "Status Report"
+     ],
+     "color": "8aebf1"
+    },
+    "10": {
+     "dst": "0.2.3.3",
+     "messages": [
+      "Meeting minutes"
+     ],
+     "color": "8aebf1"
+    },
+    "12": {
+     "dst": "0.1.0.0",
+     "messages": [
+      "Status Report"
+     ],
+     "color": "8aebf1"
+    },
+    "14": {
+     "dst": "0.3.3.3",
+     "messages": [
+      "Meeting minutes"
+     ],
+     "color": "8aebf1"
+    }
+   }
+  },
+  "0.2.0.0": {
+   "cycle": 256,
+   "sends_per_cycle": 108,
+   "color": "827094",
+   "slots": {
+    "0": {
+     "dst": "0.0.0.0",
+     "messages": [
+      "Join us!"
+     ],
+     "color": "827094"
+    },
+    "4": {
+     "dst": "0.0.0.1",
+     "messages": [
+      "Join us!"
+     ],
+     "color": "827094"
+    },
+    "6": {
+     "dst": "0.2.0.1",
+     "messages": [
+      "Call To Prayer",
+      "We haven't seen you at church today"
+     ],
+     "color": "827094",
+     "bounce_budget": 5
+    },
+    "8": {
+     "dst": "0.0.0.2",
+     "messages": [
+      "Join us!"
+     ],
+     "color": "827094"
+    },
+    "10": {
+     "dst": "0.2.0.2",
+     "messages": [
+      "Call To Prayer",
+      "We haven't seen you at church today"
+     ],
+     "color": "827094",
+     "bounce_budget": 5
+    },
+    "12": {
+     "dst": "0.0.0.3",
+     "messages": [
+      "Join us!"
+     ],
+     "color": "827094"
+    },
+    "14": {
+     "dst": "0.2.0.3",
+     "messages": [
+      "Call To Prayer",
+      "We haven't seen you at church today"
+     ],
+     "color": "827094",
+     "bounce_budget": 4
+    },
+    "16": {
+     "dst": "0.0.1.0",
+     "messages": [
+      "Join us!"
+     ],
+     "color": "827094"
+    },
+    "18": {
+     "dst": "0.2.1.0",
+     "messages": [
+      "Call To Prayer",
+      "We haven't seen you at church today"
+     ],
+     "color": "827094",
+     "bounce_budget": 7
+    },
+    "20": {
+     "dst": "0.0.1.1",
+     "messages": [
+      "Join us!"
+     ],
+     "color": "827094"
+    },
+    "22": {
+     "dst": "0.2.1.1",
+     "messages": [
+      "Call To Prayer",
+      "We haven't seen you at church today"
+     ],
+     "color": "827094",
+     "bounce_budget": 7
+    },
+    "24": {
+     "dst": "0.0.1.2",
+     "messages": [
+      "Join us!"
+     ],
+     "color": "827094"
+    },
+    "26": {
+     "dst": "0.2.1.2",
+     "messages": [
+      "Call To Prayer",
+      "We haven't seen you at church today"
+     ],
+     "color": "827094",
+     "bounce_budget": 6
+    },
+    "28": {
+     "dst": "0.0.1.3",
+     "messages": [
+      "Join us!"
+     ],
+     "color": "827094"
+    },
+    "30": {
+     "dst": "0.2.1.3",
+     "messages": [
+      "Call To Prayer",
+      "We haven't seen you at church today"
+     ],
+     "color": "827094",
+     "bounce_budget": 5
+    },
+    "32": {
+     "dst": "0.0.2.0",
+     "messages": [
+      "Join us!"
+     ],
+     "color": "827094"
+    },
+    "34": {
+     "dst": "0.2.2.0",
+     "messages": [
+      "Call To Prayer",
+      "We haven't seen you at church today"
+     ],
+     "color": "827094",
+     "bounce_budget": 8
+    },
+    "36": {
+     "dst": "0.0.2.1",
+     "messages": [
+      "Join us!"
+     ],
+     "color": "827094"
+    },
+    "38": {
+     "dst": "0.2.2.1",
+     "messages": [
+      "Call To Prayer",
+      "We haven't seen you at church today"
+     ],
+     "color": "827094",
+     "bounce_budget": 8
+    },
+    "40": {
+     "dst": "0.0.2.2",
+     "messages": [
+      "Join us!"
+     ],
+     "color": "827094"
+    },
+    "42": {
+     "dst": "0.2.2.2",
+     "messages": [
+      "Call To Prayer",
+      "We haven't seen you at church today"
+     ],
+     "color": "827094",
+     "bounce_budget": 7
+    },
+    "44": {
+     "dst": "0.0.2.3",
+     "messages": [
+      "Join us!"
+     ],
+     "color": "827094"
+    },
+    "46": {
+     "dst": "0.2.2.3",
+     "messages": [
+      "Call To Prayer",
+      "We haven't seen you at church today"
+     ],
+     "color": "827094",
+     "bounce_budget": 6
+    },
+    "48": {
+     "dst": "0.0.3.0",
+     "messages": [
+      "Join us!"
+     ],
+     "color": "827094"
+    },
+    "50": {
+     "dst": "0.2.3.0",
+     "messages": [
+      "Call To Prayer",
+      "We haven't seen you at church today"
+     ],
+     "color": "827094",
+     "bounce_budget": 8
+    },
+    "52": {
+     "dst": "0.0.3.1",
+     "messages": [
+      "Join us!"
+     ],
+     "color": "827094"
+    },
+    "54": {
+     "dst": "0.2.3.1",
+     "messages": [
+      "Call To Prayer",
+      "We haven't seen you at church today"
+     ],
+     "color": "827094",
+     "bounce_budget": 8
+    },
+    "56": {
+     "dst": "0.0.3.2",
+     "messages": [
+      "Join us!"
+     ],
+     "color": "827094"
+    },
+    "58": {
+     "dst": "0.2.3.2",
+     "messages": [
+      "Call To Prayer",
+      "We haven't seen you at church today"
+     ],
+     "color": "827094",
+     "bounce_budget": 7
+    },
+    "60": {
+     "dst": "0.0.3.3",
+     "messages": [
+      "Join us!"
+     ],
+     "color": "827094"
+    },
+    "62": {
+     "dst": "0.2.3.3",
+     "messages": [
+      "Call To Prayer",
+      "We haven't seen you at church today"
+     ],
+     "color": "827094",
+     "bounce_budget": 6
+    },
+    "64": {
+     "dst": "0.1.0.0",
+     "messages": [
+      "Join us!"
+     ],
+     "color": "827094"
+    },
+    "68": {
+     "dst": "0.1.0.1",
+     "messages": [
+      "Join us!"
+     ],
+     "color": "827094"
+    },
+    "70": {
+     "dst": "0.2.0.1",
+     "messages": [
+      "Call To Prayer",
+      "We haven't seen you at church today"
+     ],
+     "color": "827094",
+     "bounce_budget": 5
+    },
+    "72": {
+     "dst": "0.1.0.2",
+     "messages": [
+      "Join us!"
+     ],
+     "color": "827094"
+    },
+    "74": {
+     "dst": "0.2.0.2",
+     "messages": [
+      "Call To Prayer",
+      "We haven't seen you at church today"
+     ],
+     "color": "827094",
+     "bounce_budget": 5
+    },
+    "76": {
+     "dst": "0.1.0.3",
+     "messages": [
+      "Join us!"
+     ],
+     "color": "827094"
+    },
+    "78": {
+     "dst": "0.2.0.3",
+     "messages": [
+      "Call To Prayer",
+      "We haven't seen you at church today"
+     ],
+     "color": "827094",
+     "bounce_budget": 4
+    },
+    "80": {
+     "dst": "0.1.1.0",
+     "messages": [
+      "Join us!"
+     ],
+     "color": "827094"
+    },
+    "82": {
+     "dst": "0.2.1.0",
+     "messages": [
+      "Call To Prayer",
+      "We haven't seen you at church today"
+     ],
+     "color": "827094",
+     "bounce_budget": 7
+    },
+    "84": {
+     "dst": "0.1.1.1",
+     "messages": [
+      "Join us!"
+     ],
+     "color": "827094"
+    },
+    "86": {
+     "dst": "0.2.1.1",
+     "messages": [
+      "Call To Prayer",
+      "We haven't seen you at church today"
+     ],
+     "color": "827094",
+     "bounce_budget": 7
+    },
+    "88": {
+     "dst": "0.1.1.2",
+     "messages": [
+      "Join us!"
+     ],
+     "color": "827094"
+    },
+    "90": {
+     "dst": "0.2.1.2",
+     "messages": [
+      "Call To Prayer",
+      "We haven't seen you at church today"
+     ],
+     "color": "827094",
+     "bounce_budget": 6
+    },
+    "92": {
+     "dst": "0.1.1.3",
+     "messages": [
+      "Join us!"
+     ],
+     "color": "827094"
+    },
+    "94": {
+     "dst": "0.2.1.3",
+     "messages": [
+      "Call To Prayer",
+      "We haven't seen you at church today"
+     ],
+     "color": "827094",
+     "bounce_budget": 5
+    },
+    "96": {
+     "dst": "0.1.2.0",
+     "messages": [
+      "Join us!"
+     ],
+     "color": "827094"
+    },
+    "98": {
+     "dst": "0.2.2.0",
+     "messages": [
+      "Call To Prayer",
+      "We haven't seen you at church today"
+     ],
+     "color": "827094",
+     "bounce_budget": 8
+    },
+    "100": {
+     "dst": "0.1.2.1",
+     "messages": [
+      "Join us!"
+     ],
+     "color": "827094"
+    },
+    "102": {
+     "dst": "0.2.2.1",
+     "messages": [
+      "Call To Prayer",
+      "We haven't seen you at church today"
+     ],
+     "color": "827094",
+     "bounce_budget": 8
+    },
+    "104": {
+     "dst": "0.1.2.2",
+     "messages": [
+      "Join us!"
+     ],
+     "color": "827094"
+    },
+    "106": {
+     "dst": "0.2.2.2",
+     "messages": [
+      "Call To Prayer",
+      "We haven't seen you at church today"
+     ],
+     "color": "827094",
+     "bounce_budget": 7
+    },
+    "108": {
+     "dst": "0.1.2.3",
+     "messages": [
+      "Join us!"
+     ],
+     "color": "827094"
+    },
+    "110": {
+     "dst": "0.2.2.3",
+     "messages": [
+      "Call To Prayer",
+      "We haven't seen you at church today"
+     ],
+     "color": "827094",
+     "bounce_budget": 6
+    },
+    "112": {
+     "dst": "0.1.3.0",
+     "messages": [
+      "Join us!"
+     ],
+     "color": "827094"
+    },
+    "114": {
+     "dst": "0.2.3.0",
+     "messages": [
+      "Call To Prayer",
+      "We haven't seen you at church today"
+     ],
+     "color": "827094",
+     "bounce_budget": 8
+    },
+    "116": {
+     "dst": "0.1.3.1",
+     "messages": [
+      "Join us!"
+     ],
+     "color": "827094"
+    },
+    "118": {
+     "dst": "0.2.3.1",
+     "messages": [
+      "Call To Prayer",
+      "We haven't seen you at church today"
+     ],
+     "color": "827094",
+     "bounce_budget": 8
+    },
+    "120": {
+     "dst": "0.1.3.2",
+     "messages": [
+      "Join us!"
+     ],
+     "color": "827094"
+    },
+    "122": {
+     "dst": "0.2.3.2",
+     "messages": [
+      "Call To Prayer",
+      "We haven't seen you at church today"
+     ],
+     "color": "827094",
+     "bounce_budget": 7
+    },
+    "124": {
+     "dst": "0.1.3.3",
+     "messages": [
+      "Join us!"
+     ],
+     "color": "827094"
+    },
+    "126": {
+     "dst": "0.2.3.3",
+     "messages": [
+      "Call To Prayer",
+      "We haven't seen you at church today"
+     ],
+     "color": "827094",
+     "bounce_budget": 6
+    },
+    "134": {
+     "dst": "0.2.0.1",
+     "messages": [
+      "Call To Prayer",
+      "We haven't seen you at church today"
+     ],
+     "color": "827094",
+     "bounce_budget": 5
+    },
+    "138": {
+     "dst": "0.2.0.2",
+     "messages": [
+      "Call To Prayer",
+      "We haven't seen you at church today"
+     ],
+     "color": "827094",
+     "bounce_budget": 5
+    },
+    "142": {
+     "dst": "0.2.0.3",
+     "messages": [
+      "Call To Prayer",
+      "We haven't seen you at church today"
+     ],
+     "color": "827094",
+     "bounce_budget": 4
+    },
+    "146": {
+     "dst": "0.2.1.0",
+     "messages": [
+      "Call To Prayer",
+      "We haven't seen you at church today"
+     ],
+     "color": "827094",
+     "bounce_budget": 7
+    },
+    "150": {
+     "dst": "0.2.1.1",
+     "messages": [
+      "Call To Prayer",
+      "We haven't seen you at church today"
+     ],
+     "color": "827094",
+     "bounce_budget": 7
+    },
+    "154": {
+     "dst": "0.2.1.2",
+     "messages": [
+      "Call To Prayer",
+      "We haven't seen you at church today"
+     ],
+     "color": "827094",
+     "bounce_budget": 6
+    },
+    "158": {
+     "dst": "0.2.1.3",
+     "messages": [
+      "Call To Prayer",
+      "We haven't seen you at church today"
+     ],
+     "color": "827094",
+     "bounce_budget": 5
+    },
+    "162": {
+     "dst": "0.2.2.0",
+     "messages": [
+      "Call To Prayer",
+      "We haven't seen you at church today"
+     ],
+     "color": "827094",
+     "bounce_budget": 8
+    },
+    "166": {
+     "dst": "0.2.2.1",
+     "messages": [
+      "Call To Prayer",
+      "We haven't seen you at church today"
+     ],
+     "color": "827094",
+     "bounce_budget": 8
+    },
+    "170": {
+     "dst": "0.2.2.2",
+     "messages": [
+      "Call To Prayer",
+      "We haven't seen you at church today"
+     ],
+     "color": "827094",
+     "bounce_budget": 7
+    },
+    "174": {
+     "dst": "0.2.2.3",
+     "messages": [
+      "Call To Prayer",
+      "We haven't seen you at church today"
+     ],
+     "color": "827094",
+     "bounce_budget": 6
+    },
+    "178": {
+     "dst": "0.2.3.0",
+     "messages": [
+      "Call To Prayer",
+      "We haven't seen you at church today"
+     ],
+     "color": "827094",
+     "bounce_budget": 8
+    },
+    "182": {
+     "dst": "0.2.3.1",
+     "messages": [
+      "Call To Prayer",
+      "We haven't seen you at church today"
+     ],
+     "color": "827094",
+     "bounce_budget": 8
+    },
+    "186": {
+     "dst": "0.2.3.2",
+     "messages": [
+      "Call To Prayer",
+      "We haven't seen you at church today"
+     ],
+     "color": "827094",
+     "bounce_budget": 7
+    },
+    "190": {
+     "dst": "0.2.3.3",
+     "messages": [
+      "Call To Prayer",
+      "We haven't seen you at church today"
+     ],
+     "color": "827094",
+     "bounce_budget": 6
+    },
+    "192": {
+     "dst": "0.3.0.0",
+     "messages": [
+      "Join us!"
+     ],
+     "color": "827094"
+    },
+    "196": {
+     "dst": "0.3.0.1",
+     "messages": [
+      "Join us!"
+     ],
+     "color": "827094"
+    },
+    "198": {
+     "dst": "0.2.0.1",
+     "messages": [
+      "Call To Prayer",
+      "We haven't seen you at church today"
+     ],
+     "color": "827094",
+     "bounce_budget": 5
+    },
+    "200": {
+     "dst": "0.3.0.2",
+     "messages": [
+      "Join us!"
+     ],
+     "color": "827094"
+    },
+    "202": {
+     "dst": "0.2.0.2",
+     "messages": [
+      "Call To Prayer",
+      "We haven't seen you at church today"
+     ],
+     "color": "827094",
+     "bounce_budget": 5
+    },
+    "204": {
+     "dst": "0.3.0.3",
+     "messages": [
+      "Join us!"
+     ],
+     "color": "827094"
+    },
+    "206": {
+     "dst": "0.2.0.3",
+     "messages": [
+      "Call To Prayer",
+      "We haven't seen you at church today"
+     ],
+     "color": "827094",
+     "bounce_budget": 4
+    },
+    "208": {
+     "dst": "0.3.1.0",
+     "messages": [
+      "Join us!"
+     ],
+     "color": "827094"
+    },
+    "210": {
+     "dst": "0.2.1.0",
+     "messages": [
+      "Call To Prayer",
+      "We haven't seen you at church today"
+     ],
+     "color": "827094",
+     "bounce_budget": 7
+    },
+    "212": {
+     "dst": "0.3.1.1",
+     "messages": [
+      "Join us!"
+     ],
+     "color": "827094"
+    },
+    "214": {
+     "dst": "0.2.1.1",
+     "messages": [
+      "Call To Prayer",
+      "We haven't seen you at church today"
+     ],
+     "color": "827094",
+     "bounce_budget": 7
+    },
+    "216": {
+     "dst": "0.3.1.2",
+     "messages": [
+      "Join us!"
+     ],
+     "color": "827094"
+    },
+    "218": {
+     "dst": "0.2.1.2",
+     "messages": [
+      "Call To Prayer",
+      "We haven't seen you at church today"
+     ],
+     "color": "827094",
+     "bounce_budget": 6
+    },
+    "220": {
+     "dst": "0.3.1.3",
+     "messages": [
+      "Join us!"
+     ],
+     "color": "827094"
+    },
+    "222": {
+     "dst": "0.2.1.3",
+     "messages": [
+      "Call To Prayer",
+      "We haven't seen you at church today"
+     ],
+     "color": "827094",
+     "bounce_budget": 5
+    },
+    "224": {
+     "dst": "0.3.2.0",
+     "messages": [
+      "Join us!"
+     ],
+     "color": "827094"
+    },
+    "226": {
+     "dst": "0.2.2.0",
+     "messages": [
+      "Call To Prayer",
+      "We haven't seen you at church today"
+     ],
+     "color": "827094",
+     "bounce_budget": 8
+    },
+    "228": {
+     "dst": "0.3.2.1",
+     "messages": [
+      "Join us!"
+     ],
+     "color": "827094"
+    },
+    "230": {
+     "dst": "0.2.2.1",
+     "messages": [
+      "Call To Prayer",
+      "We haven't seen you at church today"
+     ],
+     "color": "827094",
+     "bounce_budget": 8
+    },
+    "232": {
+     "dst": "0.3.2.2",
+     "messages": [
+      "Join us!"
+     ],
+     "color": "827094"
+    },
+    "234": {
+     "dst": "0.2.2.2",
+     "messages": [
+      "Call To Prayer",
+      "We haven't seen you at church today"
+     ],
+     "color": "827094",
+     "bounce_budget": 7
+    },
+    "236": {
+     "dst": "0.3.2.3",
+     "messages": [
+      "Join us!"
+     ],
+     "color": "827094"
+    },
+    "238": {
+     "dst": "0.2.2.3",
+     "messages": [
+      "Call To Prayer",
+      "We haven't seen you at church today"
+     ],
+     "color": "827094",
+     "bounce_budget": 6
+    },
+    "240": {
+     "dst": "0.3.3.0",
+     "messages": [
+      "Join us!"
+     ],
+     "color": "827094"
+    },
+    "242": {
+     "dst": "0.2.3.0",
+     "messages": [
+      "Call To Prayer",
+      "We haven't seen you at church today"
+     ],
+     "color": "827094",
+     "bounce_budget": 8
+    },
+    "244": {
+     "dst": "0.3.3.1",
+     "messages": [
+      "Join us!"
+     ],
+     "color": "827094"
+    },
+    "246": {
+     "dst": "0.2.3.1",
+     "messages": [
+      "Call To Prayer",
+      "We haven't seen you at church today"
+     ],
+     "color": "827094",
+     "bounce_budget": 8
+    },
+    "248": {
+     "dst": "0.3.3.2",
+     "messages": [
+      "Join us!"
+     ],
+     "color": "827094"
+    },
+    "250": {
+     "dst": "0.2.3.2",
+     "messages": [
+      "Call To Prayer",
+      "We haven't seen you at church today"
+     ],
+     "color": "827094",
+     "bounce_budget": 7
+    },
+    "252": {
+     "dst": "0.3.3.3",
+     "messages": [
+      "Join us!"
+     ],
+     "color": "827094"
+    },
+    "254": {
+     "dst": "0.2.3.3",
+     "messages": [
+      "Call To Prayer",
+      "We haven't seen you at church today"
+     ],
+     "color": "827094",
+     "bounce_budget": 6
+    }
+   }
+  },
+  "0.2.0.1": {
+   "cycle": 8,
+   "sends_per_cycle": 4,
+   "color": "397b44",
+   "slots": {
+    "0": {
+     "dst": "0.2.0.0",
+     "messages": [
+      "Search request"
+     ],
+     "color": "397b44"
+    },
+    "2": {
+     "dst": "0.2.2.0",
+     "messages": [
+      "Search query"
+     ],
+     "color": "397b44"
+    },
+    "4": {
+     "dst": "0.2.1.0",
+     "messages": [
+      "Where are the Architects?",
+      "Did anyone survive the Apocalypse?",
+      "Who are the Architects?",
+      "Where is everyone?"
+     ],
+     "color": "397b44"
+    },
+    "6": {
+     "dst": "0.2.1.1",
+     "messages": [
+      "I need {}kg of corn"
+     ],
+     "color": "397b44",
+     "random_number": "1..4"
+    }
+   }
+  },
+  "0.2.0.2": {
+   "cycle": 16,
+   "sends_per_cycle": 8,
+   "color": "b6d53c",
+   "slots": {
+    "0": {
+     "dst": "0.2.1.0",
+     "messages": [
+      "What's 6 * 7?",
+      "Do my homework"
+     ],
+     "color": "b6d53c"
+    },
+    "2": {
+     "dst": "0.0.0.2",
+     "messages": [
+      "Student Exchange Program"
+     ],
+     "color": "b6d53c"
+    },
+    "4": {
+     "dst": "0.2.1.0",
+     "messages": [
+      "What's 6 * 7?",
+      "Do my homework"
+     ],
+     "color": "b6d53c"
+    },
+    "6": {
+     "dst": "0.1.0.2",
+     "messages": [
+      "Student Exchange Program"
+     ],
+     "color": "b6d53c"
+    },
+    "8": {
+     "dst": "0.2.1.0",
+     "messages": [
+      "What's 6 * 7?",
+      "Do my homework"
+     ],
+     "color": "b6d53c"
+    },
+    "10": {
+     "dst": "0.2.0.2",
+     "messages": [
+      "Student Exchange Program"
+     ],
+     "color": "b6d53c"
+    },
+    "12": {
+     "dst": "0.2.1.0",
+     "messages": [
+      "What's 6 * 7?",
+      "Do my homework"
+     ],
+     "color": "b6d53c"
+    },
+    "14": {
+     "dst": "0.3.0.2",
+     "messages": [
+      "Student Exchange Program"
+     ],
+     "color": "b6d53c"
+    }
+   }
+  },
+  "0.2.0.3": {
+   "cycle": 8,
+   "sends_per_cycle": 4,
+   "color": "28ccdf",
+   "slots": {
+    "0": {
+     "dst": "0.2.3.3",
+     "messages": [
+      "Track #1"
+     ],
+     "color": "28ccdf"
+    },
+    "2": {
+     "dst": "0.2.1.2",
+     "messages": [
+      "Track #2"
+     ],
+     "color": "28ccdf"
+    },
+    "4": {
+     "dst": "0.2.3.1",
+     "messages": [
+      "Track #3"
+     ],
+     "color": "28ccdf"
+    },
+    "6": {
+     "dst": "0.2.2.3",
+     "messages": [
+      "Track #4"
+     ],
+     "color": "28ccdf"
+    }
+   }
+  },
+  "0.2.1.1": {
+   "cycle": 1,
+   "sends_per_cycle": 0,
+   "color": [],
+   "slots": {}
+  },
+  "0.2.1.2": {
+   "cycle": 8,
+   "sends_per_cycle": 4,
+   "color": "cfc6b8",
+   "slots": {
+    "0": {
+     "dst": "0.2.3.1",
+     "messages": [
+      "One battery, please",
+      "One bottle of corn oil, please"
+     ],
+     "color": "cfc6b8"
+    },
+    "2": {
+     "dst": "0.2.1.0",
+     "messages": [
+      "hello",
+      "how do i use the computer?",
+      "family pictures",
+      "I have lost 6 pounds since June",
+      "Good morning",
+      "Bless you!!!",
+      "3615 TUNNET",
+      "do you get these messages?",
+      "need corn oil",
+      ":)",
+      "how to recharge battery?",
+      "happy birthday?",
+      "teddy bear pattern",
+      "how do I delete this",
+      "corn bread recipe"
+     ],
+     "color": "cfc6b8"
+    },
+    "4": {
+     "dst": "0.2.1.0",
+     "messages": [
+      "hello",
+      "how do i use the computer?",
+      "family pictures",
+      "I have lost 6 pounds since June",
+      "Good morning",
+      "Bless you!!!",
+      "3615 TUNNET",
+      "do you get these messages?",
+      "need corn oil",
+      ":)",
+      "how to recharge battery?",
+      "happy birthday?",
+      "teddy bear pattern",
+      "how do I delete this",
+      "corn bread recipe"
+     ],
+     "color": "cfc6b8"
+    },
+    "6": {
+     "dst": "0.2.1.0",
+     "messages": [
+      "hello",
+      "how do i use the computer?",
+      "family pictures",
+      "I have lost 6 pounds since June",
+      "Good morning",
+      "Bless you!!!",
+      "3615 TUNNET",
+      "do you get these messages?",
+      "need corn oil",
+      ":)",
+      "how to recharge battery?",
+      "happy birthday?",
+      "teddy bear pattern",
+      "how do I delete this",
+      "corn bread recipe"
+     ],
+     "color": "cfc6b8"
+    }
+   }
+  },
+  "0.2.1.3": {
+   "cycle": 1,
+   "sends_per_cycle": 0,
+   "color": [],
+   "slots": {}
+  },
+  "0.2.2.0": {
+   "cycle": 1,
+   "sends_per_cycle": 0,
+   "color": [],
+   "slots": {}
+  },
+  "0.2.2.1": {
+   "cycle": 2048,
+   "sends_per_cycle": 16,
+   "color": "e6482e",
+   "slots": {
+    "0": {
+     "dst": "0.2.0.0",
+     "messages": [
+      "Online CNC Machining Service"
+     ],
+     "color": "e6482e"
+    },
+    "128": {
+     "dst": "0.2.1.0",
+     "messages": [
+      "Online CNC Machining Service"
+     ],
+     "color": "e6482e"
+    },
+    "256": {
+     "dst": "0.2.2.0",
+     "messages": [
+      "Online CNC Machining Service"
+     ],
+     "color": "e6482e"
+    },
+    "384": {
+     "dst": "0.2.3.0",
+     "messages": [
+      "Online CNC Machining Service"
+     ],
+     "color": "e6482e"
+    },
+    "512": {
+     "dst": "0.2.0.1",
+     "messages": [
+      "Online CNC Machining Service"
+     ],
+     "color": "e6482e"
+    },
+    "640": {
+     "dst": "0.2.1.1",
+     "messages": [
+      "Online CNC Machining Service"
+     ],
+     "color": "e6482e"
+    },
+    "768": {
+     "dst": "0.2.2.1",
+     "messages": [
+      "Online CNC Machining Service"
+     ],
+     "color": "e6482e"
+    },
+    "896": {
+     "dst": "0.2.3.1",
+     "messages": [
+      "Online CNC Machining Service"
+     ],
+     "color": "e6482e"
+    },
+    "1024": {
+     "dst": "0.2.0.2",
+     "messages": [
+      "Online CNC Machining Service"
+     ],
+     "color": "e6482e"
+    },
+    "1152": {
+     "dst": "0.2.1.2",
+     "messages": [
+      "Online CNC Machining Service"
+     ],
+     "color": "e6482e"
+    },
+    "1280": {
+     "dst": "0.2.2.2",
+     "messages": [
+      "Online CNC Machining Service"
+     ],
+     "color": "e6482e"
+    },
+    "1408": {
+     "dst": "0.2.3.2",
+     "messages": [
+      "Online CNC Machining Service"
+     ],
+     "color": "e6482e"
+    },
+    "1536": {
+     "dst": "0.2.0.3",
+     "messages": [
+      "Online CNC Machining Service"
+     ],
+     "color": "e6482e"
+    },
+    "1664": {
+     "dst": "0.2.1.3",
+     "messages": [
+      "Online CNC Machining Service"
+     ],
+     "color": "e6482e"
+    },
+    "1792": {
+     "dst": "0.2.2.3",
+     "messages": [
+      "Online CNC Machining Service"
+     ],
+     "color": "e6482e"
+    },
+    "1920": {
+     "dst": "0.2.3.3",
+     "messages": [
+      "Online CNC Machining Service"
+     ],
+     "color": "e6482e"
+    }
+   }
+  },
+  "0.2.2.2": {
+   "cycle": 6,
+   "sends_per_cycle": 3,
+   "color": "bf7958",
+   "slots": {
+    "0": {
+     "dst": "0.2.2.1",
+     "messages": [
+      "We need ammunition"
+     ],
+     "color": "bf7958",
+     "no_bounce": true
+    },
+    "2": {
+     "dst": "0.2.3.1",
+     "messages": [
+      "We need field rations"
+     ],
+     "color": "bf7958",
+     "no_bounce": true
+    },
+    "4": {
+     "dst": "0.1.0.0",
+     "messages": [
+      "TOP SECRET",
+      "CONFIDENTIAL"
+     ],
+     "color": "bf7958",
+     "no_bounce": true
+    }
+   }
+  },
+  "0.2.2.3": {
+   "cycle": 1,
+   "sends_per_cycle": 0,
+   "color": [],
+   "slots": {}
+  },
+  "0.2.3.0": {
+   "cycle": 1,
+   "sends_per_cycle": 0,
+   "color": [],
+   "slots": {}
+  },
+  "0.2.3.1": {
+   "cycle": 1,
+   "sends_per_cycle": 0,
+   "color": [],
+   "slots": {}
+  },
+  "0.2.3.2": {
+   "cycle": 32,
+   "sends_per_cycle": 16,
+   "color": "5a5353",
+   "slots": {
+    "0": {
+     "dst": "0.0.1.1",
+     "messages": [
+      "My money is working for me",
+      "Economists hate this simple trick",
+      "INVEST NOW!"
+     ],
+     "color": "5a5353"
+    },
+    "2": {
+     "dst": "0.2.3.0",
+     "messages": [
+      "TX {}"
+     ],
+     "color": "5a5353"
+    },
+    "4": {
+     "dst": "0.2.3.0",
+     "messages": [
+      "TX {}"
+     ],
+     "color": "5a5353"
+    },
+    "6": {
+     "dst": "0.2.3.0",
+     "messages": [
+      "TX {}"
+     ],
+     "color": "5a5353"
+    },
+    "8": {
+     "dst": "0.1.1.1",
+     "messages": [
+      "My money is working for me",
+      "Economists hate this simple trick",
+      "INVEST NOW!"
+     ],
+     "color": "5a5353"
+    },
+    "10": {
+     "dst": "0.2.3.0",
+     "messages": [
+      "TX {}"
+     ],
+     "color": "5a5353"
+    },
+    "12": {
+     "dst": "0.2.3.0",
+     "messages": [
+      "TX {}"
+     ],
+     "color": "5a5353"
+    },
+    "14": {
+     "dst": "0.2.3.0",
+     "messages": [
+      "TX {}"
+     ],
+     "color": "5a5353"
+    },
+    "16": {
+     "dst": "0.2.1.1",
+     "messages": [
+      "My money is working for me",
+      "Economists hate this simple trick",
+      "INVEST NOW!"
+     ],
+     "color": "5a5353"
+    },
+    "18": {
+     "dst": "0.2.3.0",
+     "messages": [
+      "TX {}"
+     ],
+     "color": "5a5353"
+    },
+    "20": {
+     "dst": "0.2.3.0",
+     "messages": [
+      "TX {}"
+     ],
+     "color": "5a5353"
+    },
+    "22": {
+     "dst": "0.2.3.0",
+     "messages": [
+      "TX {}"
+     ],
+     "color": "5a5353"
+    },
+    "24": {
+     "dst": "0.3.1.1",
+     "messages": [
+      "My money is working for me",
+      "Economists hate this simple trick",
+      "INVEST NOW!"
+     ],
+     "color": "5a5353"
+    },
+    "26": {
+     "dst": "0.2.3.0",
+     "messages": [
+      "TX {}"
+     ],
+     "color": "5a5353"
+    },
+    "28": {
+     "dst": "0.2.3.0",
+     "messages": [
+      "TX {}"
+     ],
+     "color": "5a5353"
+    },
+    "30": {
+     "dst": "0.2.3.0",
+     "messages": [
+      "TX {}"
+     ],
+     "color": "5a5353"
+    }
+   }
+  },
+  "0.2.3.3": {
+   "cycle": 16,
+   "sends_per_cycle": 8,
+   "color": "7d7071",
+   "slots": {
+    "0": {
+     "dst": "0.2.0.0",
+     "messages": [
+      "Status Report"
+     ],
+     "color": "7d7071"
+    },
+    "2": {
+     "dst": "0.0.3.3",
+     "messages": [
+      "Meeting minutes"
+     ],
+     "color": "7d7071"
+    },
+    "4": {
+     "dst": "0.2.0.0",
+     "messages": [
+      "Status Report"
+     ],
+     "color": "7d7071"
+    },
+    "6": {
+     "dst": "0.1.3.3",
+     "messages": [
+      "Meeting minutes"
+     ],
+     "color": "7d7071"
+    },
+    "8": {
+     "dst": "0.2.0.0",
+     "messages": [
+      "Status Report"
+     ],
+     "color": "7d7071"
+    },
+    "10": {
+     "dst": "0.2.3.3",
+     "messages": [
+      "Meeting minutes"
+     ],
+     "color": "7d7071"
+    },
+    "12": {
+     "dst": "0.2.0.0",
+     "messages": [
+      "Status Report"
+     ],
+     "color": "7d7071"
+    },
+    "14": {
+     "dst": "0.3.3.3",
+     "messages": [
+      "Meeting minutes"
+     ],
+     "color": "7d7071"
+    }
+   }
+  },
+  "0.3.0.0": {
+   "cycle": 4,
+   "sends_per_cycle": 1,
+   "color": "a05b53",
+   "slots": {
+    "0": {
+     "dst": "2.1.2.0",
+     "messages": [
+      "Token"
+     ],
+     "color": "a05b53",
+     "no_bounce": true
+    }
+   }
+  },
+  "0.3.0.1": {
+   "cycle": 1,
+   "sends_per_cycle": 0,
+   "color": [],
+   "slots": {}
+  },
+  "0.3.0.2": {
+   "cycle": 16,
+   "sends_per_cycle": 8,
+   "color": "3c5956",
+   "slots": {
+    "0": {
+     "dst": "0.3.1.0",
+     "messages": [
+      "What's 6 * 7?",
+      "Do my homework"
+     ],
+     "color": "3c5956"
+    },
+    "2": {
+     "dst": "0.0.0.2",
+     "messages": [
+      "Student Exchange Program"
+     ],
+     "color": "3c5956"
+    },
+    "4": {
+     "dst": "0.3.1.0",
+     "messages": [
+      "What's 6 * 7?",
+      "Do my homework"
+     ],
+     "color": "3c5956"
+    },
+    "6": {
+     "dst": "0.1.0.2",
+     "messages": [
+      "Student Exchange Program"
+     ],
+     "color": "3c5956"
+    },
+    "8": {
+     "dst": "0.3.1.0",
+     "messages": [
+      "What's 6 * 7?",
+      "Do my homework"
+     ],
+     "color": "3c5956"
+    },
+    "10": {
+     "dst": "0.2.0.2",
+     "messages": [
+      "Student Exchange Program"
+     ],
+     "color": "3c5956"
+    },
+    "12": {
+     "dst": "0.3.1.0",
+     "messages": [
+      "What's 6 * 7?",
+      "Do my homework"
+     ],
+     "color": "3c5956"
+    },
+    "14": {
+     "dst": "0.3.0.2",
+     "messages": [
+      "Student Exchange Program"
+     ],
+     "color": "3c5956"
+    }
+   }
+  },
+  "0.3.0.3": {
+   "cycle": 8,
+   "sends_per_cycle": 4,
+   "color": "7a444a",
+   "slots": {
+    "0": {
+     "dst": "0.3.3.3",
+     "messages": [
+      "Track #1"
+     ],
+     "color": "7a444a"
+    },
+    "2": {
+     "dst": "0.3.1.2",
+     "messages": [
+      "Track #2"
+     ],
+     "color": "7a444a"
+    },
+    "4": {
+     "dst": "0.3.3.1",
+     "messages": [
+      "Track #3"
+     ],
+     "color": "7a444a"
+    },
+    "6": {
+     "dst": "0.3.2.3",
+     "messages": [
+      "Track #4"
+     ],
+     "color": "7a444a"
+    }
+   }
+  },
+  "0.3.1.1": {
+   "cycle": 1,
+   "sends_per_cycle": 0,
+   "color": [],
+   "slots": {}
+  },
+  "0.3.1.2": {
+   "cycle": 8,
+   "sends_per_cycle": 4,
+   "color": "827094",
+   "slots": {
+    "0": {
+     "dst": "0.3.3.1",
+     "messages": [
+      "One battery, please",
+      "One bottle of corn oil, please"
+     ],
+     "color": "827094"
+    },
+    "2": {
+     "dst": "0.3.1.0",
+     "messages": [
+      "hello",
+      "how do i use the computer?",
+      "family pictures",
+      "I have lost 6 pounds since June",
+      "Good morning",
+      "Bless you!!!",
+      "3615 TUNNET",
+      "do you get these messages?",
+      "need corn oil",
+      ":)",
+      "how to recharge battery?",
+      "happy birthday?",
+      "teddy bear pattern",
+      "how do I delete this",
+      "corn bread recipe"
+     ],
+     "color": "827094"
+    },
+    "4": {
+     "dst": "0.3.1.0",
+     "messages": [
+      "hello",
+      "how do i use the computer?",
+      "family pictures",
+      "I have lost 6 pounds since June",
+      "Good morning",
+      "Bless you!!!",
+      "3615 TUNNET",
+      "do you get these messages?",
+      "need corn oil",
+      ":)",
+      "how to recharge battery?",
+      "happy birthday?",
+      "teddy bear pattern",
+      "how do I delete this",
+      "corn bread recipe"
+     ],
+     "color": "827094"
+    },
+    "6": {
+     "dst": "0.3.1.0",
+     "messages": [
+      "hello",
+      "how do i use the computer?",
+      "family pictures",
+      "I have lost 6 pounds since June",
+      "Good morning",
+      "Bless you!!!",
+      "3615 TUNNET",
+      "do you get these messages?",
+      "need corn oil",
+      ":)",
+      "how to recharge battery?",
+      "happy birthday?",
+      "teddy bear pattern",
+      "how do I delete this",
+      "corn bread recipe"
+     ],
+     "color": "827094"
+    }
+   }
+  },
+  "0.3.1.3": {
+   "cycle": 1,
+   "sends_per_cycle": 0,
+   "color": [],
+   "slots": {}
+  },
+  "0.3.2.0": {
+   "cycle": 1,
+   "sends_per_cycle": 0,
+   "color": [],
+   "slots": {}
+  },
+  "0.3.2.1": {
+   "cycle": 1,
+   "sends_per_cycle": 0,
+   "color": [],
+   "slots": {}
+  },
+  "0.3.2.2": {
+   "cycle": 6,
+   "sends_per_cycle": 3,
+   "color": "cd6093",
+   "slots": {
+    "0": {
+     "dst": "0.3.2.1",
+     "messages": [
+      "We need ammunition"
+     ],
+     "color": "cd6093",
+     "no_bounce": true
+    },
+    "2": {
+     "dst": "0.3.3.1",
+     "messages": [
+      "We need field rations"
+     ],
+     "color": "cd6093",
+     "no_bounce": true
+    },
+    "4": {
+     "dst": "0.1.0.0",
+     "messages": [
+      "TOP SECRET",
+      "CONFIDENTIAL"
+     ],
+     "color": "cd6093",
+     "no_bounce": true
+    }
+   }
+  },
+  "0.3.2.3": {
+   "cycle": 1,
+   "sends_per_cycle": 0,
+   "color": [],
+   "slots": {}
+  },
+  "0.3.3.0": {
+   "cycle": 1,
+   "sends_per_cycle": 0,
+   "color": [],
+   "slots": {}
+  },
+  "0.3.3.1": {
+   "cycle": 2048,
+   "sends_per_cycle": 32,
+   "color": "eea160",
+   "slots": {
+    "0": {
+     "dst": "0.3.0.0",
+     "messages": [
+      "BEST PRICES",
+      "HUGE DISCOUNT!",
+      "SALES"
+     ],
+     "color": "eea160"
+    },
+    "8": {
+     "dst": "0.3.1.1",
+     "messages": [
+      "Purchase Order"
+     ],
+     "color": "eea160"
+    },
+    "128": {
+     "dst": "0.3.0.1",
+     "messages": [
+      "BEST PRICES",
+      "HUGE DISCOUNT!",
+      "SALES"
+     ],
+     "color": "eea160"
+    },
+    "136": {
+     "dst": "0.3.1.1",
+     "messages": [
+      "Purchase Order"
+     ],
+     "color": "eea160"
+    },
+    "256": {
+     "dst": "0.3.0.2",
+     "messages": [
+      "BEST PRICES",
+      "HUGE DISCOUNT!",
+      "SALES"
+     ],
+     "color": "eea160"
+    },
+    "264": {
+     "dst": "0.3.1.1",
+     "messages": [
+      "Purchase Order"
+     ],
+     "color": "eea160"
+    },
+    "384": {
+     "dst": "0.3.0.3",
+     "messages": [
+      "BEST PRICES",
+      "HUGE DISCOUNT!",
+      "SALES"
+     ],
+     "color": "eea160"
+    },
+    "392": {
+     "dst": "0.3.1.1",
+     "messages": [
+      "Purchase Order"
+     ],
+     "color": "eea160"
+    },
+    "512": {
+     "dst": "0.3.1.0",
+     "messages": [
+      "BEST PRICES",
+      "HUGE DISCOUNT!",
+      "SALES"
+     ],
+     "color": "eea160"
+    },
+    "520": {
+     "dst": "0.3.1.1",
+     "messages": [
+      "Purchase Order"
+     ],
+     "color": "eea160"
+    },
+    "640": {
+     "dst": "0.3.1.1",
+     "messages": [
+      "BEST PRICES",
+      "HUGE DISCOUNT!",
+      "SALES"
+     ],
+     "color": "eea160"
+    },
+    "648": {
+     "dst": "0.3.1.1",
+     "messages": [
+      "Purchase Order"
+     ],
+     "color": "eea160"
+    },
+    "768": {
+     "dst": "0.3.1.2",
+     "messages": [
+      "BEST PRICES",
+      "HUGE DISCOUNT!",
+      "SALES"
+     ],
+     "color": "eea160"
+    },
+    "776": {
+     "dst": "0.3.1.1",
+     "messages": [
+      "Purchase Order"
+     ],
+     "color": "eea160"
+    },
+    "896": {
+     "dst": "0.3.1.3",
+     "messages": [
+      "BEST PRICES",
+      "HUGE DISCOUNT!",
+      "SALES"
+     ],
+     "color": "eea160"
+    },
+    "904": {
+     "dst": "0.3.1.1",
+     "messages": [
+      "Purchase Order"
+     ],
+     "color": "eea160"
+    },
+    "1024": {
+     "dst": "0.3.2.0",
+     "messages": [
+      "BEST PRICES",
+      "HUGE DISCOUNT!",
+      "SALES"
+     ],
+     "color": "eea160"
+    },
+    "1032": {
+     "dst": "0.3.1.1",
+     "messages": [
+      "Purchase Order"
+     ],
+     "color": "eea160"
+    },
+    "1152": {
+     "dst": "0.3.2.1",
+     "messages": [
+      "BEST PRICES",
+      "HUGE DISCOUNT!",
+      "SALES"
+     ],
+     "color": "eea160"
+    },
+    "1160": {
+     "dst": "0.3.1.1",
+     "messages": [
+      "Purchase Order"
+     ],
+     "color": "eea160"
+    },
+    "1280": {
+     "dst": "0.3.2.2",
+     "messages": [
+      "BEST PRICES",
+      "HUGE DISCOUNT!",
+      "SALES"
+     ],
+     "color": "eea160"
+    },
+    "1288": {
+     "dst": "0.3.1.1",
+     "messages": [
+      "Purchase Order"
+     ],
+     "color": "eea160"
+    },
+    "1408": {
+     "dst": "0.3.2.3",
+     "messages": [
+      "BEST PRICES",
+      "HUGE DISCOUNT!",
+      "SALES"
+     ],
+     "color": "eea160"
+    },
+    "1416": {
+     "dst": "0.3.1.1",
+     "messages": [
+      "Purchase Order"
+     ],
+     "color": "eea160"
+    },
+    "1536": {
+     "dst": "0.3.3.0",
+     "messages": [
+      "BEST PRICES",
+      "HUGE DISCOUNT!",
+      "SALES"
+     ],
+     "color": "eea160"
+    },
+    "1544": {
+     "dst": "0.3.1.1",
+     "messages": [
+      "Purchase Order"
+     ],
+     "color": "eea160"
+    },
+    "1664": {
+     "dst": "0.3.3.1",
+     "messages": [
+      "BEST PRICES",
+      "HUGE DISCOUNT!",
+      "SALES"
+     ],
+     "color": "eea160"
+    },
+    "1672": {
+     "dst": "0.3.1.1",
+     "messages": [
+      "Purchase Order"
+     ],
+     "color": "eea160"
+    },
+    "1792": {
+     "dst": "0.3.3.2",
+     "messages": [
+      "BEST PRICES",
+      "HUGE DISCOUNT!",
+      "SALES"
+     ],
+     "color": "eea160"
+    },
+    "1800": {
+     "dst": "0.3.1.1",
+     "messages": [
+      "Purchase Order"
+     ],
+     "color": "eea160"
+    },
+    "1920": {
+     "dst": "0.3.3.3",
+     "messages": [
+      "BEST PRICES",
+      "HUGE DISCOUNT!",
+      "SALES"
+     ],
+     "color": "eea160"
+    },
+    "1928": {
+     "dst": "0.3.1.1",
+     "messages": [
+      "Purchase Order"
+     ],
+     "color": "eea160"
+    }
+   }
+  },
+  "0.3.3.2": {
+   "cycle": 32,
+   "sends_per_cycle": 16,
+   "color": "5e3643",
+   "slots": {
+    "0": {
+     "dst": "0.0.1.1",
+     "messages": [
+      "My money is working for me",
+      "Economists hate this simple trick",
+      "INVEST NOW!"
+     ],
+     "color": "5e3643"
+    },
+    "2": {
+     "dst": "0.3.3.0",
+     "messages": [
+      "TX {}"
+     ],
+     "color": "5e3643"
+    },
+    "4": {
+     "dst": "0.3.3.0",
+     "messages": [
+      "TX {}"
+     ],
+     "color": "5e3643"
+    },
+    "6": {
+     "dst": "0.3.3.0",
+     "messages": [
+      "TX {}"
+     ],
+     "color": "5e3643"
+    },
+    "8": {
+     "dst": "0.1.1.1",
+     "messages": [
+      "My money is working for me",
+      "Economists hate this simple trick",
+      "INVEST NOW!"
+     ],
+     "color": "5e3643"
+    },
+    "10": {
+     "dst": "0.3.3.0",
+     "messages": [
+      "TX {}"
+     ],
+     "color": "5e3643"
+    },
+    "12": {
+     "dst": "0.3.3.0",
+     "messages": [
+      "TX {}"
+     ],
+     "color": "5e3643"
+    },
+    "14": {
+     "dst": "0.3.3.0",
+     "messages": [
+      "TX {}"
+     ],
+     "color": "5e3643"
+    },
+    "16": {
+     "dst": "0.2.1.1",
+     "messages": [
+      "My money is working for me",
+      "Economists hate this simple trick",
+      "INVEST NOW!"
+     ],
+     "color": "5e3643"
+    },
+    "18": {
+     "dst": "0.3.3.0",
+     "messages": [
+      "TX {}"
+     ],
+     "color": "5e3643"
+    },
+    "20": {
+     "dst": "0.3.3.0",
+     "messages": [
+      "TX {}"
+     ],
+     "color": "5e3643"
+    },
+    "22": {
+     "dst": "0.3.3.0",
+     "messages": [
+      "TX {}"
+     ],
+     "color": "5e3643"
+    },
+    "24": {
+     "dst": "0.3.1.1",
+     "messages": [
+      "My money is working for me",
+      "Economists hate this simple trick",
+      "INVEST NOW!"
+     ],
+     "color": "5e3643"
+    },
+    "26": {
+     "dst": "0.3.3.0",
+     "messages": [
+      "TX {}"
+     ],
+     "color": "5e3643"
+    },
+    "28": {
+     "dst": "0.3.3.0",
+     "messages": [
+      "TX {}"
+     ],
+     "color": "5e3643"
+    },
+    "30": {
+     "dst": "0.3.3.0",
+     "messages": [
+      "TX {}"
+     ],
+     "color": "5e3643"
+    }
+   }
+  },
+  "0.3.3.3": {
+   "cycle": 16,
+   "sends_per_cycle": 8,
+   "color": "e6482e",
+   "slots": {
+    "0": {
+     "dst": "0.3.0.0",
+     "messages": [
+      "Status Report"
+     ],
+     "color": "e6482e"
+    },
+    "2": {
+     "dst": "0.0.3.3",
+     "messages": [
+      "Meeting minutes"
+     ],
+     "color": "e6482e"
+    },
+    "4": {
+     "dst": "0.3.0.0",
+     "messages": [
+      "Status Report"
+     ],
+     "color": "e6482e"
+    },
+    "6": {
+     "dst": "0.1.3.3",
+     "messages": [
+      "Meeting minutes"
+     ],
+     "color": "e6482e"
+    },
+    "8": {
+     "dst": "0.3.0.0",
+     "messages": [
+      "Status Report"
+     ],
+     "color": "e6482e"
+    },
+    "10": {
+     "dst": "0.2.3.3",
+     "messages": [
+      "Meeting minutes"
+     ],
+     "color": "e6482e"
+    },
+    "12": {
+     "dst": "0.3.0.0",
+     "messages": [
+      "Status Report"
+     ],
+     "color": "e6482e"
+    },
+    "14": {
+     "dst": "0.3.3.3",
+     "messages": [
+      "Meeting minutes"
+     ],
+     "color": "e6482e"
+    }
+   }
+  },
+  "1.0.1.0": {
+   "cycle": 1,
+   "sends_per_cycle": 0,
+   "color": [],
+   "slots": {}
+  },
+  "1.1.1.0": {
+   "cycle": 1,
+   "sends_per_cycle": 0,
+   "color": [],
+   "slots": {}
+  },
+  "1.2.1.0": {
+   "cycle": 1,
+   "sends_per_cycle": 0,
+   "color": [],
+   "slots": {}
+  },
+  "1.3.1.0": {
+   "cycle": 1,
+   "sends_per_cycle": 1,
+   "color": "3c5956",
+   "slots": {
+    "0": {
+     "dst": "1.3.1.0",
+     "messages": [
+      "Re: Re: Re: Re: ..."
+     ],
+     "color": "3c5956",
+     "bounce_budget": 4
+    }
+   }
+  },
+  "2.1.2.0": {
+   "cycle": 1,
+   "sends_per_cycle": 0,
+   "color": [],
+   "slots": {}
+  },
+  "2.1.2.1": {
+   "cycle": 1,
+   "sends_per_cycle": 0,
+   "color": [],
+   "slots": {}
+  },
+  "2.1.2.2": {
+   "cycle": 1,
+   "sends_per_cycle": 0,
+   "color": [],
+   "slots": {}
+  },
+  "2.1.2.3": {
+   "cycle": 1,
+   "sends_per_cycle": 0,
+   "color": [],
+   "slots": {}
+  },
+  "3.0.0.0": {
+   "cycle": 1,
+   "sends_per_cycle": 0,
+   "color": [],
+   "slots": {}
+  },
+  "3.0.1.0": {
+   "cycle": 1,
+   "sends_per_cycle": 0,
+   "color": [],
+   "slots": {}
+  },
+  "3.0.1.1": {
+   "cycle": 1,
+   "sends_per_cycle": 0,
+   "color": [],
+   "slots": {}
+  },
+  "3.0.1.2": {
+   "cycle": 1,
+   "sends_per_cycle": 0,
+   "color": [],
+   "slots": {}
+  },
+  "3.0.1.3": {
+   "cycle": 1,
+   "sends_per_cycle": 0,
+   "color": [],
+   "slots": {}
+  }
+ }
+}

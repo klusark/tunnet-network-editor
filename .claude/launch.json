@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "tunnet-viewer",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["tools/viewer/server.py"],
+      "port": 8765
+    }
+  ]
+}

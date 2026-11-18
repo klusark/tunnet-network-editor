@@ -1,0 +1,12 @@
+# generated / large
+logs/
+__pycache__/
+*.pyc
+ghidra-headless.log
+probe_out.txt
+re/gen_*.jsonl
+re/snapshot.json
+# third-party clone (its own git repo)
+tunnet-extended/
+# local Claude settings
+.claude/settings.local.json

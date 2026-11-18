@@ -1,0 +1,1296 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tunnet Live Network</title>
+<style>
+  :root {
+    --bg: #0d1013; --panel: #161b20; --line: #2a323a; --text: #d6dde3; --muted: #7f8b96;
+    --accent: #4fd1c5; --warn: #f6ad55; --bad: #fc8181;
+    --edge: #3a4652; --edge-busy: #7a8a99;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text);
+    font: 13px/1.4 ui-monospace, "Cascadia Mono", Consolas, monospace; overflow: hidden; }
+  #app { display: grid; grid-template-columns: 1fr 340px; height: 100%; }
+  #stage { position: relative; overflow: hidden; }
+  canvas { display: block; width: 100%; height: 100%; cursor: grab; touch-action: none; }
+  #zoomCtl { position: absolute; right: 12px; top: 12px; display: flex; flex-direction: column; gap: 6px; }
+  #zoomCtl button { width: 40px; height: 40px; font-size: 20px; line-height: 1; padding: 0;
+    background: rgba(22,27,32,.92); }
+  canvas.dragging { cursor: grabbing; }
+  #side { background: var(--panel); border-left: 1px solid var(--line); display: flex;
+    flex-direction: column; min-height: 0; overflow-y: auto; }
+  #rpHops { max-height: 260px; overflow: auto; margin-top: 6px; position: relative; }
+  .sec { padding: 10px 12px; border-bottom: 1px solid var(--line); }
+  .sec h2 { margin: 0 0 6px; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+  #status { display: flex; gap: 8px; align-items: center; }
+  .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--muted); flex: none; }
+  .dot.ok { background: var(--accent); } .dot.warn { background: var(--warn); } .dot.bad { background: var(--bad); }
+  .row { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+  button, input[type=text] { background: #0f1317; color: var(--text); border: 1px solid var(--line);
+    border-radius: 4px; padding: 4px 8px; font: inherit; }
+  button { cursor: pointer; } button:hover { border-color: var(--accent); }
+  button.on { border-color: var(--accent); color: var(--accent); }
+  input[type=text] { width: 100%; }
+  input[type=range] { width: 100%; accent-color: var(--accent); }
+  #info { flex: 1 0 auto; padding: 10px 12px; }
+  #info .empty { color: var(--muted); }
+  #editor:empty { display: none; }
+  #editor { padding: 10px 12px 0; }
+  #editor .ed { border: 1px solid var(--accent); border-radius: 4px; padding: 8px; }
+  #editor .ed h3 { margin: 0 0 6px; font-size: 13px; }
+  #editor label { display: grid; grid-template-columns: 90px 1fr; gap: 6px; align-items: center; margin: 4px 0; }
+  #editor input, #editor select { font: inherit; padding: 4px 6px; min-width: 0; background: var(--bg); color: var(--fg);
+    border: 1px solid var(--line); border-radius: 3px; }
+  #editor .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  #editor .acts { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+  #editor .acts button { padding: 6px 12px; }
+  #editor .msg { margin-top: 6px; font-size: 12px; } #editor .msg.err { color: #fc8181; }
+  #editor .help { color: var(--muted); font-size: 12px; margin: 4px 0; }
+  .kv { display: grid; grid-template-columns: 80px 1fr; gap: 2px 8px; margin-bottom: 8px; }
+  .kv span:nth-child(odd) { color: var(--muted); }
+  .port { border: 1px solid var(--line); border-radius: 4px; padding: 6px 8px; margin: 6px 0; }
+  .port .hd { color: var(--muted); margin-bottom: 4px; }
+  .pk { display: flex; gap: 6px; align-items: baseline; margin: 2px 0; }
+  .sw { width: 9px; height: 9px; border-radius: 2px; flex: none; transform: translateY(1px); }
+  .pk .dir { color: var(--muted); width: 26px; flex: none; }
+  .pk .pl { color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  a.jump { color: var(--accent); cursor: pointer; text-decoration: underline; }
+  .legend { display: grid; grid-template-columns: repeat(2, 1fr); gap: 3px 10px; }
+  .legend div { display: flex; gap: 6px; align-items: center; }
+  .legend canvas { width: 14px; height: 14px; }
+  #dropList { max-height: 210px; overflow: auto; margin-top: 6px; }
+  #dropList .empty { color: var(--muted); }
+  .drop { display: grid; grid-template-columns: 58px 9px 1fr; gap: 2px 6px; padding: 3px 0;
+    border-bottom: 1px solid var(--line); cursor: pointer; }
+  .drop:hover { background: #1c232a; }
+  .drop .tm { color: var(--muted); }
+  .drop .sw { transform: translateY(3px); }
+  .drop .why { grid-column: 3; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .chip { border: 1px solid var(--line); border-radius: 10px; padding: 1px 8px; cursor: pointer; color: var(--muted); }
+  .chip.on { border-color: var(--bad); color: var(--text); }
+  .badge { font-size: 11px; border-radius: 3px; padding: 0 4px; margin-left: 4px; }
+  .badge.full { color: #9ae6b4; border: 1px solid #2f5a44; }
+  .badge.part { color: var(--warn); border: 1px solid #6b4e2a; }
+  .rp-ctl { display: flex; gap: 4px; align-items: center; flex-wrap: wrap; margin: 6px 0; }
+  .rp-ctl button { padding: 2px 8px; }
+  .rp-ctl select { background: #0f1317; color: var(--text); border: 1px solid var(--line); border-radius: 4px; font: inherit; }
+  .hop { display: grid; grid-template-columns: 54px 1fr; gap: 6px; padding: 2px 4px; cursor: pointer; border-radius: 3px; }
+  .hop:hover { background: #1c232a; }
+  .hop.cur { background: #2b2414; outline: 1px solid #6b4e2a; }
+  .hop .tk { color: var(--muted); }
+  .note { color: var(--muted); margin: 4px 0; }
+  #tip { position: absolute; pointer-events: none; background: rgba(13,16,19,.92); border: 1px solid var(--line);
+    border-radius: 4px; padding: 4px 7px; display: none; white-space: nowrap; }
+  #banner { position: absolute; left: 12px; top: 12px; background: rgba(22,27,32,.9); border: 1px solid var(--line);
+    border-radius: 4px; padding: 6px 10px; display: none; }
+  @media (max-width: 760px) { #app { grid-template-columns: 1fr; grid-template-rows: 60% 40%; }
+    #side { border-left: 0; border-top: 1px solid var(--line); } }
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="stage">
+    <canvas id="cv"></canvas>
+    <div id="zoomCtl">
+      <button id="zoomIn" title="Zoom in" aria-label="Zoom in">+</button>
+      <button id="zoomOut" title="Zoom out" aria-label="Zoom out">−</button>
+      <button id="zoomFit" title="Fit the whole network" aria-label="Fit">⤢</button>
+    </div>
+    <div id="tip"></div>
+    <div id="banner"></div>
+  </div>
+  <div id="side">
+    <div class="sec">
+      <div id="status"><span class="dot" id="sdot"></span><span id="stext">connecting…</span></div>
+      <div id="stats" style="color:var(--muted);margin-top:4px"></div>
+    </div>
+    <div class="sec">
+      <h2>View</h2>
+      <div class="row">
+        <button data-view="top" class="on">Top (X/Z)</button>
+        <button data-view="side">Side (X/Y)</button>
+        <button data-view="front">Front (Z/Y)</button>
+        <button id="fit">Fit</button>
+      </div>
+      <div style="margin-top:8px">
+        <div class="row" style="justify-content:space-between"><span style="color:var(--muted)">Height (Y) range</span><span id="yrange"></span></div>
+        <input type="range" id="ymin"><input type="range" id="ymax">
+      </div>
+      <div class="row" style="margin-top:6px">
+        <label title="Draw each run of relays between two other nodes as one line"><input type="checkbox" id="collapse" checked> collapse relay chains</label>
+        <label><input type="checkbox" id="showLabels" checked> addresses</label>
+        <label><input type="checkbox" id="showPackets" checked> packets</label>
+      </div>
+    </div>
+    <div class="sec">
+      <h2>Find address</h2>
+      <input type="text" id="find" placeholder="e.g. 0.2.1.1 or 0.2.*.*  (highlights endpoint + its packets)">
+    </div>
+    <div class="sec">
+      <h2>Dropped packets <span id="dropCount" style="text-transform:none;letter-spacing:0"></span></h2>
+      <div id="spamStats" class="row" style="margin-bottom:6px"></div>
+      <div class="row" id="dropReasons"></div>
+      <div id="dropList"><div class="empty">No drops yet.</div></div>
+      <div class="row" style="margin-top:6px">
+        <button id="dropCsv" title="Download every drop the server has seen">Export CSV</button>
+        <button id="dropClear" title="Hide drops so far (the log file keeps them)">Clear list</button>
+      </div>
+    </div>
+    <div class="sec">
+      <h2>Legend</h2>
+      <div class="legend" id="legend"></div>
+    </div>
+    <div id="editor"></div>
+    <div id="info"><div class="empty">Click a node to inspect its ports and packets.</div></div>
+  </div>
+</div>
+<script>
+"use strict";
+const TYPE_STYLE = {
+  endpoint: { color: "#f6e05e", size: 6, shape: "square" },
+  relay:    { color: "#718096", size: 2.2, shape: "circle" },
+  hub:      { color: "#63b3ed", size: 5, shape: "triangle" },
+  filter:   { color: "#f687b3", size: 5, shape: "diamond" },
+  bridge:   { color: "#9ae6b4", size: 6, shape: "ring" },
+  antenna:  { color: "#b794f4", size: 6, shape: "ring" },
+  tester:   { color: "#fbd38d", size: 6, shape: "hex" },
+  other:    { color: "#a0aec0", size: 4, shape: "circle" },
+};
+const INBOUND = 0, OUTBOUND = 1;
+
+const cv = document.getElementById("cv"), ctx = cv.getContext("2d");
+const tip = document.getElementById("tip"), banner = document.getElementById("banner");
+let types = [], nodes = new Map(), rev = null, packets = [], live = null;
+let view = "top", cam = { x: 0, y: 0, s: 1 }, yLo = -1e9, yHi = 1e9, yBounds = [0, 1];
+let selected = null, hover = null, findRe = null, needsFit = true;
+let selChain = null, hoverChain = null;
+const opts = { collapse: true, labels: true, packets: true };
+
+// ---------- relay chains ----------
+// Relays only add delay (one tick per cable), so a run of relays between two other nodes
+// can be drawn as one line. Positions along that line are spaced by cable count, so a
+// packet's position shows how many ticks it is from either end.
+let chains = [];                // {id, a, ap, b, bp, relays:[e...], cables, deadEnd}
+let cableChain = new Map();     // "e|port" -> {ch, j, fromA}: cable j of chain, e is its a-side end?
+let relayChain = new Map();     // relay e -> {ch, i}: i-th relay inside the chain (0 = next to a)
+
+function computeChains() {
+  chains = []; cableChain = new Map(); relayChain = new Map();
+  const isRelay = n => n && n.type === "relay" && n.ports.length === 2;
+  const walked = new Set();     // "e|port" cable ends a chain has already started from
+  const free = (n, p) => n.ports[p][0] == null || n.ports[p][1] == null;
+  // Pass 1 starts at every non-relay node; pass 2 at relays with one free port, which
+  // catches loose wires that are connected to nothing at either end.
+  const starts = [];
+  for (const a of nodes.values()) if (!isRelay(a)) a.ports.forEach((_, ap) => starts.push([a, ap, false]));
+  for (const a of nodes.values()) if (isRelay(a) && free(a, 0) !== free(a, 1)) starts.push([a, free(a, 0) ? 1 : 0, true]);
+  for (const [a, ap, loose] of starts) {
+    {
+      const c = a.ports[ap];
+      if (c[0] == null || c[1] == null || walked.has(a.e + "|" + ap) || !isRelay(nodes.get(c[0]))) continue;
+      if (loose && relayChain.has(a.e)) continue;
+      const outs = [[a.e, ap]], ins = [];  // cable j joins outs[j] -> ins[j]
+      let cur = a, port = ap, b = null, deadEnd = false;
+      for (let guard = 0; guard < 10000; guard++) {
+        const link = cur.ports[port], nx = nodes.get(link[0]);
+        if (!nx || link[1] == null) break;
+        ins.push([nx.e, link[1]]);
+        if (!isRelay(nx)) { b = nx; break; }
+        const outP = 1 - link[1], onward = nx.ports[outP];
+        if (onward[0] == null || onward[1] == null) { b = nx; deadEnd = true; break; }  // dangling relay
+        if (nx.e === a.e) break;
+        outs.push([nx.e, outP]); cur = nx; port = outP;
+      }
+      if (!b) continue;
+      const last = ins[ins.length - 1];
+      walked.add(last[0] + "|" + last[1]);
+      const ch = { id: chains.length, a: a.e, ap, b: b.e, bp: last[1], cables: ins.length, deadEnd, loose,
+                   relays: ins.slice(0, ins.length - 1).map(x => x[0]) };
+      if (!ch.relays.length && !deadEnd) continue;
+      chains.push(ch);
+      ins.forEach((x, j) => {
+        cableChain.set(outs[j][0] + "|" + outs[j][1], { ch, j, fromA: true });
+        cableChain.set(x[0] + "|" + x[1], { ch, j, fromA: false });
+      });
+      ch.relays.forEach((e, i) => relayChain.set(e, { ch, i }));
+    }
+  }
+}
+function chainPoint(ch, s) {
+  const A = proj(nodes.get(ch.a)), B = proj(nodes.get(ch.b));
+  return [A[0] + (B[0] - A[0]) * s, A[1] + (B[1] - A[1]) * s];
+}
+function chainOf(e) { return opts.collapse ? relayChain.get(e) : null; }  // hidden relay?
+// Where a packet at (e, port, slot) sits on its chain: s in [0,1] from a, and its heading.
+function chainPos(e, port, slot) {
+  const cc = cableChain.get(e + "|" + port); if (!cc) return null;
+  const t = slot === OUTBOUND ? OUT_T : IN_T;
+  return { ch: cc.ch, j: cc.j, s: (cc.j + (cc.fromA ? t : 1 - t)) / cc.ch.cables,
+           toB: (slot === INBOUND) !== cc.fromA };
+}
+
+function store(k, v) { try { localStorage.setItem("tln." + k, JSON.stringify(v)); } catch (e) {} }
+function load(k, d) { try { const v = localStorage.getItem("tln." + k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } }
+
+// ---------- projection ----------
+function proj(n) {  // world -> 2D plane (before camera)
+  if (view === "top") return [n.x, n.z];
+  if (view === "side") return [n.x, -n.y];
+  return [n.z, -n.y];
+}
+function toScreen(p) { return [(p[0] - cam.x) * cam.s + cv.width / 2, (p[1] - cam.y) * cam.s + cv.height / 2]; }
+function inY(n) { return n.y >= yLo && n.y <= yHi; }
+function visible(n) { return inY(n) && !chainOf(n.e); }
+function chainVisible(ch) { return inY(nodes.get(ch.a)) || inY(nodes.get(ch.b)); }
+
+function fit() {
+  // The canvas can be ~0 px wide while the window is still laying out; fit again on resize.
+  if (cv.width < 50 || cv.height < 50) { needsFit = true; return; }
+  const pts = [...nodes.values()].filter(visible).map(proj);
+  if (!pts.length) return;
+  let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+  for (const [x, y] of pts) { x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y); }
+  cam.x = (x0 + x1) / 2; cam.y = (y0 + y1) / 2;
+  cam.s = Math.min(cv.width / Math.max(1, x1 - x0), cv.height / Math.max(1, y1 - y0)) * 0.9;
+  draw();
+}
+
+// ---------- drawing ----------
+function shape(c, kind, x, y, r, fill, stroke) {
+  c.beginPath();
+  if (kind === "square") c.rect(x - r, y - r, 2 * r, 2 * r);
+  else if (kind === "triangle") { c.moveTo(x, y - r * 1.2); c.lineTo(x + r, y + r * .8); c.lineTo(x - r, y + r * .8); c.closePath(); }
+  else if (kind === "diamond") { c.moveTo(x, y - r * 1.2); c.lineTo(x + r, y); c.lineTo(x, y + r * 1.2); c.lineTo(x - r, y); c.closePath(); }
+  else if (kind === "hex") { for (let i = 0; i < 6; i++) { const a = Math.PI / 3 * i; c.lineTo(x + r * Math.cos(a), y + r * Math.sin(a)); } c.closePath(); }
+  else c.arc(x, y, r, 0, Math.PI * 2);
+  if (kind === "ring") { c.lineWidth = 2; c.strokeStyle = fill; c.stroke(); }
+  else { c.fillStyle = fill; c.fill(); if (stroke) { c.lineWidth = 1.5; c.strokeStyle = stroke; c.stroke(); } }
+}
+
+function matchAddr(a) { return findRe && a && findRe.test(a); }
+
+// ---------- packet animation ----------
+// Each network tick a packet either crosses a cable (outbound at X:p -> inbound at the
+// peer's port) or passes through a node (inbound at X:q -> outbound at X:p). We find each
+// packet's previous-tick position by content and slide it there -> here over one tick.
+const IN_T = 0.12, OUT_T = 0.45;  // where along its cable a packet sits (fraction from its node)
+let anims = [], animStart = 0, animDur = 450, frameQueued = false;
+
+function anchorPoint(a) {  // -> point in the projected plane
+  const n = nodes.get(a.e); if (!n) return [0, 0];
+  if (opts.collapse) {  // positions inside a relay chain map onto the chain's single line
+    if (a.center) { const rc = relayChain.get(a.e); if (rc) return chainPoint(rc.ch, (rc.i + 1) / rc.ch.cables); }
+    else {
+      const cc = cableChain.get(a.e + "|" + a.port);
+      if (cc) return chainPoint(cc.ch, (cc.j + (cc.fromA ? a.t : 1 - a.t)) / cc.ch.cables);
+    }
+  }
+  const P = proj(n);
+  if (a.center) return P;
+  const port = n.ports[a.port], peer = port && port[0] != null ? nodes.get(port[0]) : null;
+  if (!peer) return [P[0] + (a.t > 0.3 ? 1.5 : 0.8), P[1]];
+  const Q = proj(peer);
+  return [P[0] + (Q[0] - P[0]) * a.t, P[1] + (Q[1] - P[1]) * a.t];
+}
+function alongPath(path, u) {
+  const pts = path.map(anchorPoint);
+  if (pts.length === 1 || u <= 0) return pts[0];
+  if (u >= 1) return pts[pts.length - 1];
+  const seg = []; let total = 0;
+  for (let i = 1; i < pts.length; i++) { const d = Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]); seg.push(d); total += d; }
+  if (total === 0) return pts[pts.length - 1];
+  let want = u * total;
+  for (let i = 0; i < seg.length; i++) {
+    if (want <= seg[i] || i === seg.length - 1) {
+      const f = seg[i] ? Math.min(1, want / seg[i]) : 1;
+      return [pts[i][0] + (pts[i + 1][0] - pts[i][0]) * f, pts[i][1] + (pts[i + 1][1] - pts[i][1]) * f];
+    }
+    want -= seg[i];
+  }
+  return pts[pts.length - 1];
+}
+const sigOf = p => p[3] + "|" + p[4] + "|" + p[5] + "|" + p[6];
+const at = (e, port, slot) => ({ e, port, t: slot === OUTBOUND ? OUT_T : IN_T });
+
+function staticAnims(list) { return list.map(p => ({ kind: "stay", p, home: p[0], path: [at(p[0], p[1], p[2])] })); }
+
+function buildAnims(prev, cur) {
+  const pool = new Map();  // "e|port|slot|sig" -> unmatched previous packets
+  for (const p of prev) { const k = `${p[0]}|${p[1]}|${p[2]}|${sigOf(p)}`; (pool.get(k) || pool.set(k, []).get(k)).push(p); }
+  const take = k => { const l = pool.get(k); return l && l.length ? l.pop() : null; };
+  const out = [], rest = [];
+  for (const p of cur) {  // 1) unchanged position (blocked / waiting packets)
+    if (take(`${p[0]}|${p[1]}|${p[2]}|${sigOf(p)}`)) out.push({ kind: "stay", p, home: p[0], path: [at(p[0], p[1], p[2])] });
+    else rest.push(p);
+  }
+  // 2) moved since last tick. Measured rule (tools/speed_probe.py): each tick a packet
+  // crosses at most ONE cable, and passes through a node for free when the slot ahead is
+  // free, so a route is 1-3 steps. Search backwards through the wiring for the nearest
+  // previous-tick packet with the same content. Steps backwards from a slot:
+  //   inbound at (X,p)  <- outbound at the peer's port (cable crossing)
+  //   outbound at (X,p) <- inbound at any port of X (passing through the node)
+  // Limiting to one crossing rejects false matches between identical packets (PING floods).
+  const MAX_STEPS = 3;
+  for (const p of rest) {
+    const s = sigOf(p);
+    const start = [p[0], p[1], p[2]];
+    const seen = new Set([start.join("|")]);
+    let frontier = [[start, null, 0]], found = null;  // [state, next link, cables crossed]
+    for (let d = 0; d < MAX_STEPS && !found && frontier.length; d++) {
+      const next = [];
+      for (const node of frontier) {
+        const [[e, port, slot], , crossed] = node, n = nodes.get(e);
+        if (!n) continue;
+        const preds = [];
+        if (slot === INBOUND) {
+          const c = n.ports[port];
+          if (crossed === 0 && c && c[0] != null && c[1] != null) preds.push([c[0], c[1], OUTBOUND]);
+        } else {
+          for (let q = 0; q < n.ports.length; q++) preds.push([e, q, INBOUND]);
+        }
+        for (const st of preds) {
+          const k = st.join("|");
+          if (seen.has(k)) continue;
+          seen.add(k);
+          const link = [st, node, crossed + (slot === INBOUND ? 1 : 0)];
+          if (take(`${k}|${s}`)) { found = link; break; }
+          next.push(link);
+        }
+        if (found) break;
+      }
+      frontier = next;
+    }
+    if (!found) { out.push({ kind: "in", p, home: p[0], path: [at(p[0], p[1], p[2])] }); continue; }
+    const states = [];  // from the old position forward to the current one
+    for (let l = found; l; l = l[1]) states.push(l[0]);
+    const path = [];
+    states.forEach((st, i) => {
+      const prev = states[i - 1];
+      if (prev && prev[0] === st[0]) path.push({ e: st[0], center: true });  // through the node
+      path.push(at(st[0], st[1], st[2]));
+    });
+    out.push({ kind: "move", p, home: p[0], path });
+  }
+  for (const l of pool.values()) for (const p of l)  // 3) gone: delivered or dropped
+    out.push({ kind: "out", p, home: p[0], path: [at(p[0], p[1], p[2])] });
+  return out;
+}
+function animProgress() { return Math.min(1, (performance.now() - animStart) / animDur); }
+function requestFrame() {
+  if (frameQueued) return;
+  frameQueued = true;
+  requestAnimationFrame(() => { frameQueued = false; draw(); });
+}
+
+function draw() {
+  const W = cv.width, H = cv.height, dpr = window.devicePixelRatio || 1;
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue("--bg");
+  ctx.fillRect(0, 0, W, H);
+  const scr = new Map();
+  for (const n of nodes.values()) if (visible(n)) scr.set(n.e, toScreen(proj(n)));
+
+  // busy edges = carrying a packet right now
+  const busy = new Set();
+  for (const p of packets) { const n = nodes.get(p[0]); const port = n && n.ports[p[1]]; if (port && port[0] != null) busy.add(Math.min(p[0], port[0]) + ":" + Math.max(p[0], port[0])); }
+
+  ctx.lineWidth = Math.max(1, dpr * 0.8);
+  for (const n of nodes.values()) {
+    const a = scr.get(n.e); if (!a) continue;
+    n.ports.forEach((port, pi) => {
+      const peer = port[0]; if (peer == null || peer < n.e && scr.has(peer)) return;
+      if (opts.collapse && cableChain.has(n.e + "|" + pi)) return;  // drawn as part of its chain
+      const b = scr.get(peer); if (!b) return;
+      const key = Math.min(n.e, peer) + ":" + Math.max(n.e, peer);
+      ctx.strokeStyle = busy.has(key) ? "#5b6b7a" : "#2c353e";
+      ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke();
+    });
+  }
+
+  // relay chains as single lines, with a tick mark per relay (= one tick of travel) when zoomed in
+  if (opts.collapse) {
+    const busyChain = new Set();
+    for (const p of packets) { const cp = chainPos(p[0], p[1], p[2]); if (cp) busyChain.add(cp.ch.id); }
+    ctx.font = `${10 * dpr}px ui-monospace, Consolas, monospace`;
+    for (const ch of chains) {
+      if (!chainVisible(ch)) continue;
+      const A = toScreen(chainPoint(ch, 0)), B = toScreen(chainPoint(ch, 1));
+      const hl = ch === selChain || ch === hoverChain;
+      ctx.lineWidth = Math.max(1, dpr * (hl ? 3 : 1.6));
+      ctx.strokeStyle = hl ? "#9fb3c8" : busyChain.has(ch.id) ? "#56677a" : "#323d48";
+      ctx.beginPath(); ctx.moveTo(A[0], A[1]); ctx.lineTo(B[0], B[1]); ctx.stroke();
+      const len = Math.hypot(B[0] - A[0], B[1] - A[1]);
+      if (len / ch.cables > 7 * dpr) {  // room for a tick per relay
+        const nx = -(B[1] - A[1]) / len * 3 * dpr, ny = (B[0] - A[0]) / len * 3 * dpr;
+        ctx.lineWidth = 1; ctx.beginPath();
+        for (let i = 1; i < ch.cables; i++) {
+          const x = A[0] + (B[0] - A[0]) * i / ch.cables, y = A[1] + (B[1] - A[1]) * i / ch.cables;
+          ctx.moveTo(x - nx, y - ny); ctx.lineTo(x + nx, y + ny);
+        }
+        ctx.stroke();
+      }
+      if (ch.deadEnd) shape(ctx, "circle", B[0], B[1], 2.5 * dpr, "#fc8181");  // free port: wire goes nowhere
+      if (ch.loose) shape(ctx, "circle", A[0], A[1], 2.5 * dpr, "#fc8181");
+      if ((hl || len > 160 * dpr) && cam.s > 0.8) {
+        ctx.fillStyle = hl ? "#d6dde3" : "#5f6e7c";
+        ctx.fillText(`${ch.relays.length} relays · ${ch.cables} ticks`, (A[0] + B[0]) / 2 + 4 * dpr, (A[1] + B[1]) / 2 - 4 * dpr);
+      }
+    }
+  }
+
+  // replay route under the live traffic (live packets are dimmed while a replay is open)
+  const replaying = stepReplayClock(performance.now());
+  drawReplay(dpr, "route");
+
+  // packets: animated from their previous-tick position (see buildAnims)
+  let animating = false;
+  if (opts.packets) {
+    const dim = replay ? 0.2 : 1;
+    const r = Math.max(2, Math.min(5, cam.s * 0.6)) * dpr;
+    const u = animProgress();
+    animating = u < 1;
+    const e = u < 0.5 ? 2 * u * u : 1 - (-2 * u + 2) ** 2 / 2;  // ease in-out
+    const shown = e => { const rc = chainOf(e); return rc ? chainVisible(rc.ch) : scr.has(e); };
+    for (const a of anims) {
+      if (!shown(a.home) && !(a.path.length > 1 && shown(a.path[0].e))) continue;
+      const [px, py] = alongPath(a.path, a.kind === "move" ? e : 1);
+      const [x, y] = toScreen([px, py]);
+      const p = a.p;
+      const hit = findRe ? (matchAddr(p[4]) || matchAddr(p[5])) : true;
+      const fade = a.kind === "in" ? e : a.kind === "out" ? 1 - e : 1;
+      if (fade <= 0.01) continue;
+      ctx.globalAlpha = (hit ? 1 : 0.15) * fade * dim;
+      ctx.beginPath(); ctx.arc(x, y, hit && findRe ? r * 1.4 : r, 0, Math.PI * 2);
+      ctx.fillStyle = "#" + (p[3] || "ffffff"); ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+  }
+  if (drawDropMarks(dpr)) animating = true;
+  if (animating || replaying) requestFrame();
+
+  // nodes
+  for (const n of nodes.values()) {
+    const a = scr.get(n.e); if (!a) continue;
+    const st = TYPE_STYLE[n.type] || TYPE_STYLE.other;
+    const hl = n === selected || n === hover || (findRe && matchAddr(n.addr));
+    const r = st.size * dpr * (hl ? 1.5 : 1) * Math.min(1.6, Math.max(0.7, cam.s / 3));
+    if (findRe && !matchAddr(n.addr) && n.type === "endpoint") ctx.globalAlpha = 0.35;
+    shape(ctx, st.shape, a[0], a[1], r, st.color, hl ? "#ffffff" : null);
+    ctx.globalAlpha = 1;
+    if (opts.labels && n.type === "endpoint" && n.addr && (cam.s > 1.2 || hl)) {
+      ctx.font = `${11 * dpr}px ui-monospace, Consolas, monospace`;
+      ctx.fillStyle = hl ? "#ffffff" : "#c9b458";
+      ctx.fillText(n.addr, a[0] + r + 3 * dpr, a[1] + 4 * dpr);
+    }
+    if (opts.labels && n.filter && (cam.s > 2.5 || hl)) {  // e.g. "dst≠0.2.*.*→drop"
+      ctx.font = `${10 * dpr}px ui-monospace, Consolas, monospace`;
+      ctx.fillStyle = hl ? "#ffffff" : "#d77aa3";
+      ctx.fillText(filterShort(n.filter), a[0] + r + 3 * dpr, a[1] + 4 * dpr);
+    }
+  }
+  drawReplay(dpr, "marker");  // the replayed packet, on top of everything
+}
+
+// ---------- filters, spam, traffic ----------
+// FilterConfig decoded from memory; behaviour from the game's filter code (FUN_1404f3a90).
+const SPAM_COLOR = "a93b3b";  // the only colour infected endpoints use for spam
+function filterShort(f) {  // compact label for the map
+  return `${f.addr === "Dst" ? "dst" : "src"}${f.op === "Match" ? "=" : "≠"}${f.mask}→${f.action === "Drop" ? "drop" : "back"}`;
+}
+function filterRuleHtml(n) {
+  const f = n.filter, p = f.port, q = 1 - p;
+  const peer = i => { const c = n.ports[i]; return c && c[0] != null ? esc(describe(farEnd(n, i))) : "nothing"; };
+  const test = `its <b>${f.addr === "Dst" ? "destination" : "source"}</b> ${f.op === "Match" ? "matches" : "does <b>not</b> match"} <b>${esc(f.mask)}</b>`;
+  const act = f.action === "Drop" ? "it is <b>dropped</b>" : "it is <b>sent back</b> out port " + p;
+  const coll = {
+    DropInbound: "the waiting outbound packet is dropped and replaced",
+    DropOutbound: "the arriving packet is dropped",
+    SendBackOutbound: "the arriving packet is sent back out port " + q,
+  }[f.collision] || esc(f.collision);
+  return `<div class="port"><div class="hd">filter rule</div>`
+    + `<div>Packets arriving on <b>port ${p}</b> (from ${peer(p)}): if ${test}, ${act}; otherwise they pass to port ${q}.</div>`
+    + `<div style="margin-top:4px">Packets arriving on port ${q} (from ${peer(q)}) pass to port ${p}; if its outbound slot is busy, ${coll}.</div>`
+    + `<div class="note">Packets with a bounce limit lose one when filtered on port ${p}, and are dropped when it runs out.</div>`
+    + `<div class="note">raw: port ${p} · ${esc(f.addr)} · ${esc(f.op)} · mask ${esc(f.mask)} (${esc(f.mask_type)}) · ${esc(f.action)} · collision ${esc(f.collision)}</div></div>`;
+}
+function farEnd(n, i) {  // the node at the other end of port i, skipping a collapsed relay chain
+  const cc = opts.collapse ? cableChain.get(n.e + "|" + i) : null;
+  if (cc) return cc.ch.a === n.e && cc.ch.ap === i ? cc.ch.b : cc.ch.a;
+  return n.ports[i][0];
+}
+const traffic = new Map();  // endpoint entity -> {at, data}
+async function loadTraffic(e) {
+  try { traffic.set(e, { at: Date.now(), data: await (await fetch("/api/traffic?e=" + e)).json() }); } catch (err) {}
+  if (selected && selected.e === e && !replay) renderInfo();
+}
+function trafficHtml(n) {
+  const t = traffic.get(n.e);
+  if (!t) { loadTraffic(n.e); return `<div class="note">loading traffic…</div>`; }
+  if (Date.now() - t.at > 3000) loadTraffic(n.e);
+  const d = t.data, s = d.sent, r = d.received;
+  const list = (pairs) => (pairs || []).slice(0, 6).map(([k, c]) => `${esc(k)} <span style="color:var(--muted)">×${c}</span>`).join(", ") || "—";
+  const gap = g => g ? `${g.min}/${g.median}/${g.max}` : "—";
+  let rules = "";
+  const R = d.rules;
+  if (R && R.sends_per_cycle) {
+    const up = R.upcoming.map(u => `<div class="pk"><span class="dir">+${u.in}</span><span>→ ${esc(u.dst)}</span>`
+      + `<span class="pl">${esc(u.messages.join(" | "))}${u.no_bounce ? " · no-bounce" : ""}${u.bounce_budget != null ? " · " + u.bounce_budget + " bounces" : ""}</span></div>`).join("");
+    rules = `<div class="port"><div class="hd">send rules (read from the game's code)</div>`
+      + `<div class="kv"><span>cycle</span><span>${R.sends_per_cycle} sends every ${R.cycle} ticks</span>`
+      + `<span>colour</span><span><span class="sw" style="display:inline-block;background:#${esc(R.color)}"></span> ${esc(R.color)}</span>`
+      + `<span>sends to</span><span>${list(R.destinations)}</span>`
+      + `<span>messages</span><span>${esc(R.messages.join(" | "))}</span>`
+      + (R.no_bounce ? `<span>flags</span><span>never bounced: dropped at a wrong endpoint</span>` : "")
+      + (R.bounce_budgets.length ? `<span>bounce limit</span><span>${R.bounce_budgets.join(", ")}</span>` : "")
+      + `</div><div class="hd" style="margin-top:4px">next sends</div>${up}`
+      + `<div class="note">A scheduled send is skipped if the outbound slot is still busy. Receive rules are listed below.</div></div>`;
+  } else if (R) {
+    rules = `<div class="port"><div class="hd">send rules (read from the game's code)</div><div class="note">Sends nothing on its own at the current story stage; anything it sends is a reply to a received packet.</div></div>`;
+  }
+  rules += receiveHtml(n, d);
+  return rules + `<div class="port"><div class="hd">measured traffic since the viewer started (tick ${d.since_tick ?? "?"})</div>`
+    + `<div class="kv"><span>sent</span><span>${s.count}${s.per_min != null ? ` · ${s.per_min}/min` : ""}${s.spam ? ` · <span style="color:#fc8181">${s.spam} spam</span>` : ""}</span>`
+    + (s.schedule ? `<span>schedule</span><span>every <b>${s.schedule.period}</b> ticks, when tick % ${s.schedule.period} = ${s.schedule.phase}`
+        + (s.schedule.skipped ? ` <span style="color:var(--warn)">(${s.schedule.skipped} skipped: outbound busy)</span>` : "") + `</span>` : "")
+    + `<span>gap (ticks)</span><span>${gap(s.gap_ticks)} <span style="color:var(--muted)">min/median/max</span></span>`
+    + `<span>sent to</span><span>${list(s.to)}</span>`
+    + `<span>messages</span><span>${list(s.kinds)}</span>`
+    + `<span>received</span><span>${r.count}${r.per_min != null ? ` · ${r.per_min}/min` : ""}${r.spam ? ` · <span style="color:#fc8181">${r.spam} spam</span>` : ""}</span>`
+    + `<span>from</span><span>${list(r.from)}</span></div></div>`;
+}
+
+// Receive rules: what arrives addressed to this endpoint (from the send tables and the game's
+// reply rules), what it does with it, and what happens to packets not addressed to it.
+function receiveHtml(n, d) {
+  const me = n.addr || "?";
+  const inc = d.incoming || [], reps = d.replies || [];
+  const flags = o => (o.no_bounce ? " · no-bounce" : "") + (o.bounce_budgets && o.bounce_budgets.length ? " · " + o.bounce_budgets.join("/") + " bounces" : "");
+  const every = o => o.every_ticks != null ? (o.every_ticks >= 100 ? `~every ${Math.round(o.every_ticks)}` : `every ${o.every_ticks}`) + " ticks" : "";
+  const rows = inc.map(o => {
+    const spam = o.color === SPAM_COLOR;
+    const who = o.sent_by && o.sent_by !== o.from ? `${esc(o.sent_by)} <span style="color:var(--muted)">(src ${esc(o.from)})</span>` : esc(o.from);
+    const kind = o.kind === "reply" ? `<span style="color:var(--muted)"> reply to ${esc(o.reply_to)}</span>` : "";
+    const then = o.reply ? `→ replies <b>${esc(o.reply.text)}</b> to ${esc(o.reply.dst)}` : "→ consumed, no reply";
+    return `<div class="pk"><span class="dir">${who}${kind}</span><span>${every(o)}</span>`
+      + `<span class="pl"><span class="sw" style="display:inline-block;background:#${esc(o.color)}"></span> `
+      + `${esc(o.messages.join(" | "))}${flags(o)}${spam ? ' · <span style="color:#fc8181">spam</span>' : ""} ${then}</span></div>`;
+  }).join("") || `<div class="note">No on-map endpoint sends here on its own at this story stage (bridges and the tester may; see measured traffic).</div>`;
+  const own = reps.map(q => `<div class="pk"><span class="dir">if</span><span>${esc(q.when)}</span>`
+      + `<span class="pl">→ ${esc(q.reply)} · to ${esc(q.to)}${q.color ? " · colour " + esc(q.color) : ""}`
+      + `${q.no_bounce ? " · no-bounce" : ""}${q.bounce_budget != null ? " · " + q.bounce_budget + " bounces" : ""}</span></div>`).join("");
+  return `<div class="port"><div class="hd">receive rules (read from the game's code, checked live)</div>`
+    + `<div class="hd" style="margin-top:2px">expected packets for ${esc(me)}</div>${rows}`
+    + `<div class="hd" style="margin-top:4px">packet addressed to ${esc(me)}</div>${own}`
+    + `<div class="pk"><span class="dir">else</span><span>anything else</span><span class="pl">→ consumed, no reply</span></div>`
+    + `<div class="note">A reply goes into the outbound slot in the same tick the packet arrives.</div>`
+    + `<div class="hd" style="margin-top:4px">packet for another address</div>`
+    + `<div class="kv"><span>src is ${esc(me)}</span><span>dropped (returned to sender)</span>`
+    + `<span>no-bounce flag</span><span>dropped</span>`
+    + `<span>bounce-limited, 1 left</span><span>dropped (out of bounces)</span>`
+    + `<span>otherwise</span><span>bounced back out the same port, one bounce used. <span style="color:var(--warn)">Overwrites a packet waiting in the outbound slot (silent loss).</span></span></div></div>`;
+}
+
+// ---------- side panel ----------
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+function describe(e) { const n = nodes.get(e); return n ? `${n.type}${n.addr ? " " + n.addr : ""} #${e}` : `#${e}`; }
+
+function renderChainInfo(el, ch) {
+  const onIt = [];
+  for (const p of packets) { const cp = chainPos(p[0], p[1], p[2]); if (cp && cp.ch === ch) onIt.push([cp, p]); }
+  onIt.sort((x, y) => x[0].s - y[0].s);
+  const jump = e => `<a class="jump" data-e="${e}">${esc(describe(e))}</a>`;
+  let h = `<div class="kv"><span>relay chain</span><span>${ch.relays.length} relays, ${ch.cables} cables</span>`
+    + `<span>end A</span><span>${jump(ch.a)}${ch.loose ? " (dead end)" : " port " + ch.ap}</span>`
+    + `<span>end B</span><span>${jump(ch.b)}${ch.deadEnd ? " (dead end)" : " port " + ch.bp}</span>`
+    + `<span>transit</span><span>≥ ${ch.cables} ticks (≈ ${(ch.cables * ((live && live.tick_period) || 0.5)).toFixed(1)} s) end to end</span></div>`;
+  h += `<div class="port"><div class="hd">${onIt.length} packets on this chain (A → B order)</div>`;
+  for (const [cp, p] of onIt) {
+    const left = cp.toB ? ch.cables - cp.j : cp.j + 1;  // cables still to cross, incl. current
+    h += `<div class="pk"><span class="dir">${cp.toB ? "→B" : "←A"}</span><span class="sw" style="background:#${esc(p[3])}"></span>`
+      + `<span>${esc(p[4])} → ${esc(p[5])}</span><span class="pl">${left} to go · ${esc(p[6])}</span></div>`;
+  }
+  if (!onIt.length) h += `<div class="pk"><span style="color:var(--muted)">idle</span></div>`;
+  el.innerHTML = h + `</div>`;
+}
+
+function renderInfo() {
+  const el = document.getElementById("info");
+  if (replay) return renderReplay(el);
+  if (selChain) return renderChainInfo(el, selChain);
+  if (!selected) { el.innerHTML = '<div class="empty">Click a node or a relay chain to inspect it.</div>'; return; }
+  const n = selected;
+  const byPort = n.ports.map(() => [[], []]);
+  for (const p of packets) if (p[0] === n.e && byPort[p[1]]) byPort[p[1]][p[2]].push(p);
+  let h = `<div class="kv"><span>type</span><span>${esc(n.type)}</span><span>entity</span><span>${n.e}</span>`;
+  if (n.addr) h += `<span>address</span><span>${esc(n.addr)}</span>`;
+  // hub::update (FUN_140179ef0): each frame copies inbound -> outbound in a fixed rotation
+  if (n.hub_dir != null) h += `<span>rotation</span><span>${n.hub_dir
+    ? "to the <b>previous</b> port: 0→2, 2→1, 1→0"
+    : "to the <b>next</b> port: 0→1, 1→2, 2→0"} <span style="color:var(--muted)">(dir = ${n.hub_dir ? "true" : "false"})</span></span>`;
+  h += `<span>position</span><span>${n.x.toFixed(1)}, ${n.y.toFixed(1)}, ${n.z.toFixed(1)}</span></div>`;
+  if (n.filter) h += filterRuleHtml(n);
+  if (n.tester) { const t = n.tester; h += `<div class="port"><div class="hd">tester settings (read from the game)</div><div class="kv">`
+    + `<span>mode</span><span>${esc(t.mode)}${t.mode === "Repeat" ? ` every ${t.freq} ticks` : ""}</span>`
+    + `<span>address</span><span>${esc(t.address)} <span style="color:var(--muted)">${esc(t.address_type)}</span></span>`
+    + `<span>destination</span><span>${esc(t.destination)} <span style="color:var(--muted)">${esc(t.destination_type)}</span></span></div></div>`; }
+  if (n.type === "endpoint") h += trafficHtml(n);
+  n.ports.forEach((port, i) => {
+    const cc = opts.collapse ? cableChain.get(n.e + "|" + i) : null;
+    const far = cc && (cc.ch.a === n.e && cc.ch.ap === i ? cc.ch.b : cc.ch.a);
+    const peer = port[0] == null ? "not connected"
+      : cc ? `<a class="jump" data-e="${far}">${esc(describe(far))}</a> via <a class="jump" data-c="${cc.ch.id}">${cc.ch.relays.length} relays (${cc.ch.cables} ticks)</a>`
+      : `<a class="jump" data-e="${port[0]}">${esc(describe(port[0]))}</a>${port[1] != null ? " port " + port[1] : ""}`;
+    h += `<div class="port"><div class="hd">port ${i} → ${peer}</div>`;
+    for (const [k, label] of [[INBOUND, "in"], [OUTBOUND, "out"]]) {
+      for (const p of byPort[i][k]) h += `<div class="pk"><span class="dir">${label}</span><span class="sw" style="background:#${esc(p[3])}"></span>`
+        + `<span>${esc(p[4])} → ${esc(p[5])}</span><span class="pl">${esc(p[6])}</span></div>`;
+    }
+    if (!byPort[i][0].length && !byPort[i][1].length) h += `<div class="pk"><span class="dir"></span><span style="color:var(--muted)">idle</span></div>`;
+    h += `</div>`;
+  });
+  el.innerHTML = h;
+}
+// The panel is rebuilt every tick, so a link can be replaced between mouse-down and
+// mouse-up and its click event never fires. Act on mouse-down, delegated from the panel.
+document.getElementById("info").addEventListener("mousedown", ev => {
+  if (ev.button !== 0) return;
+  const act = ev.target.closest("[data-act]");
+  if (act && replay) {
+    ev.preventDefault();
+    const r = replay, n = r.frames.length - 1;
+    ({ close: closeReplay,
+       play: () => { if (r.k >= n && r.f >= 1) { r.k = 0; r.f = 0; } r.playing = !r.playing; updateReplayHighlight(); draw(); },
+       start: () => seekReplay(0, false), end: () => seekReplay(n, false),
+       back: () => seekReplay(r.k - 1, false), fwd: () => seekReplay(r.k + 1, false) })[act.dataset.act]?.();
+    return;
+  }
+  const hop = ev.target.closest(".hop");
+  if (hop && replay) {
+    const row = replay.rows[+hop.dataset.row];
+    const k = replay.frames.findIndex(f => f.last >= row.firstIdx);
+    seekReplay(k < 0 ? 0 : k, false); return;
+  }
+  const a = ev.target.closest("a.jump"); if (!a) return;
+  ev.preventDefault();
+  if (a.dataset.c != null) selectChain(chains[+a.dataset.c]);
+  else select(nodes.get(+a.dataset.e), true);
+});
+document.getElementById("info").addEventListener("input", ev => {
+  if (!replay) return;
+  if (ev.target.id === "rpSeek") seekReplay(+ev.target.value, false);
+  if (ev.target.id === "rpSpeed") { replay.speed = +ev.target.value; store("rpSpeed", replay.speed); }
+});
+
+function select(n, center) {
+  selected = n || null; selChain = null; replay = null;
+  if (n && center) { const p = proj(n); cam.x = p[0]; cam.y = p[1]; if (cam.s < 3) cam.s = 3; }
+  renderEditor(); renderInfo(); draw();
+}
+function selectChain(ch) { selChain = ch || null; selected = null; replay = null; renderEditor(); renderInfo(); draw(); }
+
+// ---------- tester editor ----------
+// Lives outside #info (which is rebuilt every tick) so typing isn't interrupted. Writes go
+// to the running game via POST /api/tester; the server logs old and new values.
+const TESTER_MODES = {
+  Single: "Sends one PING to the destination when Send is pressed in the game, and logs the PONG.",
+  Repeat: "Sends a PING to the destination every <b>freq</b> ticks. Wildcard digits (*) in the destination step through every match in turn.",
+  Spoof: "Pretends to be <b>address</b>: logs packets addressed to it.",
+  Snoop: "Logs packets going from <b>address</b> to <b>destination</b>.",
+};
+const ADDR_TYPES = ["Endpoint", "Filter", "UnrestrictedFilter"];
+let ed = { e: null, dirty: false, undo: null, msg: "", err: false };
+function renderEditor(force) {
+  const box = document.getElementById("editor");
+  const n = selected;
+  if (!n || !n.tester || replay) { box.innerHTML = ""; ed.e = null; return; }
+  if (ed.e === n.e && ed.dirty && !force) return;
+  if (ed.e !== n.e) ed = { e: n.e, dirty: false, undo: null, msg: "", err: false };
+  const t = n.tester;
+  ed.shown = JSON.stringify(t);
+  const opt = (list, v) => list.map(x => `<option${x === v ? " selected" : ""}>${x}</option>`).join("");
+  box.innerHTML = `<div class="ed"><h3>Edit tester settings (live)</h3>
+    <label>mode <select id="edMode">${opt(Object.keys(TESTER_MODES), t.mode)}</select></label>
+    <div class="help" id="edHelp">${TESTER_MODES[t.mode] || ""}</div>
+    <label id="edFreqRow">freq (ticks) <input id="edFreq" type="number" min="1" max="100000" step="1" inputmode="numeric" value="${t.freq}"></label>
+    <label>address <span class="row2"><input id="edAddr" value="${esc(t.address)}" placeholder="0.0.1.2" autocapitalize="off" spellcheck="false">
+      <select id="edAddrT">${opt(ADDR_TYPES, t.address_type)}</select></span></label>
+    <label>destination <span class="row2"><input id="edDst" value="${esc(t.destination)}" placeholder="0.2.1.1" autocapitalize="off" spellcheck="false">
+      <select id="edDstT">${opt(ADDR_TYPES, t.destination_type)}</select></span></label>
+    <div class="help">Digits 0-3, or * for any. One tick is about 0.5 s.</div>
+    <div class="acts"><button id="edSave">Apply to game</button><button id="edReset">Reset</button>
+      ${ed.undo ? `<button id="edUndo">Undo last edit</button>` : ""}</div>
+    <div class="msg${ed.err ? " err" : ""}" id="edMsg">${ed.msg}</div></div>`;
+  const freqRow = () => { document.getElementById("edFreqRow").style.display = document.getElementById("edMode").value === "Repeat" ? "" : "none"; };
+  freqRow();
+  box.querySelectorAll("input,select").forEach(el => el.addEventListener("input", () => {
+    ed.dirty = true; freqRow();
+    document.getElementById("edHelp").innerHTML = TESTER_MODES[document.getElementById("edMode").value] || "";
+  }));
+  document.getElementById("edReset").onclick = () => { ed.dirty = false; ed.msg = ""; ed.err = false; renderEditor(true); };
+  document.getElementById("edSave").onclick = () => applyTester(n, {
+    mode: document.getElementById("edMode").value, freq: +document.getElementById("edFreq").value,
+    address: document.getElementById("edAddr").value.trim(), address_type: document.getElementById("edAddrT").value,
+    destination: document.getElementById("edDst").value.trim(), destination_type: document.getElementById("edDstT").value });
+  const u = document.getElementById("edUndo");
+  if (u) u.onclick = () => applyTester(n, ed.undo, true);
+}
+async function applyTester(n, config, isUndo) {
+  let res, body;
+  try {
+    res = await fetch("/api/tester", { method: "POST", headers: { "Content-Type": "application/json" },
+                                       body: JSON.stringify({ e: n.e, config, expect: n.tester }) });
+    body = await res.json();
+  } catch (err) { body = { error: String(err) }; res = { ok: false }; }
+  if (res.ok) {
+    n.tester = body.new;
+    ed = { e: n.e, dirty: false, undo: isUndo ? null : body.old, err: false,
+           msg: isUndo ? "Undone." : "Applied to the game. The game's own tester screen may show the old values until it is reopened." };
+  } else {
+    ed.err = true; ed.msg = "Not applied: " + esc(body.error || "error");
+  }
+  renderEditor(true); renderInfo();
+}
+
+// ---------- dropped packets ----------
+// The server reads the game's own PacketDropEvent queue; we merge its batches by event id.
+const drops = new Map();          // id -> drop row (see server.enrich_drop)
+let dropMax = -1, dropClearedAt = -1, dropTotal = 0, dropMissed = 0, reasonFilter = null;
+let dropMarks = [];               // recent drops flashed on the map: {d, t0}
+const DROP_FLASH_MS = 3000;
+
+function addDrops(list, flash) {
+  let added = false;
+  for (const d of list || []) {
+    if (drops.has(d.id)) {  // routes are attached a few ticks after the drop: update in place
+      const old = drops.get(d.id);
+      if (old.origin !== d.origin) { Object.assign(old, d); added = true; }
+      continue;
+    }
+    drops.set(d.id, d); added = true;
+    if (flash && d.id > dropMax) dropMarks.push({ d, t0: performance.now() });
+    dropMax = Math.max(dropMax, d.id);
+  }
+  if (drops.size > 5000) { const ks = [...drops.keys()].sort((a, b) => a - b); for (const k of ks.slice(0, drops.size - 5000)) drops.delete(k); }
+  return added;
+}
+function dropPoint(d) {  // map position: the node it happened at (follows relay-chain collapsing)
+  if (d.node && nodes.has(d.node[0])) return anchorPoint({ e: d.node[0], center: true });
+  return proj({ x: d.pos[0], y: d.pos[1], z: d.pos[2] });
+}
+function shownDrops() {
+  return [...drops.values()].filter(d => d.id > dropClearedAt
+    && (!reasonFilter || d.reason === reasonFilter)
+    && (!findRe || matchAddr(d.src) || matchAddr(d.dst) || (d.node && matchAddr(d.node[2]))));
+}
+function renderDrops() {
+  const all = [...drops.values()].filter(d => d.id > dropClearedAt);
+  const now = Date.now() / 1000, lastMin = all.filter(d => now - d.time < 60).length;
+  document.getElementById("dropCount").textContent =
+    `· ${dropTotal} total · ${lastMin}/min` + (dropMissed ? ` · ${dropMissed} missed` : "");
+  const c = (live && live.counts) || {};
+  document.getElementById("spamStats").innerHTML =
+    `<span class="sw" style="background:#${SPAM_COLOR}"></span> spam since start: `
+    + `<b>${c.spam_sent || 0}</b> sent · <span style="color:#9ae6b4"><b>${c.spam_dropped || 0}</b> dropped ✓</span> · `
+    + `<span style="color:#fc8181"><b>${c.spam_delivered || 0}</b> delivered ✗</span>`
+    + `<br><span style="color:var(--muted)">all packets: ${c.sent || 0} sent · ${c.delivered || 0} delivered · ${c.legit_dropped || 0} non-spam dropped</span>`;
+  const by = {};
+  for (const d of all) by[d.reason] = (by[d.reason] || 0) + 1;
+  document.getElementById("dropReasons").innerHTML = Object.entries(by).sort((a, b) => b[1] - a[1])
+    .map(([r, n]) => `<span class="chip${r === reasonFilter ? " on" : ""}" data-r="${esc(r)}">${esc(r)} ${n}</span>`).join("");
+  const list = shownDrops().sort((a, b) => b.id - a.id).slice(0, 200);
+  const el = document.getElementById("dropList");
+  if (!list.length) { el.innerHTML = '<div class="empty">No drops' + (reasonFilter || findRe ? " match the filter." : " yet.") + "</div>"; return; }
+  el.innerHTML = list.map(d => {
+    const t = new Date(d.time * 1000).toLocaleTimeString([], { hour12: false });
+    const where = d.node ? `${d.node[1]}${d.node[2] ? " " + d.node[2] : ""} #${d.node[0]}` : `(${d.pos.join(", ")})`;
+    const badge = (d.spam ? '<span class="badge full" title="Spam from an infected endpoint: dropping it is good">spam ✓</span>' : "")
+      + (ORIGIN_BADGE[d.origin] || "");
+    return `<div class="drop" data-id="${d.id}" title="Click to replay this packet's route"><span class="tm">${t}</span><span class="sw" style="background:#${esc(d.color)}"></span>`
+      + `<span>${esc(d.src)} → ${esc(d.dst)} <span style="color:var(--muted)">${esc(d.payload)}</span>${badge}</span>`
+      + `<span></span><span></span><span class="why">${esc(d.reason)} · ${esc(where)}</span></div>`;
+  }).join("");
+}
+// Rebuilt often, so act on mouse-down (a click can be lost if the row is replaced mid-click).
+document.getElementById("dropList").addEventListener("mousedown", ev => {
+  const row = ev.target.closest(".drop"); if (!row || ev.button !== 0) return;
+  const d = drops.get(+row.dataset.id); if (!d) return;
+  ev.preventDefault();
+  openReplay(d);
+});
+document.getElementById("dropReasons").addEventListener("mousedown", ev => {
+  const c = ev.target.closest(".chip"); if (!c) return;
+  reasonFilter = reasonFilter === c.dataset.r ? null : c.dataset.r; renderDrops();
+});
+document.getElementById("dropClear").onclick = () => { dropClearedAt = dropMax; reasonFilter = null; renderDrops(); };
+document.getElementById("dropCsv").onclick = async () => {
+  const all = (await (await fetch("/api/drops")).json()).drops;
+  const q = v => `"${String(v ?? "").replace(/"/g, '""')}"`;
+  const rows = [["time", "tick", "event_id", "reason", "node_type", "node_address", "node_entity",
+                 "src", "dst", "payload", "color", "x", "y", "z", "flag"].join(",")];
+  for (const d of all) rows.push([new Date(d.time * 1000).toISOString(), d.tick, d.id, d.reason,
+    d.node && d.node[1], d.node && d.node[2], d.node && d.node[0], d.src, d.dst, d.payload, d.color,
+    ...d.pos, d.flag].map(q).join(","));
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([rows.join("\n")], { type: "text/csv" }));
+  a.download = `tunnet-drops-${new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-")}.csv`;
+  a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+};
+function drawDropMarks(dpr) {
+  const now = performance.now();
+  dropMarks = dropMarks.filter(m => now - m.t0 < DROP_FLASH_MS);
+  if (!dropMarks.length) return false;
+  ctx.lineWidth = 2 * dpr;
+  for (const m of dropMarks) {
+    if (reasonFilter && m.d.reason !== reasonFilter) continue;
+    const [x, y] = toScreen(dropPoint(m.d)), k = 1 - (now - m.t0) / DROP_FLASH_MS, s = (5 + 6 * (1 - k)) * dpr;
+    ctx.globalAlpha = k; ctx.strokeStyle = "#fc8181";
+    ctx.beginPath(); ctx.moveTo(x - s, y - s); ctx.lineTo(x + s, y + s); ctx.moveTo(x + s, y - s); ctx.lineTo(x - s, y + s); ctx.stroke();
+  }
+  ctx.globalAlpha = 1;
+  return true;
+}
+
+// ---------- replay of a dropped packet's route ----------
+// The server tracks every packet tick by tick (tracker.py) and attaches the route to each
+// drop: [[tick, entity, port, slot], ...] from where it was first seen to where it died.
+const ORIGIN_BADGE = {
+  sent: '<span class="badge full">full route</span>', bridge: '<span class="badge full">via bridge</span>',
+  lost: '<span class="badge part">partial</span>', before_tracking: '<span class="badge part">partial</span>',
+  truncated: '<span class="badge part">partial</span>', none: '<span class="badge part">no route</span>',
+  pending: '<span class="badge part">…</span>',
+};
+const ORIGIN_TEXT = {
+  sent: "Complete route, from the endpoint that sent it.",
+  bridge: "Complete route, from where it entered through a bridge (from the network behind it).",
+  lost: "Partial route: tracking lost this packet earlier, so it starts mid-network. Identical packets (same colour, addresses and text) can't always be told apart.",
+  before_tracking: "Partial route: the packet was already travelling when the viewer started tracking.",
+  truncated: "Partial route: only the last 3000 steps are kept.",
+  none: "No route: the packet was never seen in a tick snapshot before it was dropped.",
+  pending: "Still matching this drop to its packet (takes up to 4 ticks)…",
+};
+let replay = null;  // {d, frames, route, k, f, playing, speed, rows}
+
+function closeReplay() { replay = null; renderEditor(); renderInfo(); draw(); }
+
+async function openReplay(d) {
+  const full = await (await fetch("/api/drop?id=" + d.id)).json();
+  if (!full) return;
+  selected = null; selChain = null; renderEditor();
+  const P = full.path || [];
+  const frames = [], route = [];
+  P.forEach((s, i) => {  // whole route as anchors; centre point when passing through a node
+    const pr = P[i - 1];
+    if (pr && pr[1] === s[1] && pr[3] !== s[3]) route.push({ a: { e: s[1], center: true }, jump: false });
+    let jump = false;
+    if (pr && pr[1] !== s[1]) {  // between nodes: by cable unless it's an antenna's wireless hop
+      const c = nodes.get(pr[1]) && nodes.get(pr[1]).ports[pr[2]];
+      jump = !(pr[3] === OUTBOUND && s[3] === INBOUND && c && c[0] === s[1]);
+    }
+    route.push({ a: at(s[1], s[2], s[3]), jump, i });
+  });
+  if (P.length) {  // one frame per tick: where the packet went during that tick
+    let i = 0, prevA = at(P[0][1], P[0][2], P[0][3]);
+    for (let T = P[0][0]; T <= P[P.length - 1][0]; T++) {
+      const path = [prevA], first = i;
+      while (i < P.length && P[i][0] === T) {
+        const s = P[i], pr = P[i - 1];
+        if (i > 0) {
+          if (pr[1] === s[1] && pr[3] !== s[3]) path.push({ e: s[1], center: true });
+          path.push(at(s[1], s[2], s[3]));
+        }
+        i++;
+      }
+      frames.push({ tick: T, path, first, last: i - 1 });
+      prevA = path[path.length - 1];
+    }
+  }
+  replay = { d: full, frames, route, k: 0, f: 0, playing: frames.length > 1, speed: load("rpSpeed", 1), rows: hopRows(P) };
+  fitTo(route.map(r => anchorPoint(r.a)));
+  renderInfo(); draw();
+  const side = document.getElementById("side"), info = document.getElementById("info");
+  side.scrollTop = info.offsetTop - side.offsetTop;  // bring the replay panel into view
+}
+
+function hopRows(P) {  // list rows, merging runs inside one collapsed relay chain
+  const rows = [];
+  P.forEach((s, i) => {
+    const rc = chainOf(s[1]);
+    const key = rc ? "c" + rc.ch.id : "n" + s[1];
+    const last = rows[rows.length - 1];
+    if (last && last.key === key) { last.lastIdx = i; last.t1 = s[0]; return; }
+    rows.push({ key, rc, e: s[1], port: s[2], slot: s[3], firstIdx: i, lastIdx: i, t0: s[0], t1: s[0] });
+  });
+  return rows;
+}
+
+function fitTo(pts) {
+  if (!pts.length || cv.width < 50) return;
+  let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+  for (const [x, y] of pts) { x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y); }
+  cam.x = (x0 + x1) / 2; cam.y = (y0 + y1) / 2;
+  cam.s = Math.min(8, Math.min(cv.width / Math.max(10, x1 - x0), cv.height / Math.max(10, y1 - y0)) * 0.8);
+}
+
+function renderReplay(el) {
+  const r = replay, d = r.d;
+  const fr = r.frames, cur = fr[r.k];
+  const t0 = fr.length ? fr[0].tick : d.tick, t1 = fr.length ? fr[fr.length - 1].tick : d.tick;
+  const cables = (d.path || []).filter((s, i, P) => i && P[i - 1][1] !== s[1]).length;
+  const jump = e => `<a class="jump" data-e="${e}">${esc(describe(e))}</a>`;
+  let h = `<div class="row" style="justify-content:space-between"><b>Replay</b><button data-act="close" title="Close replay">✕</button></div>`
+    + `<div class="pk" style="margin:4px 0"><span class="sw" style="background:#${esc(d.color)}"></span><span>${esc(d.src)} → ${esc(d.dst)}</span>`
+    + `<span class="pl">${esc(d.payload)}</span></div>`
+    + `<div class="kv"><span>dropped</span><span>${esc(d.reason)}${d.node ? " at " + jump(d.node[0]) : ""}</span>`
+    + `<span>travelled</span><span>${fr.length ? `${t1 - t0} ticks (${((t1 - t0) * ((live && live.tick_period) || 0.5)).toFixed(1)} s), ${cables} cables` : "—"}</span></div>`
+    + (d.synthetic ? `<div class="note">The game raises no drop event for this: the ${d.node && d.node[1] === "hub" ? "hub passed" : "endpoint bounced"} another packet into the outbound slot this packet was waiting in, overwriting it. Detected by tracking.</div>` : "")
+    + `<div class="note">${esc(ORIGIN_TEXT[d.origin] || d.origin)}</div>`;
+  if (fr.length) {
+    h += `<div class="rp-ctl"><button data-act="start" title="Start">⏮</button><button data-act="back" title="Previous tick">◀</button>`
+      + `<button data-act="play" title="Play / pause" id="rpPlay">${r.playing ? "⏸" : "▶"}</button>`
+      + `<button data-act="fwd" title="Next tick">▶︎|</button><button data-act="end" title="End">⏭</button>`
+      + `<select id="rpSpeed" title="Speed">${[0.5, 1, 2, 4, 8].map(s => `<option value="${s}"${s == r.speed ? " selected" : ""}>${s}×</option>`).join("")}</select>`
+      + `<span id="rpTick" style="color:var(--muted)">tick ${cur.tick} (${r.k}/${fr.length - 1})</span></div>`
+      + `<input type="range" id="rpSeek" min="0" max="${fr.length - 1}" value="${r.k}">`;
+    h += `<div id="rpHops">` + r.rows.map((row, i) => {
+      const what = row.rc ? `relay chain (${row.rc.ch.relays.length} relays)`
+        : `${esc(describe(row.e))} port ${row.port} ${row.slot === INBOUND ? "in" : "out"}`;
+      const tk = row.t0 === row.t1 ? `${row.t0 - t0}` : `${row.t0 - t0}–${row.t1 - t0}`;
+      return `<div class="hop" data-row="${i}"><span class="tk">+${tk}</span><span>${what}</span></div>`;
+    }).join("") + `</div>`;
+  }
+  el.innerHTML = h;
+  updateReplayHighlight();
+}
+
+function updateReplayHighlight() {
+  if (!replay || !replay.frames.length) return;
+  const r = replay, fr = r.frames[r.k];
+  const t = document.getElementById("rpTick"); if (t) t.textContent = `tick ${fr.tick} (${r.k}/${r.frames.length - 1})`;
+  const s = document.getElementById("rpSeek"); if (s && +s.value !== r.k) s.value = r.k;
+  const p = document.getElementById("rpPlay"); if (p) p.textContent = r.playing ? "⏸" : "▶";
+  const idx = fr.last >= fr.first ? fr.last : fr.first - 1;  // last state reached by this tick
+  const box = document.getElementById("rpHops");
+  document.querySelectorAll("#info .hop").forEach(el => {
+    const row = r.rows[+el.dataset.row];
+    const on = row.firstIdx <= idx && idx <= row.lastIdx;
+    if (on !== el.classList.contains("cur")) {
+      el.classList.toggle("cur", on);
+      // keep the current hop visible by scrolling only the hop list (scrollIntoView would
+      // also scroll the sidebar and the page)
+      if (on && box && (el.offsetTop < box.scrollTop || el.offsetTop + el.offsetHeight > box.scrollTop + box.clientHeight))
+        box.scrollTop = el.offsetTop - box.clientHeight / 3;
+    }
+  });
+}
+
+function seekReplay(k, play) {
+  if (!replay || !replay.frames.length) return;
+  replay.k = Math.max(0, Math.min(replay.frames.length - 1, k));
+  replay.f = 1; if (play !== undefined) replay.playing = play;
+  updateReplayHighlight(); draw();
+}
+
+let rpLast = 0;
+function stepReplayClock(now) {  // advance playback; returns true while it needs frames
+  const r = replay; if (!r || !r.frames.length) return false;
+  const dt = rpLast ? now - rpLast : 0; rpLast = now;
+  if (!r.playing) { rpLast = 0; return false; }
+  const per = ((live && live.tick_period) || 0.5) * 1000 / r.speed;
+  r.f += dt / per;
+  while (r.f >= 1 && r.k < r.frames.length - 1) { r.k++; r.f -= 1; updateReplayHighlight(); }
+  if (r.k >= r.frames.length - 1 && r.f >= 1) { r.f = 1; r.playing = false; rpLast = 0; updateReplayHighlight(); }
+  return r.playing;
+}
+
+function drawReplay(dpr, layer) {
+  const r = replay; if (!r || !r.route.length) return;
+  const pts = r.route.map(x => toScreen(anchorPoint(x.a)));
+  if (layer === "route") {
+    const doneIdx = r.frames[r.k] ? Math.max(r.frames[r.k].last, r.frames[r.k].first - 1) : -1;
+    for (let i = 1; i < pts.length; i++) {
+      const passed = (r.route[i].i ?? r.route[i + 1]?.i ?? Infinity) <= doneIdx;
+      ctx.setLineDash(r.route[i].jump ? [6 * dpr, 5 * dpr] : []);
+      ctx.lineWidth = (passed ? 3.2 : 2) * dpr;
+      ctx.strokeStyle = passed ? "rgba(246,173,85,0.95)" : "rgba(246,173,85,0.35)";
+      ctx.beginPath(); ctx.moveTo(pts[i - 1][0], pts[i - 1][1]); ctx.lineTo(pts[i][0], pts[i][1]); ctx.stroke();
+    }
+    ctx.setLineDash([]);
+    const [sx, sy] = pts[0];  // start ring
+    ctx.lineWidth = 2 * dpr; ctx.strokeStyle = "#68d391";
+    ctx.beginPath(); ctx.arc(sx, sy, 7 * dpr, 0, Math.PI * 2); ctx.stroke();
+    const [ex, ey] = pts[pts.length - 1], s = 6 * dpr;  // drop cross
+    ctx.strokeStyle = "#fc8181"; ctx.lineWidth = 2.5 * dpr;
+    ctx.beginPath(); ctx.moveTo(ex - s, ey - s); ctx.lineTo(ex + s, ey + s); ctx.moveTo(ex + s, ey - s); ctx.lineTo(ex - s, ey + s); ctx.stroke();
+  } else if (r.frames.length) {  // the packet itself
+    const fr = r.frames[r.k], u = Math.max(0, Math.min(1, r.f));
+    const e = u < 0.5 ? 2 * u * u : 1 - (-2 * u + 2) ** 2 / 2;
+    const [x, y] = toScreen(alongPath(fr.path, e));
+    ctx.beginPath(); ctx.arc(x, y, 6 * dpr, 0, Math.PI * 2);
+    ctx.fillStyle = "#" + (r.d.color || "ffffff"); ctx.fill();
+    ctx.lineWidth = 2 * dpr; ctx.strokeStyle = "#ffffff"; ctx.stroke();
+  }
+}
+
+// ---------- data ----------
+async function loadStructure() {
+  const s = await (await fetch("/api/structure")).json();
+  types = s.types;
+  const old = selected && selected.e, oldChain = selChain && [selChain.a, selChain.ap];
+  nodes = new Map();
+  let ymn = Infinity, ymx = -Infinity;
+  for (const r of s.nodes) {
+    const x = r[7] || {};
+    const n = { e: r[0], type: types[r[1]], x: r[2], y: r[3], z: r[4], addr: r[5], ports: r[6],
+                filter: x.filter || null, hub_dir: x.hub_dir, tester: x.tester || null };
+    nodes.set(n.e, n); ymn = Math.min(ymn, n.y); ymx = Math.max(ymx, n.y);
+  }
+  yBounds = [Math.floor(ymn), Math.ceil(ymx)];
+  computeChains();
+  setupYRange();
+  selected = old != null ? nodes.get(old) || null : null;
+  if (selected && selected.tester && !ed.dirty && JSON.stringify(selected.tester) !== ed.shown) renderEditor(true);
+  selChain = oldChain ? chains.find(c => c.a === oldChain[0] && c.ap === oldChain[1]) || null : null;
+  if (needsFit) { needsFit = false; fit(); }
+}
+new ResizeObserver(() => resize()).observe(document.getElementById("stage"));
+
+let seq = -1;
+async function poll() {
+  let wait = 0;
+  try {
+    // Long-poll: the server answers right after the game's next network tick.
+    live = await (await fetch("/api/live?after=" + seq)).json();
+    seq = live.seq ?? seq;
+    const dot = document.getElementById("sdot"), txt = document.getElementById("stext");
+    if (live.status === "ok") {
+      if (live.rev !== rev) { rev = live.rev; await loadStructure(); }
+      if (live.ticked && packets.length) {
+        anims = buildAnims(packets, live.packets);
+        animStart = performance.now();
+        animDur = Math.min(1200, Math.max(150, (live.tick_period || 0.5) * 850));
+      } else if (!live.ticked) {
+        anims = staticAnims(live.packets);
+        animStart = 0;
+      } else {
+        anims = staticAnims(live.packets);
+      }
+      packets = live.packets;
+      dropTotal = live.drop_total || 0; dropMissed = live.drop_missed || 0;
+      if (dropMax < 0 && live.drops && live.drops.length) {  // first load: history without flashing
+        addDrops((await (await fetch("/api/drops")).json()).drops, false);
+      }
+      addDrops(live.drops, true);
+      renderDrops();
+      if (replay && replay.d.origin === "pending") {  // its route has arrived since we opened it
+        const d = drops.get(replay.d.id);
+        if (d && d.origin !== "pending") openReplay(d);
+      }
+      dot.className = "dot ok"; txt.textContent = `live · tunnet.exe pid ${live.pid}`;
+      const inb = packets.filter(p => p[2] === INBOUND).length;
+      document.getElementById("stats").textContent =
+        `${nodes.size} nodes · ${packets.length} packets (${inb} in / ${packets.length - inb} out)` +
+        ` · tick ${live.tick}` + (live.tick_period ? ` (${live.tick_period.toFixed(2)} s)` : "") +
+        ` · read ${live.read_ms} ms`;
+      banner.style.display = "none";
+      if (selected || selChain) renderInfo();
+      draw();
+    } else {
+      dot.className = "dot " + (live.status === "attaching" ? "warn" : "bad");
+      txt.textContent = live.status;
+      banner.textContent = live.msg || live.status; banner.style.display = "block";
+    }
+  } catch (e) {
+    document.getElementById("sdot").className = "dot bad";
+    document.getElementById("stext").textContent = "viewer server not reachable";
+    wait = 1000;
+  }
+  setTimeout(poll, wait);
+}
+
+// ---------- controls ----------
+function setupYRange() {
+  const lo = document.getElementById("ymin"), hi = document.getElementById("ymax");
+  for (const el of [lo, hi]) { el.min = yBounds[0]; el.max = yBounds[1]; el.step = 0.5; }
+  const saved = load("yr", null);
+  lo.value = saved ? saved[0] : yBounds[0]; hi.value = saved ? saved[1] : yBounds[1];
+  applyY();
+}
+function applyY() {
+  const lo = document.getElementById("ymin"), hi = document.getElementById("ymax");
+  yLo = Math.min(+lo.value, +hi.value); yHi = Math.max(+lo.value, +hi.value);
+  document.getElementById("yrange").textContent = `${yLo} … ${yHi}`;
+  store("yr", [yLo, yHi]); draw();
+}
+document.getElementById("ymin").oninput = applyY;
+document.getElementById("ymax").oninput = applyY;
+document.querySelectorAll("[data-view]").forEach(b => b.onclick = () => {
+  view = b.dataset.view; store("view", view);
+  document.querySelectorAll("[data-view]").forEach(x => x.classList.toggle("on", x === b));
+  fit();
+});
+document.getElementById("fit").onclick = fit;
+for (const [id, k] of [["collapse", "collapse"], ["showLabels", "labels"], ["showPackets", "packets"]]) {
+  const el = document.getElementById(id); el.checked = load(k, true); opts[k] = el.checked;
+  el.onchange = () => {
+    opts[k] = el.checked; store(k, el.checked);
+    if (k === "collapse" && !el.checked) selChain = null;
+    renderInfo(); draw();
+  };
+}
+document.getElementById("find").oninput = e => {
+  const v = e.target.value.trim();
+  findRe = v ? new RegExp("^" + v.replace(/[.]/g, "\\.").replace(/\*/g, "[0-3*]") + "$") : null;
+  if (findRe) { const hit = [...nodes.values()].find(n => n.type === "endpoint" && matchAddr(n.addr)); if (hit) select(hit, true); }
+  renderDrops(); draw();
+};
+
+// legend
+const lg = document.getElementById("legend");
+for (const [t, st] of Object.entries(TYPE_STYLE)) {
+  if (t === "other") continue;
+  const d = document.createElement("div"), c = document.createElement("canvas");
+  c.width = c.height = 28; shape(c.getContext("2d"), st.shape, 14, 14, 8, st.color);
+  d.append(c, t); lg.append(d);
+}
+{ const d = document.createElement("div"); d.innerHTML = '<span class="sw" style="background:#4fd1c5"></span> packet in'; lg.append(d); }
+{ const d = document.createElement("div"); d.innerHTML = '<span class="sw" style="background:#4fd1c5;outline:1px solid #fff"></span> packet out'; lg.append(d); }
+{ const d = document.createElement("div"); d.innerHTML = '<span class="sw" style="background:#a93b3b"></span> spam'; lg.append(d); }
+
+// pan / zoom / hover / click: pointer events cover mouse, touch and pen.
+// One pointer drags the map, two pointers pinch-zoom, a tap that doesn't move selects.
+function pick(e, radius = 10) {  // nearest visible node within `radius` css px of the pointer, or null
+  const dpr = window.devicePixelRatio || 1, rect = cv.getBoundingClientRect();
+  if (e.clientX < rect.left || e.clientX > rect.right || e.clientY < rect.top || e.clientY > rect.bottom) return undefined;
+  const mx = (e.clientX - rect.left) * dpr, my = (e.clientY - rect.top) * dpr;
+  let best = null, bd = (radius * dpr) ** 2;
+  for (const n of nodes.values()) {
+    if (!visible(n)) continue;
+    const [x, y] = toScreen(proj(n)); const d = (x - mx) ** 2 + (y - my) ** 2;
+    if (d < bd) { bd = d; best = n; }
+  }
+  return best;
+}
+function pickChain(e, radius = 6) {  // nearest visible relay-chain line within `radius` css px, or null
+  if (!opts.collapse) return null;
+  const dpr = window.devicePixelRatio || 1, rect = cv.getBoundingClientRect();
+  const mx = (e.clientX - rect.left) * dpr, my = (e.clientY - rect.top) * dpr;
+  let best = null, bd = radius * dpr;
+  for (const ch of chains) {
+    if (!chainVisible(ch)) continue;
+    const [ax, ay] = toScreen(chainPoint(ch, 0)), [bx, by] = toScreen(chainPoint(ch, 1));
+    const vx = bx - ax, vy = by - ay, L = vx * vx + vy * vy;
+    const t = L ? Math.max(0, Math.min(1, ((mx - ax) * vx + (my - ay) * vy) / L)) : 0;
+    const d = Math.hypot(ax + vx * t - mx, ay + vy * t - my);
+    if (d < bd) { bd = d; best = ch; }
+  }
+  return best;
+}
+function canvasPx(clientX, clientY) {  // client (css) coords -> canvas pixel coords
+  const dpr = window.devicePixelRatio || 1, rect = cv.getBoundingClientRect();
+  return [(clientX - rect.left) * dpr, (clientY - rect.top) * dpr];
+}
+function zoomAt(px, py, factor) {  // zoom by `factor`, keeping canvas pixel (px, py) fixed
+  const wx = (px - cv.width / 2) / cam.s + cam.x, wy = (py - cv.height / 2) / cam.s + cam.y;
+  cam.s = Math.min(200, Math.max(0.05, cam.s * factor));
+  cam.x = wx - (px - cv.width / 2) / cam.s; cam.y = wy - (py - cv.height / 2) / cam.s;
+  draw();
+}
+const pointers = new Map();  // pointerId -> {x, y} (client coords)
+let gesture = null;          // {kind: "pan", ...} or {kind: "pinch", ...}
+function startPan(p, moved) { gesture = { kind: "pan", x: p.x, y: p.y, cx: cam.x, cy: cam.y, moved }; }
+function startPinch() {
+  const [a, b] = [...pointers.values()];
+  const mid = canvasPx((a.x + b.x) / 2, (a.y + b.y) / 2);
+  gesture = { kind: "pinch", d0: Math.hypot(a.x - b.x, a.y - b.y) || 1, s0: cam.s,
+              wx: (mid[0] - cv.width / 2) / cam.s + cam.x, wy: (mid[1] - cv.height / 2) / cam.s + cam.y };
+}
+cv.addEventListener("pointerdown", e => {
+  if (e.button !== 0 && e.pointerType === "mouse") return;
+  try { cv.setPointerCapture(e.pointerId); } catch (err) { /* keep going without capture */ }
+  pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  if (pointers.size === 1) startPan({ x: e.clientX, y: e.clientY }, false);
+  else if (pointers.size === 2) startPinch();
+  cv.classList.add("dragging"); tip.style.display = "none";
+});
+cv.addEventListener("pointermove", e => {
+  if (pointers.has(e.pointerId)) {
+    pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    const dpr = window.devicePixelRatio || 1;
+    if (gesture && gesture.kind === "pan" && pointers.size === 1) {
+      const dx = (e.clientX - gesture.x) * dpr, dy = (e.clientY - gesture.y) * dpr;
+      if (Math.abs(dx) + Math.abs(dy) > (e.pointerType === "touch" ? 8 : 3) * dpr) gesture.moved = true;
+      if (gesture.moved) { cam.x = gesture.cx - dx / cam.s; cam.y = gesture.cy - dy / cam.s; draw(); }
+    } else if (gesture && gesture.kind === "pinch" && pointers.size >= 2) {
+      const [a, b] = [...pointers.values()];
+      const mid = canvasPx((a.x + b.x) / 2, (a.y + b.y) / 2);
+      cam.s = Math.min(200, Math.max(0.05, gesture.s0 * Math.hypot(a.x - b.x, a.y - b.y) / gesture.d0));
+      cam.x = gesture.wx - (mid[0] - cv.width / 2) / cam.s;  // the pinched point follows the fingers
+      cam.y = gesture.wy - (mid[1] - cv.height / 2) / cam.s;
+      draw();
+    }
+    return;
+  }
+  if (e.pointerType === "mouse") hoverAt(e);
+});
+function endPointer(e) {
+  if (!pointers.has(e.pointerId)) return;
+  pointers.delete(e.pointerId);
+  const wasTap = gesture && gesture.kind === "pan" && !gesture.moved && pointers.size === 0;
+  if (pointers.size === 1) startPan([...pointers.values()][0], true);  // pinch -> keep panning, no tap
+  else if (pointers.size === 0) { gesture = null; cv.classList.remove("dragging"); }
+  if (wasTap && e.type === "pointerup") {
+    const r = e.pointerType === "touch" ? 22 : 10;
+    const n = pick(e, r);
+    if (n) select(n, false);
+    else { const ch = n === null ? pickChain(e, r * 0.6) : null; ch ? selectChain(ch) : select(null, false); }
+  }
+}
+cv.addEventListener("pointerup", endPointer);
+cv.addEventListener("pointercancel", endPointer);
+cv.addEventListener("pointerleave", e => { if (e.pointerType === "mouse" && !pointers.size) { tip.style.display = "none"; if (hover || hoverChain) { hover = hoverChain = null; draw(); } } });
+function hoverAt(e) {
+  const rect = cv.getBoundingClientRect();
+  const best = pick(e);
+  if (best === undefined) { tip.style.display = "none"; return; }
+  const hc = best ? null : pickChain(e);
+  if (best !== hover || hc !== hoverChain) { hover = best; hoverChain = hc; draw(); }
+  if (hover) {
+    const np = packets.filter(p => p[0] === hover.e).length;
+    tip.textContent = `${describe(hover.e)} · ${hover.ports.length} ports · ${np} packets`;
+  } else if (hoverChain) {
+    const ch = hoverChain;
+    const np = packets.filter(p => { const cp = chainPos(p[0], p[1], p[2]); return cp && cp.ch === ch; }).length;
+    tip.textContent = `${describe(ch.a)} ↔ ${describe(ch.b)} · ${ch.relays.length} relays · ${ch.cables} ticks · ${np} packets`;
+  }
+  if (hover || hoverChain) {
+    tip.style.left = (e.clientX - rect.left + 14) + "px"; tip.style.top = (e.clientY - rect.top + 10) + "px"; tip.style.display = "block";
+  } else tip.style.display = "none";
+}
+cv.addEventListener("wheel", e => {  // mouse wheel; trackpad pinch arrives as ctrl+wheel
+  e.preventDefault();
+  const [px, py] = canvasPx(e.clientX, e.clientY);
+  const k = e.ctrlKey ? 0.01 : 0.0015;
+  zoomAt(px, py, Math.exp(-e.deltaY * k));
+}, { passive: false });
+// on-map buttons, for touch screens and anyone without a wheel
+document.getElementById("zoomIn").onclick = () => zoomAt(cv.width / 2, cv.height / 2, 1.5);
+document.getElementById("zoomOut").onclick = () => zoomAt(cv.width / 2, cv.height / 2, 1 / 1.5);
+document.getElementById("zoomFit").onclick = () => fit();
+
+function resize() {
+  const dpr = window.devicePixelRatio || 1, r = cv.getBoundingClientRect();
+  cv.width = Math.max(1, Math.round(r.width * dpr)); cv.height = Math.max(1, Math.round(r.height * dpr));
+  if (needsFit && nodes.size) { needsFit = false; fit(); }
+  draw();
+}
+window.addEventListener("resize", resize);
+view = load("view", "top");
+document.querySelectorAll("[data-view]").forEach(x => x.classList.toggle("on", x.dataset.view === view));
+resize();
+poll();
+</script>
+</body>
+</html>
