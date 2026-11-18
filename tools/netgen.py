@@ -51,6 +51,9 @@ class Gen:
         self.leaves = {}       # address -> (ref, port, pos)
         self.dead_count = 0
         self.group_children = {}          # prefix -> [(digit, is_endpoint_leaf)]
+        self.shortcuts = []               # [(prefix A, prefix B)]: one-way bypass from part A to part B
+        self.sc_ends = collections.defaultdict(dict)
+        self.sc_exit_collision = "SendBackOutbound"   # packets bounced back off a busy entry retry
         self.notes = []
         bridges = {e: n for e, n in snap.items() if n["type"] == "bridge"}
         outer = {n["address"]: e for e, n in snap.items() if n.get("address", "").startswith("1.")}
@@ -105,7 +108,7 @@ class Gen:
         """Returns (ref, port, pos): where the parent connects to this part."""
         if len(addrs) == 1 and not root:
             ref, port, pos = self.leaves[addrs[0]]
-            return ref, port, pos
+            return self.finish(addrs[0].split("."), (ref, port, pos))
         groups = collections.OrderedDict()
         for a in sorted(addrs):
             groups.setdefault(a.split(".")[len(prefix)], []).append(a)
@@ -114,7 +117,7 @@ class Gen:
                                                       if len(v) == 1 else False) for d, v in groups.items()]
         if len(groups) == 1 and not root:          # nothing to choose at this digit
             d, sub = next(iter(groups.items()))
-            return self.build(prefix + [d], sub)
+            return self.finish(prefix, self.build(prefix + [d], sub))
         gc = self.cfg.get(".".join(prefix), {})
         digits = list(groups)
         want = gc.get("order") or self.order.get(".".join(prefix))
@@ -156,7 +159,46 @@ class Gen:
         top, top_port = self.dead_drops(prefix, groups, pos, top, top_port)
         rf = self.filt([pos[0], pos[1] + 1, pos[2]], self.mask(prefix), "Match", "SendBack", gc.get("rc", self.root_collision))
         self.link(top, top_port, rf, 0)
-        return rf, 1, pos
+        return self.finish(prefix, (rf, 1, pos))
+
+    def finish(self, prefix, att):
+        """Stack shortcut taps between a part and its parent.
+        Exit tap (part is a shortcut source): hub legs 0 part, 1 shortcut, 2 parent, dir 0:
+          the part's outgoing packets try the shortcut filter (Differ <dest>, SendBack): packets
+          for the destination take the shortcut, the rest bounce back and go to the parent.
+          Nothing arrives from the shortcut side, so this filter never collides.
+        Entry tap (part is a shortcut destination): hub legs 0 part, 1 parent, 2 shortcut,
+          dir 0: packets from the parent bounce off the shortcut filter (Match <part>,
+          SendBack) into the part; shortcut arrivals pass into the part. On a collision the
+          arriving shortcut packet is sent back up the shortcut (SendBackOutbound) and takes
+          the normal route from the source instead."""
+        p = ".".join(prefix)
+        ref, port, pos = att
+        for a, b in self.shortcuts:
+            for role, mine, other in (("out", a, b), ("in", b, a)):
+                if mine != p or role in self.sc_ends[(a, b)]:
+                    continue
+                tap = self.new("hub", [pos[0], pos[1] + 2, pos[2]], label=f"shortcut {role} {a}->{b}", hub_dir=0)
+                if role == "out":
+                    f = self.filt([pos[0] + 0.5, pos[1] + 2, pos[2]], self.mask(b.split(".")), "Differ", "SendBack",
+                                  self.sc_exit_collision, label=f"shortcut exit {a}->{b}")
+                    self.link(ref, port, tap, 0); self.link(tap, 1, f, 0)
+                    ref, port = tap, 2
+                else:
+                    f = self.filt([pos[0] + 0.5, pos[1] + 2, pos[2]], self.mask(prefix), "Match", "SendBack",
+                                  "SendBackOutbound", label=f"shortcut entry {a}->{b}")
+                    self.link(ref, port, tap, 0); self.link(tap, 2, f, 0)
+                    ref, port = tap, 1
+                self.sc_ends[(a, b)][role] = f
+        return ref, port, pos
+
+    def link_shortcuts(self):
+        for (a, b), ends in self.sc_ends.items():
+            if "out" in ends and "in" in ends:
+                self.link(ends["out"], 1, ends["in"], 1)
+                self.notes.append(f"shortcut {a} -> {b}")
+            else:
+                self.notes.append(f"shortcut {a} -> {b} skipped (no such part)")
 
     def dead_drops(self, prefix, groups, pos, top, top_port):
         """Chain Drop filters (filtered port facing down) above the spine for every digit at
@@ -178,6 +220,7 @@ class Gen:
         if dead:
             self.notes.append(f"no endpoint for {', '.join(dead)}: dropped at the top ({', '.join(self.dead_masks)})")
         self.build([], sorted(self.leaves), root=True)
+        self.link_shortcuts()
         return self.to_save()
 
     # ---------- output ----------

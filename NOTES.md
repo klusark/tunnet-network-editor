@@ -394,6 +394,22 @@ from the disassembly (re/reply_region.asm, 0x1402f6900-0x1402f7700).
   221/253 required flows delivered at least once (9 are impossible: 0.0.2.x), 12905
   packets (55.8%), 21 spam through. Player's network over the same run: 104 flows,
   ~9300 packets. 304 nodes: 92 hubs, 130 filters, no relays yet.
+- Shortcuts (Gen.shortcuts, user's idea): one-way bypass from part A to part B. Exit tap
+  at A: hub (legs 0 part, 1 shortcut, 2 parent, dir 0) + filter (Differ <B>, SendBack):
+  A's outgoing packets for B take the shortcut, the rest bounce to the parent. Entry tap
+  at B: hub (0 part, 1 parent, 2 shortcut, dir 0) + filter (Match <B>, SendBack,
+  collision SendBackOutbound): parent packets bounce into B, shortcut arrivals pass in;
+  on a collision the shortcut packet goes back and takes the tree route.
+  Region/cluster shortcuts carried traffic but didn't help: the losses are at the
+  endpoints' own merge points ("returned to sender" = a leaf collision bouncing an
+  endpoint's packet back to it). Endpoint-to-endpoint shortcuts for the heaviest flows
+  avoid those merges: +38% packets with the 12 heaviest.
+- Objective changed to mean per-flow delivery ratio over all 253 required flows (unsent
+  = 0): robust to rare flows, unlike "delivered at least once". Score = 40000 x mean +
+  packets - 5 x spam delivered.
+- Best (tools/netgen_best_cfg.json, 9 shortcuts, 2100 ticks): mean flow delivery 75.5%,
+  18449 packets (71.0%), 18 spam through. Tree-only best: 72.0%, 12827. Player's
+  current network: 33.7%, 9357.
 
 ## Map voxels in the save (digging)
 - save["chunks"]: 4527 entries [{x,y,z}, rle]; rle = [[count, value], ...] covering 32^3
