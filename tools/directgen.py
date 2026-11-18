@@ -84,6 +84,9 @@ class Direct(G.Gen):
     def __init__(self, base, merge_collision="DropOutbound"):
         super().__init__(base)
         self.merge_collision = merge_collision
+        self.delay = {}            # (sender, destination) -> extra relays on that line
+        self.line_keys = set()
+        self.edge_extra = {}
 
         self.dead_masks = []
 
@@ -173,6 +176,7 @@ class Direct(G.Gen):
             for i, (a, f, w, lim) in enumerate(ins):
                 if i == len(ins) - 1:
                     self.link(prev, pport, f, 1)                   # the farthest line joins directly
+                    self.mark_line(a, d)
                     break
                 m = self.new("hub", [pos[0] - 0.6 * (i + 1), pos[1] + 2, pos[2]], label=f"merge {a} -> {d}", hub_dir=0)
                 mf = self.filt([pos[0] - 0.6 * (i + 1), pos[1] + 2.6, pos[2]], d, "Match", "SendBack", self.merge_collision,
@@ -180,11 +184,18 @@ class Direct(G.Gen):
                 self.link(prev, pport, m, 0)
                 self.link(m, 2, mf, 0)
                 self.link(mf, 1, f, 1)
+                self.mark_line(a, d)
                 prev, pport = m, 1
         self.n_lines = len(lines)
-        if self.relay_spacing:
+        if self.relay_spacing or self.delay:
             self.add_relays(self.relay_spacing)
         return self.to_save()
+
+    def mark_line(self, a, d):
+        """The link just added is the line a -> d; give it the extra delay asked for."""
+        self.line_keys.add((a, d))
+        if self.delay.get((a, d)):
+            self.edge_extra[len(self.edges) - 1] = self.delay[(a, d)]
 
 
 def main():
@@ -195,11 +206,15 @@ def main():
     ap.add_argument("--merge-collision", default="DropOutbound")
     ap.add_argument("--ticks", type=int, default=2100)
     ap.add_argument("--relay-spacing", type=float, default=6.0, help="relays every N units (0 = none)")
+    ap.add_argument("--delays", default=os.path.join(os.path.dirname(os.path.abspath(__file__)), "direct_delays.json"),
+                    help="extra relays per line, from tools/delayopt.py ('' = none)")
     a = ap.parse_args()
     path = a.base if os.path.exists(a.base) else os.path.join(os.environ["APPDATA"], "tunnet", a.base)
     base = json.load(open(path, encoding="utf-8"))
     g = Direct(base, a.merge_collision)
     g.relay_spacing = a.relay_spacing or None
+    if a.delays and os.path.exists(a.delays):
+        g.delay = {tuple(k.split(" -> ")): v for k, v in json.load(open(a.delays)).items()}
     save = g.generate_direct()
     json.dump(save, open(a.out, "w", encoding="utf-8"), indent=2)
     c = collections.Counter(n["type"] for n in g.nodes)

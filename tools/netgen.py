@@ -234,9 +234,10 @@ class Gen:
         """Split every link longer than `spacing` with evenly spaced relays (port 0 toward the
         start, port 1 toward the end). Each relay adds one tick of travel."""
         out = []
-        for (a, pa), (b, pb) in self.edges:
+        extra = getattr(self, "edge_extra", {})     # edge index -> extra relays (one tick each)
+        for k, ((a, pa), (b, pb)) in enumerate(self.edges):
             A, B = self.pos_of(a), self.pos_of(b)
-            n = max(0, math.ceil(math.dist(A, B) / spacing) - 1)
+            n = (max(0, math.ceil(math.dist(A, B) / spacing) - 1) if spacing else 0) + extra.get(k, 0)
             prev, pport = a, pa
             for i in range(1, n + 1):
                 t = i / (n + 1)

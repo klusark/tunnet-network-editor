@@ -455,6 +455,17 @@ from the disassembly (re/reply_region.asm, 0x1402f6900-0x1402f7700).
   a packet on its send tick every cycle (the game skips the send); 5 flows sent but lost
   every time (e.g. 0.3.0.2 -> 0.0.0.2, 494/494) because their timing always lines up with
   another packet at a merge (fixable by shifting timing); the 9 impossible flows.
+- Timing fixes (tools/delayopt.py, scored with the JavaScript simulator via
+  tools/flowscore.js, 6x faster than Python): extra relays on single lines. Flows lost
+  every time: +1 relay on their own line moves them off the clashing tick. Flows never
+  sent (sender receives on its send tick every cycle): delay lines INTO the sender
+  (0.2.0.0: lines from 0.0.0.0, 0.2.0.1, 0.1.0.1, 0.2.2.1). 9 delays, 12 relays,
+  tools/direct_delays.json (directgen.py loads it by default).
+  Result over 8192 ticks: 93.2% mean flow delivery, 243/244 possible flows, 93161
+  packets (90.7% of sent), spam all dropped. Last one, 0.2.0.0 -> 0.2.3.1, runs out of
+  TTL: 0.2.0.0 has 15 TTL destinations (budgets 4-8) in 4 clusters, and every filter
+  passed costs one; no order of the split tree meets every budget (two clusters must
+  both be within the first 3 taps), so one tiny flow (~1/64 ticks) is lost.
 - JSON files written by the tools are pretty-printed (indent 2), incl. exported saves.
 
 ## Map voxels in the save (digging)
