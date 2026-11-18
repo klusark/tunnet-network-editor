@@ -410,6 +410,14 @@ from the disassembly (re/reply_region.asm, 0x1402f6900-0x1402f7700).
 - Best (tools/netgen_best_cfg.json, 9 shortcuts, 2100 ticks): mean flow delivery 75.5%,
   18449 packets (71.0%), 18 spam through. Tree-only best: 72.0%, 12827. Player's
   current network: 33.7%, 9357.
+- Relays (Gen.relay_spacing; split links into cables <= N units): relays do NOT buffer.
+  Transport moves every packet every tick and a relay copies its input straight to its
+  output, so a relay only adds one tick of travel. Measured with the tuned best network:
+  spacing 12/6/3 dropped mean flow delivery to 44/42/45% (filter collisions 1707 ->
+  3085: packets stay longer on spines and loops, so merge points see more traffic, and
+  the per-group settings were tuned for relay-free timing). Re-tuned with relays every 6
+  (200 evaluations, tools/netgen_relays6_cfg.json): 71.0% mean flow, 17129 packets
+  (relay-free: 75.5%, 18449). Relay counts depend on the rough positions for now.
 
 ## Map voxels in the save (digging)
 - save["chunks"]: 4527 entries [{x,y,z}, rle]; rle = [[count, value], ...] covering 32^3

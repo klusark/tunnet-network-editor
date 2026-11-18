@@ -54,6 +54,7 @@ class Gen:
         self.shortcuts = []               # [(prefix A, prefix B)]: one-way bypass from part A to part B
         self.sc_ends = collections.defaultdict(dict)
         self.sc_exit_collision = "SendBackOutbound"   # packets bounced back off a busy entry retry
+        self.relay_spacing = None         # e.g. 6.0: split every link into cables of at most this length
         self.notes = []
         bridges = {e: n for e, n in snap.items() if n["type"] == "bridge"}
         outer = {n["address"]: e for e, n in snap.items() if n.get("address", "").startswith("1.")}
@@ -221,7 +222,29 @@ class Gen:
             self.notes.append(f"no endpoint for {', '.join(dead)}: dropped at the top ({', '.join(self.dead_masks)})")
         self.build([], sorted(self.leaves), root=True)
         self.link_shortcuts()
+        if self.relay_spacing:
+            self.add_relays(self.relay_spacing)
         return self.to_save()
+
+    def pos_of(self, ref):
+        return self.nodes[ref[1]]["pos"] if ref[0] == "new" else self.snap[ref[1]]["pos"]
+
+    def add_relays(self, spacing):
+        """Split every link longer than `spacing` with evenly spaced relays (port 0 toward the
+        start, port 1 toward the end). Each relay adds one tick of travel."""
+        out = []
+        for (a, pa), (b, pb) in self.edges:
+            A, B = self.pos_of(a), self.pos_of(b)
+            n = max(0, math.ceil(math.dist(A, B) / spacing) - 1)
+            prev, pport = a, pa
+            for i in range(1, n + 1):
+                t = i / (n + 1)
+                r = self.new("relay", [A[c] + (B[c] - A[c]) * t for c in range(3)], label="relay")
+                out.append(((prev, pport), (r, 0)))
+                prev, pport = r, 1
+            out.append(((prev, pport), (b, pb)))
+        self.relays_added = sum(1 for n in self.nodes if n["type"] == "relay")
+        self.edges = out
 
     # ---------- output ----------
     def to_save(self):
@@ -243,6 +266,8 @@ class Gen:
             out["nodes"].append({"pos": n["pos"], "up": [0.0, 1.0, 0.0], "angle": 0.0})
             if n["type"] == "hub":
                 lists["hubs"].append({"node": k, "fixed": False, "dir": bool(n["hub_dir"])})
+            elif n["type"] == "relay":
+                lists["relays"].append({"node": k, "fixed": False, "light": False})
             else:
                 f = n["filter"]
                 names = {"0": "Zero", "1": "One", "2": "Two", "3": "Three", "*": "Wildcard"}

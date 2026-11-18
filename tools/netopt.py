@@ -16,6 +16,8 @@ def evaluate(base, dsts, cfg, ticks, spine="up"):
     g = G.Gen(base, spine, "DropOutbound", "DropInbound", "DropOutbound")
     g.cfg = {k: v for k, v in cfg.items() if not k.startswith("_")}
     g.shortcuts = [tuple(x) for x in cfg.get("_shortcuts", [])]
+    if cfg.get("_relay_spacing"):
+        g.relay_spacing = cfg["_relay_spacing"]
     if "_sc_exit" in cfg:
         g.sc_exit_collision = cfg["_sc_exit"]
     save = g.generate(dsts)
