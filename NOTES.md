@@ -597,6 +597,17 @@ from the disassembly (re/reply_region.asm, 0x1402f6900-0x1402f7700).
 - Material colours: dirt (1, 3, 10), hard rock (43, 44), metal (6, 8, 16), wood (14),
   water (18-21), stone / other.
 
+## Floor-level presets (tools/floor_levels.py -> tools/viewer/floor_levels.json)
+- Floors of the prefab structures: in each BunkerRoom chunk (save chunk_types: room kinds
+  like MilitaryOutpost, Supermarket, Hub, AbandonedLab..., some with their endpoint's
+  address), a floor is a voxel row with ground under it and 1.5 units of air over it. Rows
+  within 1 unit merge (raised platforms); levels need >= 900 floor voxels.
+- slot_0: y 5.5 (0.0.*, 1.0.*; 12 endpoints), -6.5 (0.1.*), -10.5 (0.2.*, 0.1.*, 1.1.*;
+  31 endpoints, by far the largest floor), -13, -22, -26.5 (0.3.*, 2.1.*, 1.3.*; 20),
+  -30 (treasure room), -38.5 and -42 (abandoned labs, mainframe room), -46.5 (3.0.*; 4).
+- Viewer: buttons under the Height (Y) range set it to a level (just under its floor to 3
+  units above), so the 3D voxels and the nodes show that level only; "All" resets.
+
 ## Game events (server event watcher, /api/events, logs/events.jsonl)
 - 86 Events<T> resources are registered (input, window, assets, Steam, and the game's own:
   net, map, save, death, boss, audio, achievements...). Each Events<T> starts with a u64

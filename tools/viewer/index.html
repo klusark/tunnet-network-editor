@@ -157,6 +157,7 @@
       <div style="margin-top:8px">
         <div class="row" style="justify-content:space-between"><span style="color:var(--muted)">Height (Y) range</span><span id="yrange"></span></div>
         <input type="range" id="ymin"><input type="range" id="ymax">
+        <div class="row" id="levelPresets" style="margin-top:4px;gap:4px;flex-wrap:wrap" title="Floor levels of the map's bunker rooms (tools/floor_levels.py): shows just that level, cut a little above its floor"></div>
       </div>
       <div class="row" style="margin-top:6px">
         <label title="Draw each run of relays between two other nodes as one line"><input type="checkbox" id="collapse" checked> collapse relay chains</label>
@@ -1596,6 +1597,32 @@ function applyY() {
   document.getElementById("yrange").textContent = `${yLo} … ${yHi}`;
   store("yr", [yLo, yHi]); draw();
 }
+// presets: the floor levels of the map's prefab structures (tools/viewer/floor_levels.json)
+async function setupLevelPresets() {
+  const box = document.getElementById("levelPresets");
+  let lv = [];
+  try { lv = (await (await fetch("floor_levels.json")).json()).levels || []; } catch (e) { return; }
+  const set = (a, b) => {
+    const lo = document.getElementById("ymin"), hi = document.getElementById("ymax");
+    lo.value = a; hi.value = b; applyY();
+    box.querySelectorAll("button").forEach(x => x.classList.toggle("on", +x.dataset.lo === +lo.value && +x.dataset.hi === +hi.value));
+  };
+  const btn = (text, title, a, b) => {
+    const el = document.createElement("button");
+    el.textContent = text; el.title = title; el.dataset.lo = a; el.dataset.hi = b;
+    el.style.padding = "2px 6px"; el.style.fontSize = "11px";
+    el.onclick = () => set(a, b);
+    box.appendChild(el);
+  };
+  btn("All", "Every height", -1e9, 1e9);
+  box.lastChild.onclick = () => set(yBounds[0], yBounds[1]);
+  for (const l of lv)
+    btn(l.label, `floor y ${l.floor} · range ${l.lo} … ${l.hi}
+rooms: ${l.rooms.join(", ")}`
+      + (l.endpoints ? `
+${l.endpoints} endpoints` : ""), l.lo, l.hi);
+}
+setupLevelPresets();
 document.getElementById("ymin").oninput = applyY;
 document.getElementById("ymax").oninput = applyY;
 document.querySelectorAll("[data-view]").forEach(b => b.onclick = () => {
