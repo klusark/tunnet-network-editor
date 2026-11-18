@@ -47,6 +47,15 @@ TESTER_SIZE = 16
 # (FUN_14044eae0, switch on +4): +0 i32 freq (Repeat: send every freq ticks, <1 reset to 1),
 # +4 u8 mode, +5 address (4 digits + type), +10 destination (4 digits + type), +15 padding.
 TESTER_MODE = {0: "Single", 1: "Repeat", 2: "Spoof", 3: "Snoop"}
+# Antenna components (read live, NOTES.md "Antenna (FUN_1403a7a00, decompiled)"):
+#   AntennaOutbound (12 B, align 4) = Option<Entity> target: u32 tag (1 = Some), u32
+#     generation, u32 index. Live: two antennas, each Some(the other) (505 <-> 168).
+#   AntennaId (24 B) = String, the antenna's name (e.g. "oscar298", "delta137").
+#   AntennaInbound (24 B) = Vec of 32-byte items; seen: {u64 7, String name of the antenna
+#     aiming at this one}. The u64 (7 at ~7.7 units apart) might be a whole distance; unconfirmed.
+ANTENNA_OUT = "tunnet::net::antenna::AntennaOutbound"
+ANTENNA_ID = "tunnet::net::antenna::AntennaId"
+ANTENNA_IN = "tunnet::net::antenna::AntennaInbound"
 
 
 def decode_filter(b):
@@ -518,6 +527,25 @@ class LiveNet:
                 "payload": payload.decode("utf-8", errors="replace"), "x": x, "state": s[0x3A],
                 "f3b": s[0x3B], "f3c": s[0x3C]}
 
+    def _string(self, hdr):
+        """A Rust String/Vec<u8> from its {cap, ptr, len} header, or None if it looks torn."""
+        cap, ptr, ln = struct.unpack_from("<3Q", hdr, 0)
+        if not 0 <= ln <= cap < 1 << 12 or (ln and ptr < 0x10000):
+            return None
+        return M.read(self.h, ptr, ln).decode(errors="replace") if ln else ""
+
+    def _antenna_inbound(self, hdr):
+        """AntennaInbound: Vec of 32-byte items, decoded as [u64, name] (meaning of the u64
+        unknown). None if the header looks torn."""
+        cap, ptr, ln = struct.unpack_from("<3Q", hdr, 0)
+        if not 0 <= ln <= cap < 64 or (ln and ptr < 0x10000):
+            return None
+        raw = M.read(self.h, ptr, 32 * ln) if ln else b""
+        if len(raw) < 32 * ln:
+            return None
+        return [[struct.unpack_from("<Q", raw, 32 * k)[0], self._string(raw[32 * k + 8: 32 * k + 32])]
+                for k in range(ln)]
+
     def snapshot(self):
         nn = self.by_name[NETNODE]
         gt = self.by_name[GLOBAL_TRANSFORM]
@@ -527,6 +555,9 @@ class LiveNet:
         hub_c = self.by_name.get(HUB_DIR)
         tc_c = self.by_name.get(TESTER_CONFIG)
         inf_c = self.by_name.get(INFECTION)
+        aout_c = self.by_name.get(ANTENNA_OUT)
+        aid_c = self.by_name.get(ANTENNA_ID)
+        ain_c = self.by_name.get(ANTENNA_IN)
         nodes = {}
         for rec, cols, ents in self.tables():
             if nn not in cols or not ents:
@@ -539,6 +570,9 @@ class LiveNet:
             hub_data = M.read(self.h, cols[hub_c][0], len(ents)) if hub_c in cols else None
             tc_data = M.read(self.h, cols[tc_c][0], TESTER_SIZE * len(ents)) if tc_c in cols else None
             inf_data = M.read(self.h, cols[inf_c][0], len(ents)) if inf_c in cols else None
+            aout_data = M.read(self.h, cols[aout_c][0], 12 * len(ents)) if aout_c in cols else None
+            aid_data = M.read(self.h, cols[aid_c][0], 24 * len(ents)) if aid_c in cols else None
+            ain_data = M.read(self.h, cols[ain_c][0], 24 * len(ents)) if ain_c in cols else None
             if len(nn_data) < 24 * len(ents):
                 continue  # table moved/reallocated mid-read; next snapshot will catch it
             for r, e in enumerate(ents):
@@ -568,6 +602,15 @@ class LiveNet:
                     node["tester"] = decode_tester(tc_data[TESTER_SIZE * r: TESTER_SIZE * (r + 1)])
                 if hub_data and len(hub_data) > r:
                     node["hub_dir"] = hub_data[r]  # matches the save's `dir` bool
+                if kind == "antenna":
+                    if aout_c is not None:
+                        # no AntennaOutbound component at all also means no target
+                        tag, gen, idx = struct.unpack_from("<3I", aout_data, 12 * r)                             if aout_data and len(aout_data) >= 12 * (r + 1) else (0, 0, 0)
+                        node["antenna_target"] = idx if tag == 1 else None
+                    if aid_data and len(aid_data) >= 24 * (r + 1):
+                        node["antenna_name"] = self._string(aid_data[24 * r: 24 * r + 24])
+                    if ain_data and len(ain_data) >= 24 * (r + 1):
+                        node["antenna_inbound"] = self._antenna_inbound(ain_data[24 * r: 24 * r + 24])
                 nodes[e] = node
         # resolve the peer's port index by finding the port that points back
         for e, n in nodes.items():

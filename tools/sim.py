@@ -75,6 +75,28 @@ def key(p):
     return None if p is None else (p["color"], p["src"], p["dst"], p["payload"])
 
 
+def dist2(a, b):
+    """Squared distance, computed the same way in sim.js (bit-identical comparisons)."""
+    a = a or (0.0, 0.0, 0.0)
+    b = b or (0.0, 0.0, 0.0)
+    dx, dy, dz = a[0] - b[0], a[1] - b[1], a[2] - b[2]
+    return dx * dx + dy * dy + dz * dz
+
+
+def default_antenna_targets(nodes):
+    """Antennas whose target is unknown (no "antenna_target" key: a save, which doesn't store
+    it, or an old snapshot) aim at the nearest other antenna (lowest entity on a tie); with
+    two antennas that pairs them, which is what the live game had. An explicit None (live
+    AntennaOutbound = None) is kept: that antenna drops what it receives."""
+    ants = sorted(x for x, n in nodes.items() if n["type"] == "antenna")
+    for e in ants:
+        n = nodes[e]
+        if "antenna_target" in n:
+            continue
+        others = [(dist2(nodes[x]["pos"], n["pos"]), x) for x in ants if x != e]
+        n["antenna_target"] = min(others)[1] if others else None
+
+
 class Net:
     def __init__(self, snap, rules=None, seed=1):
         """snap: LiveNet.snapshot(). Copies topology, configs and packets."""
@@ -88,6 +110,9 @@ class Net:
                 "infected": n.get("infection") == 5,
                 "rot": n.get("rot"),
             }
+            if n["type"] == "antenna" and "antenna_target" in n:
+                self.nodes[e]["antenna_target"] = n["antenna_target"]
+        default_antenna_targets(self.nodes)
         self.state = {e: [[from_live(p["slots"][0]), from_live(p["slots"][1])] for p in n["ports"]]
                       for e, n in snap.items()}
         if rules is None:
@@ -166,15 +191,40 @@ class Net:
                 P[to][OUT] = pk
 
     def upd_antenna(self, e, P, tick):
-        """An antenna sends out what its partner antenna received this tick (measured live;
-        with two antennas the partner is the other one)."""
-        partner = self.nodes[e].get("partner")
-        if partner is None:
-            others = [x for x, n in self.nodes.items() if n["type"] == "antenna" and x != e]
-            partner = self.nodes[e]["partner"] = others[0] if len(others) == 1 else -1
-        pp = self.state.get(partner)
-        if pp and pp[0][IN] is not None:
-            P[0][OUT] = dict(pp[0][IN])
+        """Antenna system (FUN_1403a7a00): an antenna holding a packet in its INBOUND slot
+        sends it to the antenna named in its AntennaOutbound (node["antenna_target"]); the
+        same tick the target writes it to its OUTBOUND slot. If several antennas send to one
+        target, the closest (world distance) wins and the others are dropped (flag 0); an
+        antenna with no target drops what it gets. Inbound slots don't change during node
+        updates, so the order antennas are updated in doesn't matter. Equal distances: the
+        lowest entity wins (the game's order is unknown)."""
+        a = P[0][IN] if P else None
+        if a is not None:
+            t = self.nodes[e].get("antenna_target")
+            if t is None or t not in self.nodes or self.nodes[t]["type"] != "antenna":
+                self.drop(tick, e, "antenna has no target", dict(a))
+            elif self.antenna_winner(t) != e:
+                self.drop(tick, e, "antenna lost to a closer antenna sending to the same target", dict(a))
+        w = self.antenna_winner(e)
+        if w is not None and P:
+            P[0][OUT] = dict(self.state[w][0][IN])
+
+    def antenna_winner(self, target):
+        """The antenna whose packet `target` receives this tick (closest sender), or None."""
+        best = None
+        for x in self.antenna_list():
+            if self.nodes[x].get("antenna_target") != target:
+                continue
+            sp = self.state.get(x)
+            if not sp or sp[0][IN] is None:
+                continue
+            k = (dist2(self.nodes[x]["pos"], self.nodes[target]["pos"]), x)
+            if best is None or k < best:
+                best = k
+        return None if best is None else best[1]
+
+    def antenna_list(self):
+        return [x for x, n in self.nodes.items() if n["type"] == "antenna"]
 
     def upd_hub(self, e, P, tick):
         d = self.nodes[e]["hub_dir"]
@@ -297,7 +347,7 @@ def clone(net):
 
 # ---------- what-if ----------
 def apply_edits(net, edits):
-    """edits: [{"kind": "filter"|"hub"|"tester", "e": entity, "config": {...}},
+    """edits: [{"kind": "filter"|"hub"|"tester"|"antenna", "e": entity, "config": {...}},
                {"kind": "link", "op": "connect"|"disconnect", ...}] (same shapes as the
     live-edit API). Changes the simulated network only."""
     for ed in edits:
@@ -312,6 +362,10 @@ def apply_edits(net, edits):
             net.nodes[ed["e"]]["hub_dir"] = int(ed["config"]["hub_dir"])
         elif k == "tester":
             net.nodes[ed["e"]]["tester"].update(ed["config"])
+        elif k == "antenna":
+            # {"kind": "antenna", "e": antenna, "config": {"antenna_target": other antenna or None}}
+            t = ed["config"].get("antenna_target")
+            net.nodes[ed["e"]]["antenna_target"] = None if t is None else int(t)
         elif k == "link" and ed["op"] == "disconnect":
             e, p = ed["e"], ed["p"]
             peer, pp = net.nodes[e]["links"][p]

@@ -55,6 +55,11 @@ def load(save):
     for k, ((a, pa), (b, pb), kind) in enumerate(save["edges"]):
         snap[a]["ports"][pa].update(peer=b, peer_port=pb, cable=-(k + 1))
         snap[b]["ports"][pb].update(peer=a, peer_port=pa, cable=-(k + 1))
+    # The save stores no antenna target (antennas are just {node}); the game keeps it in the
+    # AntennaOutbound component. Default: each antenna aims at the nearest other antenna
+    # (with the story's two antennas that pairs them, as the live game has them).
+    from sim import default_antenna_targets
+    default_antenna_targets(snap)
     return snap
 
 

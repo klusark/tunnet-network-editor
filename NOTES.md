@@ -308,8 +308,24 @@ from the disassembly (re/reply_region.asm, 0x1402f6900-0x1402f7700).
   (Option<Entity> target); same tick, the target writes it to its port's OUTBOUND slot
   (1 tick per hop, like a relay; distance does not add delay). Several antennas sending
   to one target in one tick: the CLOSEST wins, the rest are dropped (drop event flag 0);
-  an antenna with no target drops what it gets. The simulator still assumes exactly two
-  antennas paired with each other. How the target gets set (aiming) is not decoded. Address match
+  an antenna with no target drops what it gets. How the target gets set (aiming) is not decoded.
+- Antennas in the simulators (sim.py upd_antenna / sim.js, same rule): a packet in an
+  antenna's INBOUND slot goes to the OUTBOUND slot of its antenna_target the same tick;
+  several senders to one target -> the closest (squared distance; equal: lowest entity, the
+  game's order unknown) wins, the others drop ("antenna lost to a closer antenna sending to
+  the same target"); no / missing / non-antenna target -> drop ("antenna has no target");
+  drops are reported at the sending antenna. Live snapshot: antenna_target from
+  AntennaOutbound (12 B: u32 tag 1 = Some, u32 generation, u32 index; 505 <-> 168 aim at
+  each other), antenna_name from AntennaId (24 B String, e.g. "oscar298"), antenna_inbound
+  from AntennaInbound (24 B Vec of 32-byte {u64, String name of the antenna aiming here};
+  seen [[7, name]], the u64 may be the whole distance, unconfirmed). The save does not
+  store targets, so a save's antennas default to the nearest other antenna (slot_0: 69 <->
+  70); an explicit None is kept. What-if edit {"kind": "antenna", "e", "config":
+  {"antenna_target"}}. tools/antenna_check.py: 6 rule cases in both simulators, Python/JS
+  identical 200/200 ticks on slot_0 with default, untargeted and self-aimed antennas; same
+  as the old pairing rule on slot_0 400/400 ticks. Live validation unchanged (only spam
+  differs), but the loaded network's antennas are unwired, so the closest-sender and drop
+  parts are from the decompile only. Address match
   FUN_1406b6550: per digit, mask '*' matches anything, else equal; type byte ignored.
 - Endpoint details found by validation: no scheduled send on a tick the endpoint
   received a packet addressed to it; infected endpoints (proto::Infection == 5) spam a

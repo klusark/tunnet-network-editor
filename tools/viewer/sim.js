@@ -33,6 +33,25 @@
     return m.every((d, i) => d === "*" || a[i] === d); };
   const pkt = (color, src, dst, payload, x = 0, f3a = 0, f3b = 0) => ({ color, src, dst, payload, x, f3a, f3b });
   const copy = p => Object.assign({}, p);
+  // squared distance, computed exactly as sim.dist2 in Python
+  const dist2 = (a, b) => { a = a || [0, 0, 0]; b = b || [0, 0, 0];
+    const dx = a[0] - b[0], dy = a[1] - b[1], dz = a[2] - b[2]; return dx * dx + dy * dy + dz * dz; };
+  // Antennas with no antenna_target key (a save, which doesn't store it, or an old snapshot)
+  // aim at the nearest other antenna (lowest entity on a tie); an explicit null is kept.
+  function defaultAntennaTargets(nodes) {
+    const ants = [...nodes].filter(([, n]) => n.type === "antenna").map(([x]) => x).sort((a, b) => a - b);
+    for (const e of ants) {
+      const n = nodes.get(e);
+      if (n.antenna_target !== undefined) continue;
+      let best = null, bd = 0;
+      for (const x of ants) {
+        if (x === e) continue;
+        const d = dist2(nodes.get(x).pos, n.pos);
+        if (best === null || d < bd) { best = x; bd = d; }
+      }
+      n.antenna_target = best;
+    }
+  }
 
   // ---------- reply rules (tools/reply_rules.py) ----------
   function pattern(receiver, address) {
@@ -58,9 +77,11 @@
           filter: n.filter ? Object.assign({}, n.filter) : null, hub_dir: n.hub_dir ?? null,
           tester: n.tester ? Object.assign({}, n.tester) : null,
           links: n.ports.map(p => [p.peer ?? null, p.peer_port ?? null]), infected: n.infection === 5 });
+        if (n.type === "antenna" && n.antenna_target !== undefined) this.nodes.get(e).antenna_target = n.antenna_target;
         this.state.set(e, n.ports.map(p => [p.slots && p.slots[0] ? copy(p.slots[0]) : null,
                                             p.slots && p.slots[1] ? copy(p.slots[1]) : null]));
       }
+      defaultAntennaTargets(this.nodes);
       this.drops = []; this.delivered = []; this.sent = []; this.tick = 0;
     }
     clone() {
@@ -200,14 +221,33 @@
         if (this.nodes.get(e).links[to][0] !== null) P[to][OUT] = pk;
       }
     }
-    upd_antenna(e, P) {
-      const n = this.nodes.get(e);
-      if (n.partner === undefined) {
-        const others = [...this.nodes].filter(([x, m]) => m.type === "antenna" && x !== e).map(([x]) => x);
-        n.partner = others.length === 1 ? others[0] : null;
+    // Antenna system (FUN_1403a7a00), same as sim.py upd_antenna: a packet in an antenna's
+    // INBOUND slot goes to its antenna_target's OUTBOUND slot the same tick; several senders
+    // to one target: the closest wins (lowest entity on a tie), the others are dropped; no
+    // target: dropped.
+    upd_antenna(e, P, tick) {
+      const a = P.length ? P[0][IN] : null;
+      if (a) {
+        const t = this.nodes.get(e).antenna_target ?? null, tn = t !== null ? this.nodes.get(t) : null;
+        if (!tn || tn.type !== "antenna") this.drop(tick, e, "antenna has no target", copy(a));
+        else if (this.antennaWinner(t) !== e) this.drop(tick, e, "antenna lost to a closer antenna sending to the same target", copy(a));
       }
-      const pp = n.partner !== null ? this.state.get(n.partner) : null;
-      if (pp && pp[0][IN]) P[0][OUT] = copy(pp[0][IN]);
+      const w = this.antennaWinner(e);
+      if (w !== null && P.length) P[0][OUT] = copy(this.state.get(w)[0][IN]);
+    }
+    antennaWinner(target) {
+      let best = null, bd = 0;
+      // antennas are never built or removed by edits: list them once (like sim.py antenna_list)
+      if (!this._antennas) this._antennas = [...this.nodes].filter(([, n]) => n.type === "antenna").map(([x]) => x);
+      for (const x of this._antennas) {
+        const n = this.nodes.get(x);
+        if ((n.antenna_target ?? null) !== target) continue;
+        const sp = this.state.get(x);
+        if (!sp || !sp.length || !sp[0][IN]) continue;
+        const d = dist2(n.pos, this.nodes.get(target).pos);
+        if (best === null || d < bd || (d === bd && x < best)) { best = x; bd = d; }
+      }
+      return best;
     }
     upd_tester(e, P, tick) {
       const t = this.nodes.get(e).tester, f = Math.max(1, t ? +t.freq : 1);
@@ -239,6 +279,7 @@
       } else if (k === "filter") Object.assign(net.nodes.get(ed.e).filter, ed.config);
       else if (k === "hub") net.nodes.get(ed.e).hub_dir = +ed.config.hub_dir;
       else if (k === "tester") Object.assign(net.nodes.get(ed.e).tester, ed.config);
+      else if (k === "antenna") { const t = ed.config.antenna_target; net.nodes.get(ed.e).antenna_target = t == null ? null : +t; }
       else if (k === "link" && ed.op === "disconnect") {
         const n = net.nodes.get(ed.e), [peer, pp] = n.links[ed.p];
         n.links[ed.p] = [null, null];
@@ -316,6 +357,10 @@
       Object.assign(snap[a].ports[pa], { peer: b, peer_port: pb, cable: -(k + 1) });
       Object.assign(snap[b].ports[pb], { peer: a, peer_port: pa, cable: -(k + 1) });
     });
+    // The save stores no antenna target: aim each antenna at the nearest other one (as
+    // save_import.py does).
+    const m = new Map(Object.entries(snap).map(([k, n]) => [+k, n]));
+    defaultAntennaTargets(m);
     return snap;
   }
 
