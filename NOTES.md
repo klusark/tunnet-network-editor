@@ -564,10 +564,15 @@ from the disassembly (re/reply_region.asm, 0x1402f6900-0x1402f7700).
   gzip binary, u32 header length + JSON header (chunk keys, nodes [x,y,z,type], edges,
   endpoint labels) + 32768 raw bytes per stored chunk (~7 MB gzipped, ~5-7 s to build,
   cached by file time). Without the server, "Open file..." parses a save in the browser.
-- Whole map at 2-unit blocks (4^3 voxels, majority solid), full 0.5-unit detail for the
-  chunks around the focus (radius slider); meshing (faces between solid and air, none
-  toward unstored chunks) runs in a Web Worker. 15.2M faces at full resolution for the
-  whole map, 3.1M at 1-unit, so full detail is only near the focus.
+- Everything at full 0.5-unit detail. 15.2M voxel faces in slot_0, so the worker culls and
+  merges: (1) greedy meshing, faces of one material class (dirt 1/3/10, hard rock 43/44,
+  ...), direction and kind (ordinary / cut lid) that touch in a plane merge into one
+  rectangle; (2) visibility flood: air is flood-filled from the sky (top of the highest
+  stored chunk of each column) and from the cut down, and only faces onto reached air (or
+  cut lids) are drawn, so caves sealed below the cut are left out. After a cut change only
+  chunks whose reached air (or their neighbours') changed are re-meshed, nearest the camera
+  first. Dug network save: 7.15M quads with merging alone, 4.73M with classes + flood and no
+  cut, 2.64M with the cut at -8; flood ~1-1.5 s, full mesh ~15-27 s in one worker.
 - Height cut to see inside: built into the meshes (blocks at or above the cut count as air), so
   cut rock and walls get a solid, darker lid instead of being see-through; only chunks the cut
   passes through are re-meshed when it moves. The network overlay is clipped by a plane; "show dirt" off re-meshes with dirt as air,
