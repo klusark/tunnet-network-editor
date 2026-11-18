@@ -364,6 +364,37 @@ from the disassembly (re/reply_region.asm, 0x1402f6900-0x1402f7700).
 - Hosting: needs only index.html, sim.js, offline.js, sim_data.json on any static host.
   A claude.ai artifact would need changes (downloads and confirm() are blocked there).
 
+## Network generator (tools/netgen.py, tools/netopt.py, tools/flows.py)
+- Requirements (flows.py): every scheduled flow (sender, destination) plus replies and the
+  Token ring. Delivered = reaches the endpoint with that address (bridges turn 0.y.1.0
+  into 1.y.1.0; bridge y is the one 10.3 units from endpoint 1.y.1.0). 0.0.2.0-3 have
+  no endpoint (undeliverable). Spam should be dropped.
+- Baseline, the player's current network (slot 0, imported, 2000 ticks): 40.5% of legit
+  packets delivered, 75/262 flows always delivered.
+- Design: address tree. Each prefix group has a spine of hubs (legs 0 up, 1 child, 2
+  down) ending in a REFLECTOR (Match *.*.*.* SendBack, other side unconnected, so it
+  can't collide); each child sits behind a child filter (Differ <child>, SendBack); the
+  group's top filter (Match <group>, SendBack) turns back packets that belong inside;
+  Drop filters at the top remove packets for digits with no child (else they circle).
+  Root: dead-address drops + reflector. Stage 1 is logical: no relays, rough positions.
+- Losses are almost all FILTER COLLISIONS: a filter that sends a packet back and passes
+  one from its other side in the same tick must lose one (a hub is a bijection, so two
+  streams can only merge at a filter). Bare leaves (endpoint straight on the hub, it
+  bounces wrong packets and skips its own send that tick) avoid leaf collisions but drop
+  no-bounce packets at wrong endpoints and lower throughput.
+- Results (1000 ticks): first tree 38-43%; + spine reflectors 56.5%; bare leaves 61.7%
+  rate but fewer packets delivered (busy bare endpoints skip their own sends, so some
+  flows were never even sent).
+- Spam guards: infected endpoints have no scheduled sends (only replies), so a Drop
+  filter in front of each (filtered side facing it) drops what it sends except to its
+  reply target (0.0.1.1 -> 0.0.3.2 allowed; 0.2.1.3 everything). Spam delivered 880 -> ~20.
+- netopt.py hill-climbs per-group spine direction, child order, bare/filtered leaves and
+  collision modes. Score = 1000 x flows delivered at least once + packets delivered
+  - 5 x spam delivered. Best (300 evaluations, 2100 ticks; tools/netgen_best_cfg.json):
+  221/253 required flows delivered at least once (9 are impossible: 0.0.2.x), 12905
+  packets (55.8%), 21 spam through. Player's network over the same run: 104 flows,
+  ~9300 packets. 304 nodes: 92 hubs, 130 filters, no relays yet.
+
 ## Map voxels in the save (digging)
 - save["chunks"]: 4527 entries [{x,y,z}, rle]; rle = [[count, value], ...] covering 32^3
   voxels. Chunk = 16 world units, voxel = 0.5 units: voxel = floor(world * 2), chunk =
