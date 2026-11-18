@@ -38,6 +38,10 @@
   #info { flex: 1 0 auto; padding: 10px 12px; }
   #info .empty { color: var(--muted); }
   #editor:empty { display: none; }
+  table.simt { width: 100%; border-collapse: collapse; margin: 6px 0; font-size: 12px; }
+  table.simt th, table.simt td { text-align: right; padding: 1px 4px; border-bottom: 1px solid var(--line); }
+  table.simt th:first-child, table.simt td:first-child { text-align: left; word-break: break-word; }
+  table.simt .good { color: #68d391; } table.simt .bad { color: #fc8181; } table.simt .muted { color: var(--muted); }
   .lks { float: right; } .lk { font-size: 11px; padding: 1px 6px; margin-left: 4px; }
   #editor .pick { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
   #editor { padding: 10px 12px 0; }
@@ -140,6 +144,21 @@
         <button id="dropCsv" title="Download every drop the server has seen">Export CSV</button>
         <button id="dropClear" title="Hide drops so far (the log file keeps them)">Clear list</button>
       </div>
+    </div>
+    <div class="sec">
+      <h2>What-if simulator</h2>
+      <div class="note">Runs the network forward from the current live state, with and without the edits
+        below, using rules read from the game's code (checked tick by tick against the game). Nothing is
+        written to the game.</div>
+      <div id="simEdits"><div class="empty">No edits staged. Use "Try in simulator" on a filter, hub or
+        tester, or tick the box below and use the port buttons.</div></div>
+      <label style="display:block;margin:4px 0"><input type="checkbox" id="simLinks"> port connect / rewire /
+        disconnect go to the simulator, not the game</label>
+      <div class="row" style="margin-top:6px;gap:6px;display:flex;flex-wrap:wrap;align-items:center">
+        <label>ticks <input id="simTicks" type="number" min="1" max="1000" value="200" style="width:70px"></label>
+        <button id="simRun">Run</button><button id="simClear">Clear edits</button>
+      </div>
+      <div id="simOut"></div>
     </div>
     <div class="sec">
       <h2>Legend</h2>
@@ -779,7 +798,7 @@ function renderEditor(force) {
   };
   box.innerHTML = `<div class="ed"><h3>${E.title}</h3>${E.fields.map(field).join("")}
     <div class="help" id="edHelp"></div>
-    <div class="acts"><button id="edSave">Apply to game</button><button id="edReset">Reset</button>
+    <div class="acts"><button id="edSave">Apply to game</button><button id="edSim">Try in simulator</button><button id="edReset">Reset</button>
       ${ed.undo ? `<button id="edUndo">Undo last edit</button>` : ""}</div>
     <div class="msg${ed.err ? " err" : ""}" id="edMsg">${ed.msg}</div></div>`;
   const refresh = () => {
@@ -791,6 +810,10 @@ function renderEditor(force) {
   box.querySelectorAll("input,select").forEach(el => el.addEventListener("input", () => { ed.dirty = true; refresh(); }));
   document.getElementById("edReset").onclick = () => { ed.dirty = false; ed.msg = ""; ed.err = false; renderEditor(true); };
   document.getElementById("edSave").onclick = () => applyEdit(n, kind, formValue(E, v));
+  document.getElementById("edSim").onclick = () => {
+    stageSim({ kind, e: n.e, config: formValue(E, v), label: `${describe(n.e)}: ${simDiff(v, formValue(E, v))}` });
+    ed.msg = "Staged in the simulator (not applied to the game)."; ed.err = false; ed.dirty = false; renderEditor(true);
+  };
   const u = document.getElementById("edUndo");
   if (u) u.onclick = () => applyEdit(n, kind, ed.undo, true);
 }
@@ -826,6 +849,13 @@ async function linkOp(body) {
   return res.ok ? out : { error: out.error || "error" };
 }
 async function runLinkOps(ops, undoOps, okText) {
+  if (document.getElementById("simLinks").checked && okText !== "Undone.") {
+    for (const op of ops) stageSim(Object.assign({ kind: "link", label: op.op === "connect"
+      ? `connect ${describe(op.a[0])} port ${op.a[1]} to ${describe(op.b[0])} port ${op.b[1]}`
+      : `disconnect ${describe(op.e)} port ${op.p}` }, op));
+    linkMsg = { text: "Staged in the simulator (not applied to the game).", err: false, undo: null };
+    return finishLink();
+  }
   for (const [i, op] of ops.entries()) {
     const r = await linkOp(op);
     if (r.error) {
@@ -901,6 +931,55 @@ document.getElementById("info").addEventListener("mousedown", ev => {
   ev.preventDefault(); ev.stopPropagation();
   startLink(b.dataset.link, +b.dataset.e, +b.dataset.p);
 }, true);
+
+// ---------- what-if simulator ----------
+let simEdits = [];
+function simDiff(a, b) {
+  const ch = Object.keys(b).filter(k => String(a[k]) !== String(b[k])).map(k => `${k} ${a[k]} → ${b[k]}`);
+  return ch.join(", ") || "no change";
+}
+function stageSim(ed) { simEdits.push(ed); renderSimEdits(); }
+function renderSimEdits() {
+  const el = document.getElementById("simEdits");
+  el.innerHTML = simEdits.length ? simEdits.map((x, i) => `<div class="pk"><span>${esc(x.label)}</span>`
+    + `<button class="lk" data-simdel="${i}">remove</button></div>`).join("")
+    : '<div class="empty">No edits staged.</div>';
+  el.querySelectorAll("[data-simdel]").forEach(b => b.onclick = () => { simEdits.splice(+b.dataset.simdel, 1); renderSimEdits(); });
+}
+document.getElementById("simClear").onclick = () => { simEdits = []; renderSimEdits(); document.getElementById("simOut").innerHTML = ""; };
+document.getElementById("simRun").onclick = async () => {
+  const out = document.getElementById("simOut");
+  const ticks = +document.getElementById("simTicks").value || 200;
+  out.innerHTML = `<div class="note">Simulating ${ticks} ticks…</div>`;
+  let r;
+  try {
+    const res = await fetch("/api/sim", { method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ticks, edits: simEdits.map(({ label, ...x }) => x) }) });
+    r = await res.json();
+    if (!res.ok) throw new Error(r.error || "error");
+  } catch (err) { out.innerHTML = `<div class="msg err">${esc(String(err.message || err))}</div>`; return; }
+  const B = r.baseline, W = r.what_if;
+  const row = (label, a, b, goodUp) => {
+    const d = b - a, cls = d === 0 ? "" : (d > 0) === goodUp ? "good" : "bad";
+    return `<tr><td>${label}</td><td>${a}</td><td>${b}</td><td class="${cls}">${d > 0 ? "+" : ""}${d}</td></tr>`;
+  };
+  const diffs = (a, b, goodUp) => {
+    const keys = [...new Set([...Object.keys(a), ...Object.keys(b)])]
+      .map(k => [k, (a[k] || 0), (b[k] || 0)]).filter(([, x, y]) => x !== y)
+      .sort((p, q) => Math.abs(q[2] - q[1]) - Math.abs(p[2] - p[1])).slice(0, 12);
+    return keys.length ? keys.map(([k, x, y]) => row(esc(k), x, y, goodUp)).join("") : `<tr><td colspan="4" class="muted">no change</td></tr>`;
+  };
+  const table = (title, body) => `<table class="simt"><tr><th>${title}</th><th>now</th><th>what-if</th><th>Δ</th></tr>${body}</table>`;
+  out.innerHTML = `<div class="note">${r.what_if.ticks} ticks from tick ${r.start_tick} (≈${Math.round(r.what_if.ticks * 0.51 / 60)} min of game time), ${r.seconds}s.</div>`
+    + table("totals", row("delivered", B.delivered, W.delivered, true) + row("sent", B.sent, W.sent, true)
+      + row("dropped", B.dropped, W.dropped, false) + row("spam delivered", B.spam_delivered, W.spam_delivered, false)
+      + row("spam dropped", B.spam_dropped, W.spam_dropped, true))
+    + table("delivered to", diffs(B.delivered_by_endpoint, W.delivered_by_endpoint, true))
+    + table("drop reasons", diffs(B.drop_reasons, W.drop_reasons, false))
+    + table("drops at", diffs(B.drop_places, W.drop_places, false))
+    + table("spam delivered to", diffs(B.spam_delivered_to, W.spam_delivered_to, false))
+    + `<div class="note">Spam is random (same seed in both runs); the bridge to the outer network and testers in Repeat mode follow decoded rules; the tester's wildcard order is a guess.</div>`;
+};
 
 // ---------- dropped packets ----------
 // The server reads the game's own PacketDropEvent queue; we merge its batches by event id.

@@ -33,6 +33,7 @@ DROP_EVENTS = "bevy_ecs::event::Events<tunnet::particle::PacketDropEvent>"
 DROP_SIZE = 0x58   # EventInstance<PacketDropEvent>: Packet (0x40), pos f32x3, flag u8 @0x4c, event id u64 @0x50
 ADDRESS = "tunnet::net::proto::Address"
 HUB_DIR = "tunnet::net::hub::HubDirection"
+INFECTION = "tunnet::net::proto::Infection"
 FILTER_CONFIG = "tunnet::net::filter::FilterConfig"
 # FilterConfig (24 B), verified 100/100 against the save; behaviour from filter code FUN_1404f3a90
 MASK_TYPE = {0: "Endpoint", 1: "Filter", 2: "UnrestrictedFilter"}
@@ -507,6 +508,7 @@ class LiveNet:
         fc_c = self.by_name.get(FILTER_CONFIG)
         hub_c = self.by_name.get(HUB_DIR)
         tc_c = self.by_name.get(TESTER_CONFIG)
+        inf_c = self.by_name.get(INFECTION)
         nodes = {}
         for rec, cols, ents in self.tables():
             if nn not in cols or not ents:
@@ -518,6 +520,7 @@ class LiveNet:
             fc_data = M.read(self.h, cols[fc_c][0], 24 * len(ents)) if fc_c in cols else None
             hub_data = M.read(self.h, cols[hub_c][0], len(ents)) if hub_c in cols else None
             tc_data = M.read(self.h, cols[tc_c][0], TESTER_SIZE * len(ents)) if tc_c in cols else None
+            inf_data = M.read(self.h, cols[inf_c][0], len(ents)) if inf_c in cols else None
             if len(nn_data) < 24 * len(ents):
                 continue  # table moved/reallocated mid-read; next snapshot will catch it
             for r, e in enumerate(ents):
@@ -540,6 +543,8 @@ class LiveNet:
                     node["address"] = fmt_addr(adr_data[5 * r: 5 * r + 5])
                 if fc_data and len(fc_data) >= 24 * (r + 1):
                     node["filter"] = decode_filter(fc_data[24 * r: 24 * r + 24])
+                if inf_data and len(inf_data) > r:
+                    node["infection"] = inf_data[r]   # proto::Infection (1 B); present = infected
                 if tc_data and len(tc_data) >= TESTER_SIZE * (r + 1):
                     node["tester"] = decode_tester(tc_data[TESTER_SIZE * r: TESTER_SIZE * (r + 1)])
                 if hub_data and len(hub_data) > r:

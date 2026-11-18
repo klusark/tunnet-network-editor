@@ -84,16 +84,16 @@ copied per hop and freed memory reused).
   bump gives one consistent read per tick (no half-written state). The viewer does this.
 - Snapshots taken across a tick boundary show half-written state; earlier "3 ticks/s"
   estimates were inflated by that.
-- Movement rule (tools/speed_probe.py, 7 consecutive ticks, ~11.5k packet moves):
-  each tick a packet crosses AT MOST ONE cable. Passing through a node costs nothing if
-  the slot ahead is free, so a tick's route is 1-3 steps:
-    1: OUT -> cable -> IN            2: IN -> node -> OUT -> cable -> IN, or OUT -> cable -> IN -> node -> OUT
-    3: IN -> node -> OUT -> cable -> IN -> node -> OUT          0: blocked
-  Packets stop where the next slot is occupied (2774 stopped at OUT with the peer's
-  IN occupied; 3521 stopped at a relay's IN). Every cable takes one tick regardless of
-  length, so long cables LOOK faster in the viewer. Apparent 5-7 step routes (~1%)
-  were false content matches between identical packets; the viewer now allows at most
-  one crossing per tick.
+- Tick model (from the code, verified live; this replaces the earlier "packets wait"
+  theory, which came from IN slots not being cleared after a node copies them):
+  1. transport FUN_14074aa00: clear EVERY inbound slot; every outbound packet on a
+     connected port moves to the peer port's inbound slot (the first peer port whose peer
+     is the sender); outbound on an unconnected port -> drop event flag 0. Outbound slots
+     are always emptied. Verified: IN(t+1) == peer OUT(t) on 17052/17052 ports.
+  2. node systems, once per tick (they run when an Events<NetTockEvent> is pending):
+     each copies inbound -> outbound by its rules and OVERWRITES the outbound slot; the
+     inbound slot is left (the next transport clears it).
+  So every packet crosses exactly one cable and one node per tick; nothing ever waits.
 - Packet +0x10 is not speed: constant per packet, occasionally decrements by 1;
   value 8 correlates with blocked packets. Meaning still unknown.
 
@@ -296,6 +296,28 @@ from the disassembly (re/reply_region.asm, 0x1402f6900-0x1402f7700).
   backups/, which git ignores). Node removal next to a rewired link is also untested.
 - Viewer: per-port connect… / rewire… / disconnect buttons; pick the other node on the map,
   then its free port; Undo. A failed step in a rewire puts back the steps already done.
+
+## Simulator (tools/sim.py)
+- Node rules: relay FUN_1402fc350 (0->1, 1->0, copy+overwrite); hub by HubDirection;
+  filter (see Config components); endpoint (receive/reply/bounce/drop, then the exact
+  generator table, then spam); bridge FUN_1406b6bb0: first digit of src/dst swaps 0<->1;
+  new dst first digit '1' or '*' -> bounce limit (6 if 2nd digit '3'/'*', else 4), else
+  limit removed and no-bounce if 2nd digit '1'/'*'; written only if the far port is
+  connected. Antenna: outputs what its partner antenna received this tick. Address match
+  FUN_1406b6550: per digit, mask '*' matches anything, else equal; type byte ignored.
+- Endpoint details found by validation: no scheduled send on a tick the endpoint
+  received a packet addressed to it; infected endpoints (proto::Infection == 5) spam a
+  random 0.R.x.x address only when nothing else is sent (rate 0.26 for 0.0.1.1, 0.11 for
+  0.2.1.3 per free tick). The x field (+0x10) only matters while flag 0x3a is set.
+- Validation: tools/sim_validate.py (one tick, real inputs) -> 0 mismatches outside spam
+  over 30 ticks, all fields incl. bounce flags; tools/sim_run_check.py (free-running from
+  one snapshot) -> 100% of non-spam packets in the right slot after 25 ticks; drops per
+  node type match the game's drop events (filters 161/161, relays 42/41).
+- Not validated: tester Repeat (tester was in Single mode; wildcard order guessed),
+  catalogue/boss replies, payload text where the game picks randomly.
+- What-if: sim.what_if(snapshot, tick, edits, ticks, seed) runs baseline and edited
+  network with per-(seed, node, tick) randomness; POST /api/sim; viewer "What-if
+  simulator" panel ("Try in simulator" on editors, or route port edits there).
 
 ## Config components
 - HubDirection (1 B): 1 = save `dir: true`, 0 = false (96/96 hubs).

@@ -36,6 +36,7 @@ sys.path.insert(0, os.path.dirname(HERE))
 import tunnet_live as T  # noqa: E402
 import tracker as TR  # noqa: E402
 import reply_rules as RR  # noqa: E402
+import sim as SIM  # noqa: E402
 
 DROP_CLAIM_TICKS = 4  # how long a drop waits for its packet's track before giving up
 
@@ -536,8 +537,24 @@ class Handler(SimpleHTTPRequestHandler):
         self.wfile.write(body)
 
     def do_POST(self):
-        """Edits to the running game: tester and filter configs, hub direction, links. EDIT=0 disables."""
+        """Edits to the running game: tester and filter configs, hub direction, links. EDIT=0 disables.
+        /api/sim runs the simulator (no game writes)."""
         url = urlparse(self.path)
+        if url.path == "/api/sim":
+            try:
+                req = json.loads(self.rfile.read(int(self.headers.get("Content-Length", "0") or 0)) or b"{}")
+                snap, tick = SHARED.snap, SHARED.tick
+                if not snap:
+                    return self._reply(503, {"error": "no live snapshot yet"})
+                ticks = max(1, min(int(req.get("ticks", 200)), 1000))
+                t0 = time.time()
+                res = SIM.what_if(snap, tick, req.get("edits") or [], ticks, int(req.get("seed", 1)))
+                res["start_tick"], res["seconds"] = tick, round(time.time() - t0, 2)
+                return self._reply(200, res)
+            except Exception as ex:
+                import traceback
+                traceback.print_exc()
+                return self._reply(400, {"error": f"{type(ex).__name__}: {ex}"})
         if os.environ.get("EDIT", "1") == "0":
             return self._reply(403, {"error": "editing is disabled (EDIT=0)"})
         what = {"/api/tester": "tester", "/api/filter": "filter", "/api/hub": "hub", "/api/link": "link"}.get(url.path)
