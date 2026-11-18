@@ -303,7 +303,13 @@ from the disassembly (re/reply_region.asm, 0x1402f6900-0x1402f7700).
   generator table, then spam); bridge FUN_1406b6bb0: first digit of src/dst swaps 0<->1;
   new dst first digit '1' or '*' -> bounce limit (6 if 2nd digit '3'/'*', else 4), else
   limit removed and no-bounce if 2nd digit '1'/'*'; written only if the far port is
-  connected. Antenna: outputs what its partner antenna received this tick. Address match
+  connected. Antenna (FUN_1403a7a00, decompiled): each antenna holding a packet in its
+  port's INBOUND slot sends it to the antenna named in its AntennaOutbound component
+  (Option<Entity> target); same tick, the target writes it to its port's OUTBOUND slot
+  (1 tick per hop, like a relay; distance does not add delay). Several antennas sending
+  to one target in one tick: the CLOSEST wins, the rest are dropped (drop event flag 0);
+  an antenna with no target drops what it gets. The simulator still assumes exactly two
+  antennas paired with each other. How the target gets set (aiming) is not decoded. Address match
   FUN_1406b6550: per digit, mask '*' matches anything, else equal; type byte ignored.
 - Endpoint details found by validation: no scheduled send on a tick the endpoint
   received a packet addressed to it; infected endpoints (proto::Infection == 5) spam a
