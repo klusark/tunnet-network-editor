@@ -466,6 +466,15 @@ from the disassembly (re/reply_region.asm, 0x1402f6900-0x1402f7700).
   TTL: 0.2.0.0 has 15 TTL destinations (budgets 4-8) in 4 clusters, and every filter
   passed costs one; no order of the split tree meets every budget (two clusters must
   both be within the first 3 taps), so one tiny flow (~1/64 ticks) is lost.
+- TTL fix (that conclusion was wrong): a budget b allows b-1 filter visits, and
+  0.2.0.0 -> 0.2.3.1 (budget 8) was visiting 8: 4 cluster taps + 4 taps in its
+  sub-chain. When all four addresses of a cluster are destinations, the last one needs
+  no filter: whatever the other three bounce can only be for it, so its line starts
+  straight off the previous tap's hub (and that sub-chain needs no end drop). Deepest
+  line is now 4 + 3 = 7 visits. Result over 8192 ticks: 93.6% mean flow delivery,
+  244/244 possible flows, 93292/102735 packets, spam all dropped. 28 fewer filters.
+  Still weak for timing reasons: 0.2.0.0 -> 0.2.1.1 (rarely sent), -> 0.2.1.2 (mostly
+  lost in a merge collision).
 - JSON files written by the tools are pretty-printed (indent 2), incl. exported saves.
 
 ## Map voxels in the save (digging)

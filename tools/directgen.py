@@ -142,13 +142,23 @@ class Direct(G.Gen):
                     self.link(prev, pport, tap, 0); self.link(tap, 1, f, 0)
                     prev, pport = tap, 2
                     sub, sport = f, 1
+                    # a cluster whose four addresses are all destinations needs no filter for
+                    # the last one: whatever the other three bounce can only be for it. That
+                    # saves a TTL packet one bounce on the deepest line.
+                    full = {d.split(".")[3] for d in ds} == {"0", "1", "2", "3"}
                     for j, d in enumerate(ds):
+                        if full and j == len(ds) - 1:
+                            lines.append((a, d, (sub, sport), dsts[d], (a, d) in limited))
+                            sub = None
+                            break
                         t2 = self.new("hub", [pos[0] + 0.6 * col, pos[1] + 3.2 + 0.6 * j, pos[2]], label=f"split {a} -> {d}", hub_dir=0)
                         f2 = self.filt([pos[0] + 0.6 * col + 0.3, pos[1] + 3.2 + 0.6 * j, pos[2]], d, "Differ", "SendBack",
                                        "DropInbound", label=f"split {a} -> {d}")
                         self.link(sub, sport, t2, 0); self.link(t2, 1, f2, 0)
                         sub, sport = t2, 2
-                        lines.append((a, d, f2, dsts[d], (a, d) in limited))
+                        lines.append((a, d, (f2, 1), dsts[d], (a, d) in limited))
+                    if sub is None:
+                        continue
                     end_ = self.filt([pos[0] + 0.6 * col, pos[1] + 3.2 + 0.6 * len(ds), pos[2]], "*.*.*.*", "Match", "Drop",
                                      "DropInbound", label=f"end of {a}'s {cl}.* lines")
                     self.link(sub, sport, end_, 0)
@@ -160,7 +170,7 @@ class Direct(G.Gen):
                                   label=f"split {a} -> {d}")
                     self.link(prev, pport, tap, 0); self.link(tap, 1, f, 0)
                     prev, pport = tap, 2
-                    lines.append((a, d, f, dsts[d], (a, d) in limited))
+                    lines.append((a, d, (f, 1), dsts[d], (a, d) in limited))
             drop = self.filt([pos[0] + 0.6 * (col + 1), pos[1] + 2, pos[2]], "*.*.*.*", "Match", "Drop", "DropInbound",
                              label=f"end of {a}'s lines (drops spam / unknown addresses)")
             self.link(prev, pport, drop, 0)
@@ -175,7 +185,7 @@ class Direct(G.Gen):
             prev, pport = ends[d]["hub"], 2
             for i, (a, f, w, lim) in enumerate(ins):
                 if i == len(ins) - 1:
-                    self.link(prev, pport, f, 1)                   # the farthest line joins directly
+                    self.link(prev, pport, *f)                     # the farthest line joins directly
                     self.mark_line(a, d)
                     break
                 m = self.new("hub", [pos[0] - 0.6 * (i + 1), pos[1] + 2, pos[2]], label=f"merge {a} -> {d}", hub_dir=0)
@@ -183,7 +193,7 @@ class Direct(G.Gen):
                                label=f"merge {a} -> {d}")
                 self.link(prev, pport, m, 0)
                 self.link(m, 2, mf, 0)
-                self.link(mf, 1, f, 1)
+                self.link(mf, 1, *f)
                 self.mark_line(a, d)
                 prev, pport = m, 1
         self.n_lines = len(lines)
