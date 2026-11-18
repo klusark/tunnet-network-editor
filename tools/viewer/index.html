@@ -148,7 +148,7 @@
         <span class="note" style="margin:0">Drag to turn · right-drag or Shift+drag to move · wheel or pinch to zoom</span>
       </div>
       <div class="row" id="rowVox" style="margin-top:6px;display:none;gap:6px;flex-wrap:wrap;align-items:center">
-        <label title="Draw the map's voxels (rock, dirt, tunnels, bunkers) behind the network. The top of the height range below cuts the map, with solid lids where it cuts rock."><input type="checkbox" id="voxOn"> voxels</label>
+        <label title="Draw the map's voxels (rock, dirt, tunnels, bunkers) behind the network. The height range below cuts the map from above and below, with solid lids where it cuts rock."><input type="checkbox" id="voxOn"> voxels</label>
         <select id="voxSave" title="Where the map voxels come from: the running game (live) or a save" style="max-width:170px"></select>
         <button id="voxReload" title="Read the voxels again (e.g. after digging in the game)">↻</button>
         <label title="Untick to see only hard rock, bunkers and water"><input type="checkbox" id="voxDirt" checked> dirt</label>
@@ -526,7 +526,7 @@ function draw() {
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   const bgCol = getComputedStyle(document.documentElement).getPropertyValue("--bg");
   if (voxShown()) {                  // voxels behind: same camera, 2D canvas stays transparent
-    vox.setCut(yHi >= yBounds[1] ? 1e9 : yHi);
+    vox.setCut(yHi >= yBounds[1] ? 1e9 : yHi, yLo <= yBounds[0] ? -1e9 : yLo);
     vox.render(orbit, cam, W, H, bgCol);
     ctx.clearRect(0, 0, W, H);
   } else {

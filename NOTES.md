@@ -562,7 +562,11 @@ from the disassembly (re/reply_region.asm, 0x1402f6900-0x1402f7700).
 - 3D mode has a "voxels" switch: the map's voxels are drawn with WebGL (three.js 0.160
   from unpkg) on a canvas behind the 2D canvas, with an orthographic camera built from the
   same orbit (yaw, pitch, centre, pan, zoom), so they line up with the nodes and cables
-  (which are drawn on top, not hidden by walls). The top of the Height (Y) range is the cut.
+  (which are drawn on top, not hidden by walls). The Height (Y) range cuts the map from above
+  and below (only the slab between them is drawn, with lids at both cuts; the flood starts
+  from both cuts). Fixed: meshes finished during a newer rebuild were dropped while the
+  worker counted them as done, so fast slider moves left chunks with an old cut; now every
+  finished mesh is applied unless it predates a reload / dirt reset (epoch).
   Live mode: voxels from the running game's memory ("live", the default) or a chosen save,
   via the server; offline mode: from the opened file. The ↻ button reads them again.
 - Voxels in game memory: every chunk is an entity with tunnet::map::chunk::ChunkPosition

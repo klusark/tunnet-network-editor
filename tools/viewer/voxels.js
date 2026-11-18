@@ -63,17 +63,20 @@ function update(m) {
     for (let d = 0; d < 6; d++) { const j = nb[i * 6 + d]; if (j >= 0) meshedKey.delete(j); }
   }
 }
-// flood the air reachable from outside (sky above the top chunks, or the space above the cut)
-function flood(clip) {
+// flood the air reachable from outside: the sky above the top chunks, and the open space
+// above the top cut (clip) and below the bottom cut (lo); only voxels in the slab are kept
+function flood(clip, lo) {
   ext.fill(0);
   let q = new Uint32Array(1 << 22), head = 0, tail = 0;
   const push = (i, l) => { if (tail >= q.length) { const n = new Uint32Array(q.length * 2); n.set(q); q = n; } q[tail++] = i * V + l; };
   for (let i = 0; i < keys.length; i++) {
     const cy = keys[i][1], base = i * V, sky = colTop.get(keys[i][0] + "," + keys[i][2]) === cy;
     for (let y = 0; y < N; y++) {
-      if ((cy * N + y) * S >= clip) break;                       // above the cut: not stored as voxels
-      const top = (cy * N + y + 1) * S >= clip || (y === N - 1 && sky);
-      if (!top) continue;
+      const yb = (cy * N + y) * S;
+      if (yb >= clip) break;                                      // above the top cut
+      if (yb < lo) continue;                                      // below the bottom cut
+      const edge = yb + S >= clip || (y === N - 1 && sky) || yb - S < lo;
+      if (!edge) continue;
       for (let z = 0; z < N; z++) for (let x = 0; x < N; x++) {
         const l = (z * N + y) * N + x;
         if (air[data[base + l]] && !ext[base + l]) { ext[base + l] = 1; push(i, l); }
@@ -89,7 +92,8 @@ function flood(clip) {
         j = nb[i * 6 + d]; if (j < 0) continue;
         X &= 31; Y &= 31; Z &= 31;
       }
-      if ((keys[j][1] * N + Y) * S >= clip) continue;          // above the cut: open anyway
+      const yb = (keys[j][1] * N + Y) * S;
+      if (yb >= clip || yb < lo) continue;                      // outside the slab: open anyway
       const L = (Z * N + Y) * N + X, G = j * V + L;
       if (!ext[G] && air[data[G]]) { ext[G] = 1; push(j, L); }
     }
@@ -100,9 +104,9 @@ function sig(i) {                                  // FNV of a chunk's reached-a
   for (let l = 0; l < V; l += 4) h = Math.imul(h ^ (ext[b + l] | ext[b + l + 1] << 1 | ext[b + l + 2] << 2 | ext[b + l + 3] << 3), 16777619);
   return h >>> 0;
 }
-function mesh(i, clip) {
+function mesh(i, clip, lo) {
   const [cx, cy, cz] = keys[i], base = i * V, o = [cx * N, cy * N, cz * N];
-  const kept = y => (o[1] + y) * S < clip;
+  const kept = y => { const yb = (o[1] + y) * S; return yb < clip && yb >= lo; };
   const pos = [], col = [], idx = [];
   const mask = new Int32Array(N * N), p = [0, 0, 0];
   for (let a = 0; a < 3; a++) {
@@ -161,10 +165,17 @@ async function build(m) {
   CLASS = m.CLASS; COLOR = m.COLORS;
   if (m.reset) meshedKey = new Map();
   const t0 = performance.now();
-  flood(m.clip);
+  flood(m.clip, m.lo);
   const t1 = performance.now();
   const s = keys.map((_, i) => sig(i));
-  const eff = i => { const bottom = keys[i][1] * 16, top = bottom + 16; return m.clip > top ? "f" : m.clip <= bottom ? "e" : String(Math.ceil(m.clip / S)); };
+  // a chunk's mesh depends on a cut only while the cut is inside it (or at its edge, where
+  // the neighbour's voxels next to it are cut away)
+  const eff = i => {
+    const bottom = keys[i][1] * 16, top = bottom + 16;
+    const h = m.clip > top ? "f" : m.clip <= bottom ? "e" : String(Math.ceil(m.clip / S));
+    const l = m.lo <= bottom - S ? "f" : m.lo >= top ? "e" : String(Math.ceil(m.lo / S));
+    return h + "/" + l;
+  };
   const todo = [];
   keys.forEach((_, i) => {
     let k = s[i] + ":" + eff(i) + ":" + (m.hideDirt ? 1 : 0);
@@ -174,15 +185,15 @@ async function build(m) {
   const [px, py, pz] = m.cam;
   const dist = i => { const [x, y, z] = keys[i]; return (x * 16 + 8 - px) ** 2 + (y * 16 + 8 - py) ** 2 + (z * 16 + 8 - pz) ** 2; };
   todo.sort((a, b) => dist(a) - dist(b));
-  postMessage({ gen: my, start: true, todo: todo.length, floodMs: Math.round(t1 - t0) });
+  postMessage({ gen: my, epoch: m.epoch, start: true, todo: todo.length, floodMs: Math.round(t1 - t0) });
   for (let k = 0; k < todo.length; k += 24) {
     if (gen !== my) { for (const i of todo.slice(k)) meshedKey.delete(i); return; }   // superseded
     const out = [];
-    for (const i of todo.slice(k, k + 24)) { const r = mesh(i, m.clip); out.push({ i, pos: r.pos, col: r.col, idx: r.idx }); }
-    postMessage({ gen: my, out, left: Math.max(0, todo.length - k - 24) }, out.flatMap(o => [o.pos.buffer, o.col.buffer, o.idx.buffer]));
+    for (const i of todo.slice(k, k + 24)) { const r = mesh(i, m.clip, m.lo); out.push({ i, pos: r.pos, col: r.col, idx: r.idx }); }
+    postMessage({ gen: my, epoch: m.epoch, out, left: Math.max(0, todo.length - k - 24) }, out.flatMap(o => [o.pos.buffer, o.col.buffer, o.idx.buffer]));
     await new Promise(r => setTimeout(r, 0));
   }
-  postMessage({ gen: my, done: true, ms: Math.round(performance.now() - t0) });
+  postMessage({ gen: my, epoch: m.epoch, done: true, ms: Math.round(performance.now() - t0) });
 }
 onmessage = e => { const m = e.data; if (m.init) init(m); else if (m.update) update(m); else build(m); };`;
 
@@ -201,8 +212,8 @@ export function createVoxelLayer(stage, { onUpdate = () => {}, onStatus = () => 
   const group = new THREE.Group(); scene.add(group);
   const worker = new Worker(URL.createObjectURL(new Blob([workerSrc], { type: "text/javascript" })));
   const meshes = new Map();
-  let world = null, gen = 0, quads = 0, left = 0, floodMs = 0, lastMs = 0, building = false;
-  let cut = 1e9, showDirt = true, visible = false, bg = "#111";
+  let world = null, gen = 0, epoch = 0, quads = 0, left = 0, floodMs = 0, lastMs = 0, building = false;
+  let cut = 1e9, cutLo = -1e9, showDirt = true, visible = false, bg = "#111";
 
   const CLASS = new Uint8Array(256), COLORS = new Array(256).fill(MAT.stone.c);
   for (let v = 1; v < 256; v++) CLASS[v] = 250;
@@ -215,11 +226,18 @@ export function createVoxelLayer(stage, { onUpdate = () => {}, onStatus = () => 
       + `${world.keys.length} chunks, ${(quads / 1e6).toFixed(2)}M faces`
       + (!building && lastMs ? ` · built in ${(lastMs / 1000).toFixed(1)} s` : ""));
   }
+  // A mesh the worker finished is always applied (the worker counts it as done even if a
+  // newer build started meanwhile; dropping it left stale chunks). Only meshes from before a
+  // reload or a dirt on/off reset (an older epoch) are thrown away. gen is for the status.
   worker.onmessage = e => {
     const m = e.data;
-    if (m.gen !== gen) return;
-    if (m.start) { floodMs = m.floodMs; left = m.todo; building = m.todo > 0; report(); return; }
-    if (m.done) { building = false; lastMs = m.ms; report(); return; }
+    if (m.epoch !== epoch) return;
+    if (m.start || m.done) {
+      if (m.gen !== gen) return;
+      if (m.start) { floodMs = m.floodMs; left = m.todo; building = m.todo > 0; }
+      else { building = false; lastMs = m.ms; }
+      report(); return;
+    }
     for (const { i, pos, col, idx } of m.out) {
       const old = meshes.get(i);
       if (old) { group.remove(old); old.geometry.dispose(); meshes.delete(i); quads -= old.userData.quads; }
@@ -233,16 +251,16 @@ export function createVoxelLayer(stage, { onUpdate = () => {}, onStatus = () => 
       mm.userData = { quads: idx.length / 6 };
       meshes.set(i, mm); group.add(mm); quads += idx.length / 6;
     }
-    left = m.left;
+    if (m.gen === gen) left = m.left;
     report();
     onUpdate();
   };
   function rebuild(reset) {
     if (!world) return;
     gen++;
-    if (reset) { for (const mm of meshes.values()) { group.remove(mm); mm.geometry.dispose(); } meshes.clear(); quads = 0; }
+    if (reset) { epoch++; for (const mm of meshes.values()) { group.remove(mm); mm.geometry.dispose(); } meshes.clear(); quads = 0; }
     building = true;
-    worker.postMessage({ gen, reset, clip: cut, hideDirt: !showDirt, DIRT, CLASS, COLORS, cam: lastCam });
+    worker.postMessage({ gen, epoch, reset, clip: cut, lo: cutLo, hideDirt: !showDirt, DIRT, CLASS, COLORS, cam: lastCam });
     report();
   }
   let timer = null, lastCam = [0, 0, 0];
@@ -296,7 +314,11 @@ export function createVoxelLayer(stage, { onUpdate = () => {}, onStatus = () => 
       start(keys, vox.buffer);
     },
     clear() { gen++; world = null; for (const mm of meshes.values()) { group.remove(mm); mm.geometry.dispose(); } meshes.clear(); quads = 0; report(); },
-    setCut(y) { const c = Math.min(1e9, y); if (c !== cut) { cut = c; later(); } },
+    // keep only the slab lo <= y < hi (solid lids where either cut passes through rock)
+    setCut(hi, lo = -1e9) {
+      const h = Math.min(1e9, hi), l = Math.max(-1e9, lo);
+      if (h !== cut || l !== cutLo) { cut = h; cutLo = l; later(); }
+    },
     setShowDirt(b) { if (b !== showDirt) { showDirt = b; rebuild(true); } },
     setVisible(b) { visible = b; canvas.style.display = b ? "block" : "none"; },
     // orbit: { yaw, pitch, c: [x, y, z] }, cam: { x, y, s }, W/H: canvas size in device pixels
