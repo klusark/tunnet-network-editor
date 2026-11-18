@@ -558,12 +558,16 @@ from the disassembly (re/reply_region.asm, 0x1402f6900-0x1402f7700).
   the air (vertical drops), 73 in rock; all 1095 hubs/filters on a floor or in a drop.
 - Not tested: whether the game loads edited chunk data.
 
-## Voxel viewer (tools/viewer/voxels.html, tools/voxel_data.py)
-- 3D view of a save's map voxels with its network on top (three.js 0.160 from unpkg).
+## Voxels in the viewer's 3D mode (tools/viewer/voxels.js, tools/voxel_data.py)
+- 3D mode has a "voxels" switch: the map's voxels are drawn with WebGL (three.js 0.160
+  from unpkg) on a canvas behind the 2D canvas, with an orthographic camera built from the
+  same orbit (yaw, pitch, centre, pan, zoom), so they line up with the nodes and cables
+  (which are drawn on top, not hidden by walls). The top of the Height (Y) range is the cut.
+  Live mode: voxels from a chosen save via the server; offline mode: from the opened file.
   The local server serves /api/saves (game saves + out/*.json) and /api/voxels?save=NAME:
   gzip binary, u32 header length + JSON header (chunk keys, nodes [x,y,z,type], edges,
   endpoint labels) + 32768 raw bytes per stored chunk (~7 MB gzipped, ~5-7 s to build,
-  cached by file time). Without the server, "Open file..." parses a save in the browser.
+  cached by file time). Offline, the opened save file's chunks are decoded in the browser.
 - Everything at full 0.5-unit detail. 15.2M voxel faces in slot_0, so the worker culls and
   merges: (1) greedy meshing, faces of one material class (dirt 1/3/10, hard rock 43/44,
   ...), direction and kind (ordinary / cut lid) that touch in a plane merge into one
@@ -573,10 +577,10 @@ from the disassembly (re/reply_region.asm, 0x1402f6900-0x1402f7700).
   chunks whose reached air (or their neighbours') changed are re-meshed, nearest the camera
   first. Dug network save: 7.15M quads with merging alone, 4.73M with classes + flood and no
   cut, 2.64M with the cut at -8; flood ~1-1.5 s, full mesh ~15-27 s in one worker.
-- Height cut to see inside: built into the meshes (blocks at or above the cut count as air), so
+- Cut: built into the meshes (blocks at or above the cut count as air), so
   cut rock and walls get a solid, darker lid instead of being see-through; only chunks the cut
-  passes through are re-meshed when it moves. The network overlay is clipped by a plane; "show dirt" off re-meshes with dirt as air,
-  leaving hard rock, bunkers and water; double-click moves the focus; "Go to endpoint".
+  passes through are re-meshed when it moves. "dirt" off re-meshes with dirt as air, leaving
+  hard rock, bunkers and water.
 - Material colours: dirt (1, 3, 10), hard rock (43, 44), metal (6, 8, 16), wood (14),
   water (18-21), stone / other.
 

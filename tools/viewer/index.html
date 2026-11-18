@@ -16,6 +16,7 @@
   #app { display: grid; grid-template-columns: 1fr 340px; height: 100%; }
   #stage { position: relative; overflow: hidden; }
   canvas { display: block; width: 100%; height: 100%; cursor: grab; touch-action: none; }
+  #cv { position: relative; z-index: 1; }        /* above the 3D voxel layer (voxels.js) */
   #zoomCtl { position: absolute; right: 12px; top: 12px; display: flex; flex-direction: column; gap: 6px; }
   #zoomCtl button { width: 40px; height: 40px; font-size: 20px; line-height: 1; padding: 0;
     background: rgba(22,27,32,.92); }
@@ -138,13 +139,18 @@
         <button data-view="front">Front (Z/Y)</button>
         <button data-view="3d">3D</button>
         <button id="fit">Fit</button>
-        <button onclick="window.open('voxels.html', '_blank')" title="Map voxels in 3D (tunnels, rock, dug dirt) with the network">Voxels</button>
       </div>
       <div class="row" id="row3d" style="margin-top:6px;display:none;gap:6px;flex-wrap:wrap;align-items:center">
         <button id="spin" title="Turn the network slowly">Spin</button>
         <button id="ortho0" title="Look from the side, level">Level</button>
         <button id="ortho1" title="Look from above at an angle">Above</button>
         <span class="note" style="margin:0">Drag to turn · right-drag or Shift+drag to move · wheel or pinch to zoom</span>
+      </div>
+      <div class="row" id="rowVox" style="margin-top:6px;display:none;gap:6px;flex-wrap:wrap;align-items:center">
+        <label title="Draw the map's voxels (rock, dirt, tunnels, bunkers) behind the network. The top of the height range below cuts the map, with solid lids where it cuts rock."><input type="checkbox" id="voxOn"> voxels</label>
+        <select id="voxSave" title="Save whose map voxels are drawn (live mode)" style="max-width:170px"></select>
+        <label title="Untick to see only hard rock, bunkers and water"><input type="checkbox" id="voxDirt" checked> dirt</label>
+        <span class="note" id="voxStatus" style="margin:0"></span>
       </div>
       <div style="margin-top:8px">
         <div class="row" style="justify-content:space-between"><span style="color:var(--muted)">Height (Y) range</span><span id="yrange"></span></div>
@@ -516,8 +522,15 @@ function requestFrame() {
 function draw() {
   const W = cv.width, H = cv.height, dpr = window.devicePixelRatio || 1;
   ctx.setTransform(1, 0, 0, 1, 0, 0);
-  ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue("--bg");
-  ctx.fillRect(0, 0, W, H);
+  const bgCol = getComputedStyle(document.documentElement).getPropertyValue("--bg");
+  if (voxShown()) {                  // voxels behind: same camera, 2D canvas stays transparent
+    vox.setCut(yHi >= yBounds[1] ? 1e9 : yHi);
+    vox.render(orbit, cam, W, H, bgCol);
+    ctx.clearRect(0, 0, W, H);
+  } else {
+    ctx.fillStyle = bgCol;
+    ctx.fillRect(0, 0, W, H);
+  }
   const scr = new Map();
   for (const n of nodes.values()) if (visible(n)) scr.set(n.e, toScreen(proj(n)));
   // 3D depth cue: far things fade (alpha 0.35 .. 1)
@@ -1585,8 +1598,62 @@ document.querySelectorAll("[data-view]").forEach(b => b.onclick = () => {
   view = b.dataset.view; store("view", view);
   document.querySelectorAll("[data-view]").forEach(x => x.classList.toggle("on", x === b));
   document.getElementById("row3d").style.display = view === "3d" ? "flex" : "none";
+  document.getElementById("rowVox").style.display = view === "3d" ? "flex" : "none";
+  syncVox();
   fit();
 });
+
+// ---------- voxels in 3D mode (voxels.js) ----------
+// The save's map voxels, drawn with WebGL behind the 2D canvas with the same orbit camera.
+// Live mode loads them from the server (/api/voxels, chosen save); offline mode from the
+// opened save file. The top of the height range is the cut.
+let vox = null, voxSource = null, voxLoading = false;
+const voxShown = () => !!(vox && view === "3d" && document.getElementById("voxOn").checked && vox.loaded);
+async function syncVox() {
+  const on = view === "3d" && document.getElementById("voxOn").checked;
+  if (vox) vox.setVisible(on);
+  if (!on) { draw(); return; }
+  if (!vox) {
+    const m = await import("./voxels.js");
+    vox = m.createVoxelLayer(document.getElementById("stage"), {
+      onUpdate: requestFrame, onStatus: s => { document.getElementById("voxStatus").textContent = s; } });
+    vox.setVisible(true);
+  }
+  vox.setShowDirt(document.getElementById("voxDirt").checked);
+  const off = window.OfflineBackend && OfflineBackend.active;
+  const want = off ? OfflineBackend.base : document.getElementById("voxSave").value;
+  if (want && want !== voxSource && !voxLoading) {
+    voxLoading = true;
+    document.getElementById("voxStatus").textContent = "loading voxels…";
+    try {
+      if (off) vox.loadSave(want);
+      else {
+        const r = await fetch("/api/voxels?save=" + encodeURIComponent(want));
+        if (!r.ok) throw new Error(r.status);
+        vox.loadBinary(await r.arrayBuffer());
+      }
+      voxSource = want;
+    } catch (e) { document.getElementById("voxStatus").textContent = "could not load voxels: " + e.message; }
+    voxLoading = false;
+  }
+  draw();
+}
+async function listVoxSaves() {
+  const sel = document.getElementById("voxSave");
+  if (window.OfflineBackend && OfflineBackend.active) { sel.style.display = "none"; return; }
+  try {
+    const list = await (await fetch("/api/saves")).json();
+    const keep = load("voxSave", "slot_0.json");
+    sel.innerHTML = list.map(n => `<option>${n}</option>`).join("");
+    if (list.includes(keep)) sel.value = keep;
+    sel.style.display = "";
+  } catch (e) { sel.style.display = "none"; }
+}
+document.getElementById("voxOn").checked = load("voxOn", false);
+document.getElementById("voxOn").onchange = e => { store("voxOn", e.target.checked); syncVox(); };
+document.getElementById("voxDirt").onchange = () => syncVox();
+document.getElementById("voxSave").onchange = e => { store("voxSave", e.target.value); syncVox(); };
+listVoxSaves().then(syncVox);
 document.getElementById("spin").onclick = () => {
   orbit.spin = !orbit.spin; if (orbit.spin) pivotOnViewport();
   document.getElementById("spin").classList.toggle("on", orbit.spin); requestFrame();
@@ -1765,6 +1832,7 @@ window.addEventListener("resize", resize);
 view = load("view", "top");
 document.querySelectorAll("[data-view]").forEach(x => x.classList.toggle("on", x.dataset.view === view));
 document.getElementById("row3d").style.display = view === "3d" ? "flex" : "none";
+document.getElementById("rowVox").style.display = view === "3d" ? "flex" : "none";
 resize();
 
 // ---------- offline mode (save file + in-browser simulator) ----------
@@ -1787,6 +1855,7 @@ async function openSave(file) {
   traffic.clear(); simEdits = []; renderSimEdits(); selected = null; selChain = null; replay = null;
   packets = []; anims = []; seq = -1; rev = null; needsFit = true;
   document.getElementById("simOut").innerHTML = ""; document.getElementById("expOut").innerHTML = "";
+  listVoxSaves().then(syncVox);      // voxels now come from this file
   const story = save.story && save.story.state, want = OB.data.story_state;
   document.getElementById("srcNote").innerHTML = `Simulating <b>${esc(file.name)}</b> in this browser (nothing is uploaded). `
     + `Edits change the simulation; Export save downloads a file.`
