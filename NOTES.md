@@ -613,6 +613,31 @@ from the disassembly (re/reply_region.asm, 0x1402f6900-0x1402f7700).
 - Material colours: dirt (1, 3, 10), hard rock (43, 44), metal (6, 8, 16), wood (14),
   water (18-21), stone / other.
 
+## 3D view: walls hide the network, voxel inspector, dig plan (index.html, voxels.js, digplan.py)
+- Walls hide the network (3D + voxels, "hide behind walls"): after each new voxel frame
+  voxels.js renders the voxel meshes again with a depth shader (distance from the camera in
+  1/64 units, packed RGB; half resolution above 2.4 Mpx) and reads it back (depthAt). proj3
+  returns depth3 as a third value through toScreen/chainPoint/anchorPoint/alongPath;
+  occluded() hides a point when a voxel surface is more than 0.4 units nearer (slack for
+  things on floors and walls). Cables and chain lines are sampled every 3 px and drawn only
+  where visible; nodes, labels, packets and picking skip hidden points; the selected node
+  stays, faint. The voxel layer draws only when the camera or meshes change. Live map from
+  above, uncut: 1,086 of 1,160 nodes on screen hidden; depth pass ~17 ms per camera move
+  with 4.7M faces. Ray hit points project back within 0.4 px; read-back depth within 0.04.
+- Alt/Ctrl+click a voxel in 3D: raycast against the chunk meshes, step 0.25 into the hit
+  face, the worker gives the value: voxel/chunk/world coords, value, material, diggable,
+  dig-plan flag, nearest node; a yellow box marks it.
+- Dig plan (3D row "dig plan", GET /api/digplan?save=out/X.json&base=slot_0.json,
+  tools/viewer/digplan.py): dug = solid in the base and air in the save (direct_final vs
+  slot_0: 238,654 voxels in 728 chunks); blocked = nodes/cables whose corridor/node box
+  touches non-dirt (329 of 24,725: 145 hard rock, 109 metal, 56 stone/other, 16 wood, 3
+  unstored chunk); an undug save falls back to dig.plan on the base. Dug voxels (and faces
+  onto dug air) tinted cyan, blocking voxels red; x-ray glow of the dug volume; red boxes
+  on blocked items; "next blocked ›" visits each. ~12 s server-side, cached by file times.
+- Limits: in live mode the drawn network is the game's even with a save's voxels (open the
+  save offline to see its own nodes); collapsed relay chains are straight lines, so with
+  voxels mostly hidden (untick "collapse relay chains" for real cable runs).
+
 ## Floor-level presets (tools/floor_levels.py -> tools/viewer/floor_levels.json)
 - Floors of the prefab structures: in each BunkerRoom chunk (save chunk_types: room kinds
   like MilitaryOutpost, Supermarket, Hub, AbandonedLab..., some with their endpoint's

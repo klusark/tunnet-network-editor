@@ -152,8 +152,18 @@
         <select id="voxSave" title="Where the map voxels come from: the running game (live) or a save" style="max-width:170px"></select>
         <button id="voxReload" title="Read the voxels again (e.g. after digging in the game)">↻</button>
         <label title="Untick to see only hard rock, bunkers and water"><input type="checkbox" id="voxDirt" checked> dirt</label>
+        <label title="Hide nodes, cables, packets and labels that are behind voxels (the selected node stays, faint)"><input type="checkbox" id="voxOcc" checked> hide behind walls</label>
         <span class="note" id="voxStatus" style="margin:0"></span>
       </div>
+      <div class="row" id="rowDig" style="margin-top:6px;display:none;gap:6px;flex-wrap:wrap;align-items:center">
+        <label title="Show what a generated save dug (cyan) compared with the map it was made from, and the nodes / cables still blocked by something that is not dirt (red boxes, red voxels). Computed by the server (tools/viewer/digplan.py), ~15 s the first time."><input type="checkbox" id="digOn"> dig plan</label>
+        <select id="digSave" title="Generated save (out/)" style="max-width:150px"></select>
+        <span class="note" style="margin:0">from</span>
+        <select id="digBase" title="The map the save was made from" style="max-width:110px"></select>
+        <label title="Show the dug tunnels through the rock as a faint glow"><input type="checkbox" id="digXray" checked> x-ray</label>
+        <div class="note" id="digStatus" style="margin:0;width:100%"></div>
+      </div>
+      <div class="note" id="voxInfo" style="margin-top:4px;display:none">Alt+click (or Ctrl+click) a voxel to inspect it.</div>
       <div style="margin-top:8px">
         <div class="row" style="justify-content:space-between"><span style="color:var(--muted)">Height (Y) range</span><span id="yrange"></span></div>
         <input type="range" id="ymin"><input type="range" id="ymax">
@@ -296,9 +306,9 @@ function computeChains() {
     }
   }
 }
-function chainPoint(ch, s) {
+function chainPoint(ch, s) {  // [x, y] in the projected plane (+ depth3 in 3D)
   const A = proj(nodes.get(ch.a)), B = proj(nodes.get(ch.b));
-  return [A[0] + (B[0] - A[0]) * s, A[1] + (B[1] - A[1]) * s];
+  return [A[0] + (B[0] - A[0]) * s, A[1] + (B[1] - A[1]) * s, A[2] + (B[2] - A[2]) * s];
 }
 function chainOf(e) { return opts.collapse ? relayChain.get(e) : null; }  // hidden relay?
 // Where a packet at (e, port, slot) sits on its chain: s in [0,1] from a, and its heading.
@@ -315,12 +325,14 @@ function load(k, d) { try { const v = localStorage.getItem("tln." + k); return v
 // ---------- projection ----------
 // 3D: orthographic orbit around the network's centre. yaw turns around the vertical (Y)
 // axis, pitch tilts the view down; depth3 is larger for points nearer the viewer.
+// proj3 returns [x, y, depth3]: the depth rides along through toScreen, chainPoint,
+// anchorPoint and alongPath so the voxel layer can hide what is behind walls (occluded()).
 const orbit = { yaw: load("orbitYaw", -0.7), pitch: load("orbitPitch", 0.55), c: [0, 0, 0], spin: false };
 function proj3(n) {
   const dx = n.x - orbit.c[0], dy = n.y - orbit.c[1], dz = n.z - orbit.c[2];
   const cy = Math.cos(orbit.yaw), sy = Math.sin(orbit.yaw), cp = Math.cos(orbit.pitch), sp = Math.sin(orbit.pitch);
   const x1 = cy * dx - sy * dz, z1 = sy * dx + cy * dz;
-  return [x1, -(cp * dy - sp * z1)];
+  return [x1, -(cp * dy - sp * z1), sp * dy + cp * z1];
 }
 function depth3(n) {
   const dx = n.x - orbit.c[0], dy = n.y - orbit.c[1], dz = n.z - orbit.c[2];
@@ -358,7 +370,38 @@ function proj(n) {  // world -> 2D plane (before camera)
   if (view === "side") return [n.x, -n.y];
   return [n.z, -n.y];
 }
-function toScreen(p) { return [(p[0] - cam.x) * cam.s + cv.width / 2, (p[1] - cam.y) * cam.s + cv.height / 2]; }
+function toScreen(p) { return [(p[0] - cam.x) * cam.s + cv.width / 2, (p[1] - cam.y) * cam.s + cv.height / 2, p[2]]; }
+// Hidden behind voxels (3D with voxels on): the voxel layer reads back the depth of what it
+// drew (voxels.js depthAt: distance from the camera, which sits DIST in front of the
+// orbit centre); a point is hidden when a voxel surface is more than OCC_EPS nearer. The
+// slack keeps nodes and cables lying on a floor or wall visible.
+let occ = null;                       // (x, y) -> voxel depth at that canvas pixel, or null
+const DIST = 3000, OCC_EPS = 0.4;
+function occluded(s) { return !!occ && occ(s[0], s[1]) < DIST - s[2] - OCC_EPS; }
+// add a line a -> b (screen points with depth) to the current path, leaving out the parts
+// behind voxels (sampled every 3 px of the part on screen)
+function segPath(a, b) {
+  if (!occ) { ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); return; }
+  const dx = b[0] - a[0], dy = b[1] - a[1], dd = b[2] - a[2];
+  let t0 = 0, t1 = 1;
+  for (const [p, q] of [[-dx, a[0]], [dx, cv.width - a[0]], [-dy, a[1]], [dy, cv.height - a[1]]]) {
+    if (p === 0) { if (q < 0) return; continue; }
+    const r = q / p;
+    if (p < 0) { if (r > t1) return; if (r > t0) t0 = r; } else { if (r < t0) return; if (r < t1) t1 = r; }
+  }
+  const n = Math.max(1, Math.ceil(Math.hypot(dx, dy) * (t1 - t0) / 3)), h = (t1 - t0) / n;
+  let run = -1;
+  for (let i = 0; i <= n; i++) {
+    const t = t0 + h * i;
+    const vis = !(occ(a[0] + dx * t, a[1] + dy * t) < DIST - (a[2] + dd * t) - OCC_EPS);
+    if (vis && run < 0) run = Math.max(t0, t - h / 2);
+    if (run >= 0 && (!vis || i === n)) {
+      const e = vis ? t : t - h / 2;
+      if (e > run) { ctx.moveTo(a[0] + dx * run, a[1] + dy * run); ctx.lineTo(a[0] + dx * e, a[1] + dy * e); }
+      run = -1;
+    }
+  }
+}
 function inY(n) { return n.y >= yLo && n.y <= yHi; }
 function visible(n) { return inY(n) && !chainOf(n.e); }
 function chainVisible(ch) { return inY(nodes.get(ch.a)) || inY(nodes.get(ch.b)); }
@@ -414,9 +457,9 @@ function anchorPoint(a) {  // -> point in the projected plane
   const P = proj(n);
   if (a.center) return P;
   const port = n.ports[a.port], peer = port && port[0] != null ? nodes.get(port[0]) : null;
-  if (!peer) return [P[0] + (a.t > 0.3 ? 1.5 : 0.8), P[1]];
+  if (!peer) return [P[0] + (a.t > 0.3 ? 1.5 : 0.8), P[1], P[2]];
   const Q = proj(peer);
-  return [P[0] + (Q[0] - P[0]) * a.t, P[1] + (Q[1] - P[1]) * a.t];
+  return [P[0] + (Q[0] - P[0]) * a.t, P[1] + (Q[1] - P[1]) * a.t, P[2] + (Q[2] - P[2]) * a.t];
 }
 function alongPath(path, u) {
   const pts = path.map(anchorPoint);
@@ -429,7 +472,8 @@ function alongPath(path, u) {
   for (let i = 0; i < seg.length; i++) {
     if (want <= seg[i] || i === seg.length - 1) {
       const f = seg[i] ? Math.min(1, want / seg[i]) : 1;
-      return [pts[i][0] + (pts[i + 1][0] - pts[i][0]) * f, pts[i][1] + (pts[i + 1][1] - pts[i][1]) * f];
+      return [pts[i][0] + (pts[i + 1][0] - pts[i][0]) * f, pts[i][1] + (pts[i + 1][1] - pts[i][1]) * f,
+              pts[i][2] + (pts[i + 1][2] - pts[i][2]) * f];
     }
     want -= seg[i];
   }
@@ -529,8 +573,10 @@ function draw() {
   if (voxShown()) {                  // voxels behind: same camera, 2D canvas stays transparent
     vox.setCut(yHi >= yBounds[1] ? 1e9 : yHi, yLo <= yBounds[0] ? -1e9 : yLo);
     vox.render(orbit, cam, W, H, bgCol);
+    occ = document.getElementById("voxOcc").checked ? (x, y) => vox.depthAt(x, y) : null;
     ctx.clearRect(0, 0, W, H);
   } else {
+    occ = null;
     ctx.fillStyle = bgCol;
     ctx.fillRect(0, 0, W, H);
   }
@@ -558,7 +604,7 @@ function draw() {
       const key = Math.min(n.e, peer) + ":" + Math.max(n.e, peer);
       ctx.strokeStyle = busy.has(key) ? "#5b6b7a" : "#2c353e";
       if (fog) ctx.globalAlpha = fog((depth3(n) + depth3(nodes.get(peer))) / 2);
-      ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke();
+      ctx.beginPath(); segPath(a, b); ctx.stroke();
       ctx.globalAlpha = 1;
     });
   }
@@ -575,7 +621,7 @@ function draw() {
       ctx.lineWidth = Math.max(1, dpr * (hl ? 3 : 1.6));
       ctx.strokeStyle = hl ? "#9fb3c8" : busyChain.has(ch.id) ? "#56677a" : "#323d48";
       if (fog && !hl) ctx.globalAlpha = fog((depth3(nodes.get(ch.a)) + depth3(nodes.get(ch.b))) / 2);
-      ctx.beginPath(); ctx.moveTo(A[0], A[1]); ctx.lineTo(B[0], B[1]); ctx.stroke();
+      ctx.beginPath(); segPath(A, B); ctx.stroke();
       ctx.globalAlpha = 1;
       const len = Math.hypot(B[0] - A[0], B[1] - A[1]);
       if (len / ch.cables > 7 * dpr) {  // room for a tick per relay
@@ -583,13 +629,14 @@ function draw() {
         ctx.lineWidth = 1; ctx.beginPath();
         for (let i = 1; i < ch.cables; i++) {
           const x = A[0] + (B[0] - A[0]) * i / ch.cables, y = A[1] + (B[1] - A[1]) * i / ch.cables;
+          if (occ && occluded([x, y, A[2] + (B[2] - A[2]) * i / ch.cables])) continue;
           ctx.moveTo(x - nx, y - ny); ctx.lineTo(x + nx, y + ny);
         }
         ctx.stroke();
       }
-      if (ch.deadEnd) shape(ctx, "circle", B[0], B[1], 2.5 * dpr, "#fc8181");  // free port: wire goes nowhere
-      if (ch.loose) shape(ctx, "circle", A[0], A[1], 2.5 * dpr, "#fc8181");
-      if ((hl || len > 160 * dpr) && cam.s > 0.8) {
+      if (ch.deadEnd && !occluded(B)) shape(ctx, "circle", B[0], B[1], 2.5 * dpr, "#fc8181");  // free port: wire goes nowhere
+      if (ch.loose && !occluded(A)) shape(ctx, "circle", A[0], A[1], 2.5 * dpr, "#fc8181");
+      if ((hl || len > 160 * dpr) && cam.s > 0.8 && !occluded([(A[0] + B[0]) / 2, (A[1] + B[1]) / 2, (A[2] + B[2]) / 2])) {
         ctx.fillStyle = hl ? "#d6dde3" : "#5f6e7c";
         ctx.fillText(`${ch.relays.length} relays · ${ch.cables} ticks`, (A[0] + B[0]) / 2 + 4 * dpr, (A[1] + B[1]) / 2 - 4 * dpr);
       }
@@ -611,8 +658,8 @@ function draw() {
     const shown = e => { const rc = chainOf(e); return rc ? chainVisible(rc.ch) : scr.has(e); };
     for (const a of anims) {
       if (!shown(a.home) && !(a.path.length > 1 && shown(a.path[0].e))) continue;
-      const [px, py] = alongPath(a.path, a.kind === "move" ? e : 1);
-      const [x, y] = toScreen([px, py]);
+      const [x, y, pd] = toScreen(alongPath(a.path, a.kind === "move" ? e : 1));
+      if (occ && occluded([x, y, pd])) continue;
       const p = a.p;
       const hit = findRe ? (matchAddr(p[4]) || matchAddr(p[5])) : true;
       const fade = a.kind === "in" ? e : a.kind === "out" ? 1 - e : 1;
@@ -630,7 +677,10 @@ function draw() {
   const order = fog ? [...nodes.values()].filter(n => scr.has(n.e)).map(n => [depth3(n), n]).sort((p, q) => p[0] - q[0]) : null;
   for (const n of order ? order.map(x => x[1]) : nodes.values()) {
     const a = scr.get(n.e); if (!a) continue;
+    const behind = occ && occluded(a);   // behind voxels: only the selected node shows, faint
+    if (behind && n !== selected) continue;
     if (fog) ctx.globalAlpha = fog(depth3(n));
+    if (behind) ctx.globalAlpha = 0.3;
     const st = TYPE_STYLE[n.type] || TYPE_STYLE.other;
     const hl = n === selected || n === hover || (findRe && matchAddr(n.addr));
     const r = st.size * dpr * (hl ? 1.5 : 1) * Math.min(1.6, Math.max(0.7, cam.s / 3));
@@ -1630,6 +1680,7 @@ document.querySelectorAll("[data-view]").forEach(b => b.onclick = () => {
   document.querySelectorAll("[data-view]").forEach(x => x.classList.toggle("on", x === b));
   document.getElementById("row3d").style.display = view === "3d" ? "flex" : "none";
   document.getElementById("rowVox").style.display = view === "3d" ? "flex" : "none";
+  syncDigRow();
   syncVox();
   fit();
 });
@@ -1649,6 +1700,7 @@ async function syncVox() {
     vox = m.createVoxelLayer(document.getElementById("stage"), {
       onUpdate: requestFrame, onStatus: s => { document.getElementById("voxStatus").textContent = s; } });
     vox.setVisible(true);
+    vox.setOcclusion(document.getElementById("voxOcc").checked);
   }
   vox.setShowDirt(document.getElementById("voxDirt").checked);
   const off = window.OfflineBackend && OfflineBackend.active;
@@ -1667,6 +1719,7 @@ async function syncVox() {
     } catch (e) { document.getElementById("voxStatus").textContent = "could not load voxels: " + e.message; }
     voxLoading = false;
   }
+  if (document.getElementById("digOn").checked && !digPlan) syncDig();
   draw();
 }
 // live game: when the server's voxel revision moves on (map edited, explosion, save loaded),
@@ -1706,7 +1759,108 @@ document.getElementById("voxOn").onchange = e => { store("voxOn", e.target.check
 document.getElementById("voxDirt").onchange = () => syncVox();
 document.getElementById("voxReload").onclick = () => { voxSource = null; syncVox(); };
 document.getElementById("voxSave").onchange = e => { store("voxSave", e.target.value); syncVox(); };
+document.getElementById("voxOcc").checked = load("voxOcc", true);
+document.getElementById("voxOcc").onchange = e => { store("voxOcc", e.target.checked); if (vox) vox.setOcclusion(e.target.checked); draw(); };
 listVoxSaves().then(syncVox);
+
+// Alt+click (or Ctrl+click) on a voxel in 3D: raycast against the voxel meshes (voxels.js
+// pickVoxel), show the voxel's coordinates, value, material and the nearest node.
+const VOX_MAT = v => v === 0 ? ["air", "air"] : [1, 3, 10].includes(v) ? ["dirt", "dirt (diggable)"]
+  : [43, 44].includes(v) ? ["hard", "hard rock"] : [6, 8, 16].includes(v) ? ["metal", "metal"]
+  : v === 14 ? ["wood", "wood"] : v >= 18 && v <= 21 ? ["water", "water"] : ["stone", "stone / other"];
+async function inspectVoxel(e) {
+  const el = document.getElementById("voxInfo");
+  const [px, py] = canvasPx(e.clientX, e.clientY);
+  const r = await vox.pickVoxel(px, py, cv.width, cv.height);
+  el.style.display = "";
+  if (!r) { vox.setMarker(null); el.innerHTML = "No voxel under the pointer. Alt+click (or Ctrl+click) a voxel to inspect it."; draw(); return; }
+  vox.setMarker(r.voxel);
+  const [vx, vy, vz] = r.voxel, c = [(vx + 0.5) * 0.5, (vy + 0.5) * 0.5, (vz + 0.5) * 0.5];
+  let best = null, bd = Infinity;
+  for (const n of nodes.values()) { const d = Math.hypot(n.x - c[0], n.y - c[1], n.z - c[2]); if (d < bd) { bd = d; best = n; } }
+  const [, mat] = r.value == null ? [null, "not stored (generated by the game)"] : VOX_MAT(r.value);
+  const dig = r.value != null && [1, 3, 10].includes(r.value);
+  const face = ["+X", "-X", "+Y", "-Y", "+Z", "-Z"][[[1,0,0],[-1,0,0],[0,1,0],[0,-1,0],[0,0,1],[0,0,-1]].findIndex(v => v.every((x, i) => x === r.normal[i]))] || "?";
+  const f = (x, k = 2) => (+x).toFixed(k);
+  el.innerHTML = `<b>voxel</b> ${vx}, ${vy}, ${vz} · world ${f(vx * 0.5, 1)}…${f(vx * 0.5 + 0.5, 1)}, ${f(vy * 0.5, 1)}…${f(vy * 0.5 + 0.5, 1)}, ${f(vz * 0.5, 1)}…${f(vz * 0.5 + 0.5, 1)}`
+    + ` · chunk ${vx >> 5}, ${vy >> 5}, ${vz >> 5} · hit ${face} face at ${r.point.map(x => f(x)).join(", ")}<br>`
+    + `<b>value</b> ${r.value ?? "—"} · <b>${esc(mat)}</b> · ${dig ? '<span style="color:var(--accent)">diggable dirt</span>' : "not diggable dirt"}`
+    + (r.flag === 1 ? ' · <span style="color:#46d7ff">dug by the plan</span>' : r.flag === 2 ? ' · <span style="color:var(--bad)">blocks the plan</span>' : "")
+    + (best ? `<br><b>nearest node</b> ${esc(describe(best.e))} at ${f(bd)} units (${f(best.x)}, ${f(best.y)}, ${f(best.z)})` : "")
+    + ` <button id="voxInfoX" title="Clear" style="padding:0 6px">×</button>`;
+  document.getElementById("voxInfoX").onclick = () => { vox.setMarker(null); el.style.display = "none"; draw(); };
+  draw();
+}
+
+// Dig plan of a generated save (server /api/digplan, tools/viewer/digplan.py): voxels the
+// save dug compared with its base map (cyan faces + x-ray glow) and the nodes / cables that
+// still touch something that is not dirt (red boxes; the blocking voxels red).
+let digPlan = null, digKey = null, digLoading = false;
+function syncDigRow() {
+  const off = window.OfflineBackend && OfflineBackend.active;
+  document.getElementById("rowDig").style.display = view === "3d" && !off ? "flex" : "none";
+  if (view !== "3d") document.getElementById("voxInfo").style.display = "none";
+}
+async function listDigSaves() {
+  try {
+    const list = await (await fetch("/api/saves")).json();
+    const outs = list.filter(n => n.startsWith("out/")), bases = list.filter(n => n !== "live" && !n.startsWith("out/"));
+    const s = document.getElementById("digSave"), b = document.getElementById("digBase");
+    s.innerHTML = outs.map(n => `<option>${esc(n)}</option>`).join("");
+    b.innerHTML = bases.map(n => `<option>${esc(n)}</option>`).join("");
+    s.value = outs.includes(load("digSave", "out/direct_final.json")) ? load("digSave", "out/direct_final.json") : outs[0] || "";
+    b.value = bases.includes(load("digBase", "slot_0.json")) ? load("digBase", "slot_0.json") : bases[0] || "";
+  } catch (e) {}
+}
+function digSummary(p) {
+  const by = Object.entries(p.blocked_by).sort((a, b) => b[1] - a[1]).map(([k, v]) => `${v} ${esc(k)}`).join(", ");
+  const items = p.items_ok + p.items_blocked;
+  return `<span style="color:#46d7ff">■</span> ${p.dug_voxels.toLocaleString()} voxels dug in ${p.dug_chunks} chunks (${(p.dug_voxels / 8).toLocaleString()} cubic units`
+    + `${p.mode === "plan" ? ", planned: save not dug yet" : ""}${p.filled_voxels ? `; ${p.filled_voxels} filled` : ""})`
+    + ` · <span style="color:var(--bad)">■</span> ${p.items_blocked} of ${items.toLocaleString()} nodes + cables blocked${by ? ` (${by})` : ""}`
+    + (p.blocked.length ? ` <a href="#" id="digNext" title="Turn to the next blocked item">next blocked ›</a>` : "");
+}
+let digNextI = 0;
+function showBlocked(i) {             // centre the 3D view on blocked item i
+  const it = digPlan.blocked[i % digPlan.blocked.length];
+  const c = [(it.a[0] + it.b[0]) / 2, (it.a[1] + it.b[1]) / 2 + 0.75, (it.a[2] + it.b[2]) / 2];
+  orbit.c = c; cam.x = 0; cam.y = 0; cam.s = Math.max(cam.s, 12);
+  document.getElementById("digStatus").querySelector("#digNextInfo")?.remove();
+  const s = document.createElement("span"); s.id = "digNextInfo";
+  s.textContent = ` · #${i % digPlan.blocked.length + 1}: ${it.what} ${it.ids.join("-")} by ${Object.entries(it.by).map(([k, v]) => `${k} ×${v}`).join(", ")}`;
+  document.getElementById("digStatus").append(s);
+  draw();
+}
+async function syncDig() {
+  const on = document.getElementById("digOn").checked;
+  const st = document.getElementById("digStatus");
+  if (!on) { if (vox && digPlan) vox.setDigPlan(null); digPlan = null; digKey = null; st.textContent = ""; draw(); return; }
+  if (!voxShown()) { st.textContent = "turn voxels on first"; return; }
+  const save = document.getElementById("digSave").value, base = document.getElementById("digBase").value;
+  const key = save + "|" + base;
+  if (key === digKey || digLoading) return;
+  digLoading = true;
+  st.textContent = `computing the dig plan of ${save} from ${base}… (~15 s the first time)`;
+  try {
+    const r = await fetch(`/api/digplan?save=${encodeURIComponent(save)}&base=${encodeURIComponent(base)}`);
+    const p = await r.json();
+    if (!r.ok) throw new Error(p.error || r.status);
+    if (!document.getElementById("digOn").checked) return;
+    digPlan = p; digKey = key; digNextI = 0;
+    vox.setDigPlan(p); vox.setXray(document.getElementById("digXray").checked);
+    st.innerHTML = digSummary(p);
+    const nx = document.getElementById("digNext");
+    if (nx) nx.onclick = ev => { ev.preventDefault(); showBlocked(digNextI++); };
+  } catch (e) { st.textContent = "could not get the dig plan: " + e.message; }
+  finally { digLoading = false; }
+  if (document.getElementById("digSave").value + "|" + document.getElementById("digBase").value !== digKey && document.getElementById("digOn").checked) syncDig();
+  draw();
+}
+document.getElementById("digOn").onchange = syncDig;
+document.getElementById("digSave").onchange = e => { store("digSave", e.target.value); syncDig(); };
+document.getElementById("digBase").onchange = e => { store("digBase", e.target.value); syncDig(); };
+document.getElementById("digXray").onchange = e => { if (vox) vox.setXray(e.target.checked); draw(); };
+listDigSaves();
 document.getElementById("spin").onclick = () => {
   orbit.spin = !orbit.spin; if (orbit.spin) pivotOnViewport();
   document.getElementById("spin").classList.toggle("on", orbit.spin); requestFrame();
@@ -1751,8 +1905,8 @@ function pick(e, radius = 10) {  // nearest visible node within `radius` css px 
   let best = null, bd = (radius * dpr) ** 2;
   for (const n of nodes.values()) {
     if (!visible(n)) continue;
-    const [x, y] = toScreen(proj(n)); const d = (x - mx) ** 2 + (y - my) ** 2;
-    if (d < bd) { bd = d; best = n; }
+    const q = toScreen(proj(n)), d = (q[0] - mx) ** 2 + (q[1] - my) ** 2;
+    if (d < bd && !occluded(q)) { bd = d; best = n; }
   }
   return best;
 }
@@ -1763,11 +1917,11 @@ function pickChain(e, radius = 6) {  // nearest visible relay-chain line within 
   let best = null, bd = radius * dpr;
   for (const ch of chains) {
     if (!chainVisible(ch)) continue;
-    const [ax, ay] = toScreen(chainPoint(ch, 0)), [bx, by] = toScreen(chainPoint(ch, 1));
+    const A = toScreen(chainPoint(ch, 0)), B = toScreen(chainPoint(ch, 1)), [ax, ay] = A, [bx, by] = B;
     const vx = bx - ax, vy = by - ay, L = vx * vx + vy * vy;
     const t = L ? Math.max(0, Math.min(1, ((mx - ax) * vx + (my - ay) * vy) / L)) : 0;
     const d = Math.hypot(ax + vx * t - mx, ay + vy * t - my);
-    if (d < bd) { bd = d; best = ch; }
+    if (d < bd && !occluded([ax + vx * t, ay + vy * t, A[2] + (B[2] - A[2]) * t])) { bd = d; best = ch; }
   }
   return best;
 }
@@ -1836,6 +1990,7 @@ function endPointer(e) {
   if (pointers.size === 1) startPan([...pointers.values()][0], true);  // pinch -> keep panning, no tap
   else if (pointers.size === 0) { gesture = null; cv.classList.remove("dragging"); }
   if (wasTap && e.type === "pointerup" && placeMode) { placeAt(e); return; }
+  if (wasTap && e.type === "pointerup" && (e.altKey || e.ctrlKey) && voxShown()) { inspectVoxel(e); return; }
   if (wasTap && e.type === "pointerup") {
     const r = e.pointerType === "touch" ? 22 : 10;
     const n = pick(e, r);
@@ -1886,6 +2041,7 @@ view = load("view", "top");
 document.querySelectorAll("[data-view]").forEach(x => x.classList.toggle("on", x.dataset.view === view));
 document.getElementById("row3d").style.display = view === "3d" ? "flex" : "none";
 document.getElementById("rowVox").style.display = view === "3d" ? "flex" : "none";
+syncDigRow();
 resize();
 
 // ---------- offline mode (save file + in-browser simulator) ----------
@@ -1909,6 +2065,7 @@ async function openSave(file) {
   packets = []; anims = []; seq = -1; rev = null; needsFit = true;
   document.getElementById("simOut").innerHTML = ""; document.getElementById("expOut").innerHTML = "";
   listVoxSaves().then(syncVox);      // voxels now come from this file
+  syncDigRow();
   const story = save.story && save.story.state, want = OB.data.story_state;
   document.getElementById("srcNote").innerHTML = `Simulating <b>${esc(file.name)}</b> in this browser (nothing is uploaded). `
     + `Edits change the simulation; Export save downloads a file.`

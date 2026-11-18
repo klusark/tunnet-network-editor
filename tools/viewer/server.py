@@ -12,6 +12,7 @@ network once right after each tick, when the tick's writes are complete.
   /api/drops          every dropped packet seen since the server started (no paths)
   /api/events         game events seen (map edits, builds, wiring, saves, loads)
   /api/voxels?save=live[&since=REV]  map chunks from game memory (only those changed after REV)
+  /api/digplan?save=out/X.json&base=slot_0.json  voxels a generated save dug + blocked spots
   /api/drop?id=N      one drop with the full path of the packet up to where it was dropped
   /api/traffic?e=N    what endpoint N sent and received (rates, gaps, destinations, spam)
 
@@ -41,6 +42,7 @@ import reply_rules as RR  # noqa: E402
 import sim as SIM  # noqa: E402
 import save_export as SX  # noqa: E402
 import voxel_data as VD  # noqa: E402
+import digplan as DP  # noqa: E402  (tools/viewer/digplan.py)
 
 DROP_CLAIM_TICKS = 4  # how long a drop waits for its packet's track before giving up
 
@@ -689,6 +691,24 @@ class Handler(SimpleHTTPRequestHandler):
                 body = VD.build(path)
             self.send_response(200)
             self.send_header("Content-Type", "application/octet-stream")
+            self.send_header("Content-Encoding", "gzip")
+            self.send_header("Cache-Control", "no-store")
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+            return
+        if url.path == "/api/digplan":  # what a generated save dug, and what blocks it (digplan.py)
+            q = parse_qs(url.query)
+            try:
+                body = DP.payload(q.get("save", [""])[0], q.get("base", ["slot_0.json"])[0])
+            except ValueError as ex:
+                return self._reply(404, {"error": str(ex)})
+            except Exception as ex:
+                import traceback
+                traceback.print_exc()
+                return self._reply(500, {"error": f"{type(ex).__name__}: {ex}"})
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
             self.send_header("Content-Encoding", "gzip")
             self.send_header("Cache-Control", "no-store")
             self.send_header("Content-Length", str(len(body)))
