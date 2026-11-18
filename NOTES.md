@@ -419,6 +419,24 @@ from the disassembly (re/reply_region.asm, 0x1402f6900-0x1402f7700).
   (200 evaluations, tools/netgen_relays6_cfg.json): 71.0% mean flow, 17129 packets
   (relay-free: 75.5%, 18449). Relay counts depend on the rough positions for now.
 
+## Direct wiring (tools/directgen.py, user's idea)
+- A dedicated line for every (sender, destination) pair, from the send table + replies
+  (replies to 0.y.1.0 computed as 1.y.1.0's, across the bridge; Token ring followed hop
+  by hop; self-addressed flows included: 1.3.1.0 answers its own "Re:" endlessly).
+- Per endpoint: SPLITTER hub (0 endpoint, 1 out, 2 in, dir 0). Out line -> SPLIT CHAIN:
+  per destination a hub (0 in, 1 filter, 2 onward, dir 0) + filter Differ <dest>
+  SendBack; that destination's packets pass onto its line; the end of the chain drops
+  everything left (spam, missing addresses). Split taps never collide. In line <- MERGE
+  CHAIN: per extra incoming line a hub (0 toward endpoint, 1 upstream, 2 line, dir 0) +
+  filter Match <me> SendBack (collision DropOutbound); the farthest line joins directly.
+  Bounce-limited and heavy flows go first in split chains and nearest the endpoint in
+  merge chains (each filter they pass costs a bounce-limited packet one bounce).
+- Result (slot 0, 2100 ticks): 275 lines, 555 hubs + 532 filters; mean flow delivery
+  78.6%, 22394 packets (91.6% of those sent), all spam dropped, nothing reaches a wrong
+  endpoint. Remaining losses: merge collisions (1819), bounce limits (159). Tree +
+  shortcuts: 75.5%, 18449; player's network: 33.7%, 9357. Some rare flows are never
+  sent at all: an endpoint skips its scheduled send on a tick it receives a packet.
+
 ## Map voxels in the save (digging)
 - save["chunks"]: 4527 entries [{x,y,z}, rle]; rle = [[count, value], ...] covering 32^3
   voxels. Chunk = 16 world units, voxel = 0.5 units: voxel = floor(world * 2), chunk =
