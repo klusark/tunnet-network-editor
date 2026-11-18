@@ -172,6 +172,7 @@
       <div class="row" style="margin-top:6px">
         <label title="Draw each run of relays between two other nodes as one line"><input type="checkbox" id="collapse" checked> collapse relay chains</label>
         <label><input type="checkbox" id="showLabels" checked> addresses</label>
+        <label title="Hide endpoints (and, in 3D, map chunks) the player has not discovered yet: chunks not in the game's visited set (story.visited_chunks)"><input type="checkbox" id="onlyFound"> discovered only</label>
         <label><input type="checkbox" id="showPackets" checked> packets</label>
       </div>
     </div>
@@ -254,7 +255,23 @@ let types = [], nodes = new Map(), rev = null, packets = [], live = null;
 let view = "top", cam = { x: 0, y: 0, s: 1 }, yLo = -1e9, yHi = 1e9, yBounds = [0, 1];
 let selected = null, hover = null, findRe = null, needsFit = true;
 let selChain = null, hoverChain = null;
-const opts = { collapse: true, labels: true, packets: true };
+const opts = { collapse: true, labels: true, packets: true, found: false };
+// chunks the player has visited (live: game memory; offline: the save), "x,y,z" -> true
+let visited = null, visitedRev = null;
+const chunkKey = n => `${Math.floor(n.x / 16)},${Math.floor(n.y / 16)},${Math.floor(n.z / 16)}`;
+const undiscovered = n => opts.found && visited && n.type === "endpoint" && !visited.has(chunkKey(n));
+async function loadVisited() {
+  try {
+    const r = await (await fetch("/api/visited")).json();
+    visited = r.chunks ? new Set(r.chunks.map(c => c.join(","))) : null;
+    visitedRev = r.rev;
+  } catch (e) { visited = null; }
+  syncFound();
+}
+function syncFound() {               // voxels: hide chunks not visited
+  if (vox) vox.setHidden(opts.found && visited ? new Set(vox.keys().filter(k => !visited.has(k))) : null);
+  draw();
+}
 
 // ---------- relay chains ----------
 // Relays only add delay (one tick per cable), so a run of relays between two other nodes
@@ -403,7 +420,7 @@ function segPath(a, b) {
   }
 }
 function inY(n) { return n.y >= yLo && n.y <= yHi; }
-function visible(n) { return inY(n) && !chainOf(n.e); }
+function visible(n) { return inY(n) && !chainOf(n.e) && !undiscovered(n); }
 function chainVisible(ch) { return inY(nodes.get(ch.a)) || inY(nodes.get(ch.b)); }
 
 function fit() {
@@ -1586,6 +1603,7 @@ async function poll() {
     if (live.status === "ok") {
       if (live.rev !== rev) { rev = live.rev; await loadStructure(); }
       if (live.voxel_rev != null) voxLiveUpdate(live.voxel_rev);
+      if (opts.found && live.visited_rev != null && live.visited_rev !== visitedRev) loadVisited();
       showGameEvents(live.game_events);
       if (live.ticked && packets.length) {
         anims = buildAnims(packets, live.packets);
@@ -1720,6 +1738,7 @@ async function syncVox() {
     voxLoading = false;
   }
   if (document.getElementById("digOn").checked && !digPlan) syncDig();
+  if (opts.found) syncFound();       // hide chunks not visited yet
   draw();
 }
 // live game: when the server's voxel revision moves on (map edited, explosion, save loaded),
@@ -1869,11 +1888,13 @@ document.getElementById("ortho0").onclick = () => { pivotOnViewport(); orbit.pit
 document.getElementById("ortho1").onclick = () => { pivotOnViewport(); orbit.pitch = 0.55; draw(); };
 cv.addEventListener("contextmenu", e => { if (view === "3d") e.preventDefault(); });
 document.getElementById("fit").onclick = fit;
-for (const [id, k] of [["collapse", "collapse"], ["showLabels", "labels"], ["showPackets", "packets"]]) {
-  const el = document.getElementById(id); el.checked = load(k, true); opts[k] = el.checked;
+for (const [id, k] of [["collapse", "collapse"], ["showLabels", "labels"], ["showPackets", "packets"], ["onlyFound", "found"]]) {
+  const el = document.getElementById(id); el.checked = load(k, k !== "found"); opts[k] = el.checked;
+  if (k === "found" && el.checked) setTimeout(loadVisited, 0);
   el.onchange = () => {
     opts[k] = el.checked; store(k, el.checked);
     if (k === "collapse" && !el.checked) selChain = null;
+    if (k === "found") { if (el.checked && !visited) loadVisited(); else syncFound(); }
     renderInfo(); draw();
   };
 }

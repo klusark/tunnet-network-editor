@@ -215,6 +215,10 @@
           return ok(Object.assign(r, { start_tick: B.net.tick, seconds: Math.round(performance.now() - t0) / 1000 }));
         }
         case "/api/export": return ok(exportSave(body));
+        case "/api/visited": {          // the save's story.visited_chunks
+          const v = B.base && B.base.story && B.base.story.visited_chunks;
+          return ok({ rev: 1, chunks: v ? v.map(c => [c.x, c.y, c.z]) : null });
+        }
         case "/api/slots": return ok([0, 1, 2, 3].map(k => ({ slot: k, size: 0, modified: null })));
       }
       return ok({ error: "unknown " + path }, 404);

@@ -365,6 +365,31 @@ class LiveNet:
             ents = struct.unpack(f"<{f[11]}Q", M.read(self.h, f[10], 8 * f[11])) if f[11] else ()
             yield rec, cols, [e >> 32 for e in ents]
 
+    STORY_VISITED = 0x100   # Story resource: HashSet<IVec3> of visited chunks (hashbrown RawTable)
+
+    def visited_chunks(self):
+        """Chunks the player has visited (the save's story.visited_chunks), from the live
+        tunnet::story::Story resource: a hashbrown table at +0x100 (bucket_mask, growth_left,
+        items, ctrl ptr), 12-byte (x, y, z) i32 elements stored below ctrl. Verified equal to
+        the save's 369 chunks. None if the layout does not look right."""
+        a = self.resource("tunnet::story::Story")
+        if not a:
+            return None
+        mask, growth, items, ctrl = self.q(a + self.STORY_VISITED, 4)
+        if not (0 < mask < 1 << 20 and (mask + 1) & mask == 0 and items <= mask + 1 and ctrl):
+            return None
+        c = M.read(self.h, ctrl, mask + 1)
+        full = [i for i in range(mask + 1) if c[i] < 0x80]
+        if len(full) != items:
+            return None
+        lo = ctrl - (mask + 1) * 12
+        raw = M.read(self.h, lo, (mask + 1) * 12)
+        out = set()
+        for i in full:
+            o = (mask - i) * 12                     # element i sits at ctrl - (i + 1) * 12
+            out.add(struct.unpack_from("<3i", raw, o))
+        return out
+
     def chunks(self):
         """The map's voxel chunks as the game holds them: [((cx, cy, cz), 32768 bytes), ...].
         Each chunk is an entity with tunnet::map::chunk::ChunkPosition (3 x i32) and

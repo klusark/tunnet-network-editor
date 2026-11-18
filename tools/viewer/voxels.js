@@ -32,13 +32,18 @@ const CUT_SHADE = 0.58;
 let air = null;                                   // per material value: counts as air?
 let CLASS = null, COLOR = null;
 let index = new Map();
+let hidden = null;                                 // chunk index -> 1: hidden (treated as not stored)
 function relink() {                                // neighbours, column tops, flood buffer
   index = new Map(); keys.forEach((k, i) => index.set(k.join(","), i));
   nb = new Int32Array(keys.length * 6);
   // the highest stored chunk of each column: above it is open sky
   colTop = new Map();
-  for (const [x, y, z] of keys) { const k = x + "," + z; if (!(colTop.get(k) >= y)) colTop.set(k, y); }
+  keys.forEach(([x, y, z], i) => {                 // (hidden chunks don't count: as if not stored)
+    if (hidden && hidden[i]) return;
+    const k = x + "," + z; if (!(colTop.get(k) >= y)) colTop.set(k, y);
+  });
   keys.forEach(([x, y, z], i) => { for (let d = 0; d < 6; d++) { const j = index.get((x + DX[d]) + "," + (y + DY[d]) + "," + (z + DZ[d])); nb[i * 6 + d] = j === undefined ? -1 : j; } });
+  if (hidden) for (let i = 0; i < nb.length; i++) if (nb[i] >= 0 && hidden[nb[i]]) nb[i] = -1;
   ext = new Uint8Array(keys.length * V);
   fl = keys.map(k => flagsByKey.get(k.join(",")));
 }
@@ -118,6 +123,7 @@ function flood(clip, lo) {
   let q = new Uint32Array(1 << 22), head = 0, tail = 0;
   const push = (i, l) => { if (tail >= q.length) { const n = new Uint32Array(q.length * 2); n.set(q); q = n; } q[tail++] = i * V + l; };
   for (let i = 0; i < keys.length; i++) {
+    if (hidden && hidden[i]) continue;
     const cy = keys[i][1], base = i * V, sky = colTop.get(keys[i][0] + "," + keys[i][2]) === cy;
     for (let y = 0; y < N; y++) {
       const yb = (cy * N + y) * S;
@@ -153,6 +159,7 @@ function sig(i) {                                  // FNV of a chunk's reached-a
   return h >>> 0;
 }
 function mesh(i, clip, lo) {
+  if (hidden && hidden[i]) return { pos: new Float32Array(0), col: new Uint8Array(0), idx: new Uint32Array(0) };
   const [cx, cy, cz] = keys[i], base = i * V, o = [cx * N, cy * N, cz * N], Fi = fl[i];
   const kept = y => { const yb = (o[1] + y) * S; return yb < clip && yb >= lo; };
   const pos = [], col = [], idx = [];
@@ -258,7 +265,7 @@ function query(m) {
   const l = ((z & 31) * N + (y & 31)) * N + (x & 31), f = i !== undefined && fl[i] ? fl[i][l] : 0;
   postMessage({ query: m.query, stored: i !== undefined, value: i === undefined ? null : data[i * V + l], flag: f });
 }
-onmessage = e => { const m = e.data; if (m.init) init(m); else if (m.update) update(m); else if (m.flags) setFlags(m); else if (m.query) query(m); else build(m); };`;
+onmessage = e => { const m = e.data; if (m.init) init(m); else if (m.hide) { hidden = new Uint8Array(keys.length); for (const i of m.hide) hidden[i] = 1; relink(); meshedKey = new Map(); } else if (m.update) update(m); else if (m.flags) setFlags(m); else if (m.query) query(m); else build(m); };`;
 
 // ---------- the layer ----------
 // A WebGL canvas behind the viewer's 2D canvas. Its orthographic camera is built from the
@@ -394,11 +401,19 @@ export function createVoxelLayer(stage, { onUpdate = () => {}, onStatus = () => 
   let timer = null, lastCam = [0, 0, 0];
   const later = () => { clearTimeout(timer); timer = setTimeout(() => rebuild(false), 150); };
 
+  let hiddenKeys = null;                     // Set of "x,y,z" chunk keys to hide, or null
+  function sendHidden() {
+    if (!world) return;
+    const idx = [];
+    if (hiddenKeys) world.keys.forEach((k, i) => { if (hiddenKeys.has(k.join(","))) idx.push(i); });
+    worker.postMessage({ hide: idx });
+  }
   function start(keys, voxels) {
     for (const mm of meshes.values()) { group.remove(mm); mm.geometry.dispose(); }
     meshes.clear(); quads = 0;
     world = { keys };
     worker.postMessage({ init: true, keys, buf: voxels }, [voxels]);
+    if (hiddenKeys) sendHidden();
     rebuild(true);
   }
   return {
@@ -502,6 +517,15 @@ export function createVoxelLayer(stage, { onUpdate = () => {}, onStatus = () => 
       const id = ++qn;
       const r = await new Promise(res => { queries.set(id, res); worker.postMessage({ query: id, v: voxel }); });
       return { voxel, point: h.point.toArray(), normal: n.toArray().map(Math.round), value: r.value, stored: r.stored, flag: r.flag };
+    },
+    keys() { return world ? world.keys.map(k => k.join(",")) : []; },   // loaded chunks, "x,y,z"
+    // hide these chunks (e.g. not yet visited), as if the map did not have them; null = none
+    setHidden(keys) {
+      const same = (keys === null && hiddenKeys === null) ||
+        (keys && hiddenKeys && keys.size === hiddenKeys.size && [...keys].every(k => hiddenKeys.has(k)));
+      if (same) return;
+      hiddenKeys = keys;
+      if (world) { sendHidden(); rebuild(true); }
     },
     setShowDirt(b) { if (b !== showDirt) { showDirt = b; rebuild(true); } },
     setVisible(b) { visible = b; canvas.style.display = b ? "block" : "none"; version++; },

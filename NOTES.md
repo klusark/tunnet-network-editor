@@ -638,6 +638,24 @@ from the disassembly (re/reply_region.asm, 0x1402f6900-0x1402f7700).
   save offline to see its own nodes); collapsed relay chains are straight lines, so with
   voxels mostly hidden (untick "collapse relay chains" for real cable runs).
 
+## Discovered only (earlier parts of the game)
+- The save's story has visited_chunks (chunks the player has been in; 369 in slot_0), the
+  story stage (state, e.g. DestroyCorruptedMainframe, BuyCabin), unlock flags (relay, hub,
+  filter, tester, antenna, digging, ...), journal entries (knowledge.journal) and
+  connection_status (per SENDING endpoint, which destinations it has reached: not an
+  unlock list). All 69 endpoints exist in every save; "found" = in a visited chunk.
+- Live: tunnet::story::Story (488 B resource); +0x100 is the visited set, a hashbrown
+  table (bucket_mask, growth_left, items, ctrl ptr) of 12-byte (x, y, z) i32, elements below
+  ctrl; LiveNet.visited_chunks() reads it (identical to slot_0's 369). +0x130 is another
+  table with 69 items (one per endpoint?), layout not decoded.
+- Server /api/visited (re-read every 2 s by the event watcher; live payload visited_rev);
+  offline: the save's story.visited_chunks. Viewer "discovered only": endpoints in chunks
+  not visited are hidden (all views); in 3D the unvisited chunks are hidden too (treated as
+  not stored; the sky check only counts shown chunks). slot_0: hides 3.0.1.x (4 endpoints).
+- Not done: the simulator's send tables were extracted at one story stage
+  (DestroyCorruptedMainframe); earlier stages may send other messages / to other addresses
+  (see "Story dependence" above), so simulating an early save needs re-extracting them.
+
 ## Floor-level presets (tools/floor_levels.py -> tools/viewer/floor_levels.json)
 - Floors of the prefab structures: in each BunkerRoom chunk (save chunk_types: room kinds
   like MilitaryOutpost, Supermarket, Hub, AbandonedLab..., some with their endpoint's

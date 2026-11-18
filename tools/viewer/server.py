@@ -444,7 +444,7 @@ def poller():
         publish({"status": "ok", "pid": net.pid, "rev": published_rev, "tick": tick, "ticked": ticked,
                  "tick_period": period, "read_ms": round((last_read - now) * 1000),
                  "time": now, "packets": packets, "drops": recent, "drop_total": drop_total,
-                 "drop_missed": drop_missed, "counts": counts, "voxel_rev": VOX.rev,
+                 "drop_missed": drop_missed, "counts": counts, "voxel_rev": VOX.rev, "visited_rev": VISITED["rev"],
                  "game_events": [dict(r) for r in list(EVENT_LOG)[-5:]]})
 
 
@@ -516,6 +516,9 @@ GAME_EVENTS = {
 }
 EVENT_POLL_S = 0.05
 VOXEL_SETTLE_S = 0.3   # wait this long after the last map event before re-reading chunks
+
+
+VISITED = {"rev": 0, "chunks": None}   # chunks the player has visited (live), for "discovered only"
 
 
 class Voxels:
@@ -605,6 +608,11 @@ def event_watcher():
                     voxel_due = now + 1.0                  # let the game finish loading the map
                     row["full"] = True
                 log_event(row)
+            if now - getattr(event_watcher, "visited_at", 0) > 2.0:   # visited chunks, every 2 s
+                event_watcher.visited_at = now
+                v = net.visited_chunks()
+                if v is not None and v != VISITED["chunks"]:
+                    VISITED["chunks"], VISITED["rev"] = v, VISITED["rev"] + 1
             if voxel_due and now >= voxel_due:
                 full = any(r.get("full") for r in list(EVENT_LOG)[-20:] if r["time"] > now - 5)
                 n = read_chunks(net, full=full)
@@ -670,6 +678,12 @@ class Handler(SimpleHTTPRequestHandler):
                 row = next((d for d in reversed(STATE.drops) if d["id"] == want), None)
                 body = json.dumps(row, separators=(",", ":")).encode()
             return self._send(body)
+        if url.path == "/api/visited":  # chunks the player has visited (story.visited_chunks)
+            v = VISITED["chunks"]
+            if v is None and SHARED.net is not None:
+                v = SHARED.net.visited_chunks()
+            return self._send(json.dumps({"rev": VISITED["rev"], "chunks": sorted(v) if v is not None else None},
+                                         separators=(",", ":")).encode())
         if url.path == "/api/events":  # game events seen (counts + the most recent ones)
             return self._send(json.dumps({"counts": dict(EVENT_COUNTS), "voxel_rev": VOX.rev,
                                           "recent": list(EVENT_LOG)[-100:]}, indent=2).encode())
