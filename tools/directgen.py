@@ -134,6 +134,8 @@ class Direct(G.Gen):
                 self.link(mf, 1, f, 1)
                 prev, pport = m, 1
         self.n_lines = len(lines)
+        if self.relay_spacing:
+            self.add_relays(self.relay_spacing)
         return self.to_save()
 
 
@@ -144,10 +146,12 @@ def main():
     ap.add_argument("base"); ap.add_argument("out")
     ap.add_argument("--merge-collision", default="DropOutbound")
     ap.add_argument("--ticks", type=int, default=2100)
+    ap.add_argument("--relay-spacing", type=float, default=6.0, help="relays every N units (0 = none)")
     a = ap.parse_args()
     path = a.base if os.path.exists(a.base) else os.path.join(os.environ["APPDATA"], "tunnet", a.base)
     base = json.load(open(path, encoding="utf-8"))
     g = Direct(base, a.merge_collision)
+    g.relay_spacing = a.relay_spacing or None
     save = g.generate_direct()
     json.dump(save, open(a.out, "w", encoding="utf-8"), separators=(",", ":"))
     c = collections.Counter(n["type"] for n in g.nodes)

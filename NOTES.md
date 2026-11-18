@@ -436,6 +436,11 @@ from the disassembly (re/reply_region.asm, 0x1402f6900-0x1402f7700).
   endpoint. Remaining losses: merge collisions (1819), bounce limits (159). Tree +
   shortcuts: 75.5%, 18449; player's network: 33.7%, 9357. Some rare flows are never
   sent at all: an endpoint skips its scheduled send on a tick it receives a packet.
+- With relays every 6 units (--relay-spacing 6, the default; 5795 relays along straight
+  lines between the rough positions): 82.1% mean flow delivery, 23714 packets, 216 flows
+  covered (no relays: 78.6%, 22394, 205). More merge collisions (2653 vs 1819), but more
+  packets get sent: arrivals are spread out in time, so endpoints less often receive on
+  their scheduled send tick and skip the send.
 
 ## Map voxels in the save (digging)
 - save["chunks"]: 4527 entries [{x,y,z}, rle]; rle = [[count, value], ...] covering 32^3
