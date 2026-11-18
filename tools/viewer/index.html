@@ -136,7 +136,14 @@
         <button data-view="top" class="on">Top (X/Z)</button>
         <button data-view="side">Side (X/Y)</button>
         <button data-view="front">Front (Z/Y)</button>
+        <button data-view="3d">3D</button>
         <button id="fit">Fit</button>
+      </div>
+      <div class="row" id="row3d" style="margin-top:6px;display:none;gap:6px;flex-wrap:wrap;align-items:center">
+        <button id="spin" title="Turn the network slowly">Spin</button>
+        <button id="ortho0" title="Look from the side, level">Level</button>
+        <button id="ortho1" title="Look from above at an angle">Above</button>
+        <span class="note" style="margin:0">Drag to turn · right-drag or Shift+drag to move · wheel or pinch to zoom</span>
       </div>
       <div style="margin-top:8px">
         <div class="row" style="justify-content:space-between"><span style="color:var(--muted)">Height (Y) range</span><span id="yrange"></span></div>
@@ -296,7 +303,29 @@ function store(k, v) { try { localStorage.setItem("tln." + k, JSON.stringify(v))
 function load(k, d) { try { const v = localStorage.getItem("tln." + k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } }
 
 // ---------- projection ----------
+// 3D: orthographic orbit around the network's centre. yaw turns around the vertical (Y)
+// axis, pitch tilts the view down; depth3 is larger for points nearer the viewer.
+const orbit = { yaw: load("orbitYaw", -0.7), pitch: load("orbitPitch", 0.55), c: [0, 0, 0], spin: false };
+function proj3(n) {
+  const dx = n.x - orbit.c[0], dy = n.y - orbit.c[1], dz = n.z - orbit.c[2];
+  const cy = Math.cos(orbit.yaw), sy = Math.sin(orbit.yaw), cp = Math.cos(orbit.pitch), sp = Math.sin(orbit.pitch);
+  const x1 = cy * dx - sy * dz, z1 = sy * dx + cy * dz;
+  return [x1, -(cp * dy - sp * z1)];
+}
+function depth3(n) {
+  const dx = n.x - orbit.c[0], dy = n.y - orbit.c[1], dz = n.z - orbit.c[2];
+  const z1 = Math.sin(orbit.yaw) * dx + Math.cos(orbit.yaw) * dz;
+  return Math.sin(orbit.pitch) * dy + Math.cos(orbit.pitch) * z1;
+}
+function centerOrbit() {
+  const vis = [...nodes.values()].filter(inY);
+  if (!vis.length) return;
+  const mn = [Infinity, Infinity, Infinity], mx = [-Infinity, -Infinity, -Infinity];
+  for (const n of vis) [n.x, n.y, n.z].forEach((v, i) => { mn[i] = Math.min(mn[i], v); mx[i] = Math.max(mx[i], v); });
+  orbit.c = mn.map((v, i) => (v + mx[i]) / 2);
+}
 function proj(n) {  // world -> 2D plane (before camera)
+  if (view === "3d") return proj3(n);
   if (view === "top") return [n.x, n.z];
   if (view === "side") return [n.x, -n.y];
   return [n.z, -n.y];
@@ -309,11 +338,17 @@ function chainVisible(ch) { return inY(nodes.get(ch.a)) || inY(nodes.get(ch.b));
 function fit() {
   // The canvas can be ~0 px wide while the window is still laying out; fit again on resize.
   if (cv.width < 50 || cv.height < 50) { needsFit = true; return; }
+  if (view === "3d") centerOrbit();
   const pts = [...nodes.values()].filter(visible).map(proj);
   if (!pts.length) return;
   let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
   for (const [x, y] of pts) { x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y); }
   cam.x = (x0 + x1) / 2; cam.y = (y0 + y1) / 2;
+  if (view === "3d") {  // keep the orbit centre in the middle so turning doesn't drift; fit the turning extent
+    const r = Math.max(...[...nodes.values()].filter(visible).map(n => Math.hypot(n.x - orbit.c[0], n.y - orbit.c[1], n.z - orbit.c[2])));
+    cam.x = 0; cam.y = 0; cam.s = Math.min(cv.width, cv.height) / Math.max(1, 2 * r) * 0.95;
+    draw(); return;
+  }
   cam.s = Math.min(cv.width / Math.max(1, x1 - x0), cv.height / Math.max(1, y1 - y0)) * 0.9;
   draw();
 }
@@ -438,6 +473,20 @@ function buildAnims(prev, cur) {
     out.push({ kind: "out", p, home: p[0], path: [at(p[0], p[1], p[2])] });
   return out;
 }
+function drawGizmo(dpr) {  // X/Y/Z axes in the corner, turned like the network
+  const o = [44 * dpr, cv.height - 44 * dpr], L = 26 * dpr;
+  const c = orbit.c;
+  const axes = [["X", [1, 0, 0], "#fc8181"], ["Y", [0, 1, 0], "#68d391"], ["Z", [0, 0, 1], "#63b3ed"]]
+    .map(([t, v, col]) => { const p = proj3({ x: c[0] + v[0], y: c[1] + v[1], z: c[2] + v[2] });
+      return [t, p, col, depth3({ x: c[0] + v[0], y: c[1] + v[1], z: c[2] + v[2] })]; })
+    .sort((a, b) => a[3] - b[3]);
+  ctx.lineWidth = 2 * dpr; ctx.font = `${11 * dpr}px ui-monospace, Consolas, monospace`;
+  for (const [t, p, col] of axes) {
+    ctx.strokeStyle = col; ctx.fillStyle = col;
+    ctx.beginPath(); ctx.moveTo(o[0], o[1]); ctx.lineTo(o[0] + p[0] * L, o[1] + p[1] * L); ctx.stroke();
+    ctx.fillText(t, o[0] + p[0] * (L + 8 * dpr) - 3 * dpr, o[1] + p[1] * (L + 8 * dpr) + 4 * dpr);
+  }
+}
 function animProgress() { return Math.min(1, (performance.now() - animStart) / animDur); }
 function requestFrame() {
   if (frameQueued) return;
@@ -452,6 +501,13 @@ function draw() {
   ctx.fillRect(0, 0, W, H);
   const scr = new Map();
   for (const n of nodes.values()) if (visible(n)) scr.set(n.e, toScreen(proj(n)));
+  // 3D depth cue: far things fade (alpha 0.35 .. 1)
+  let fog = null;
+  if (view === "3d") {
+    let d0 = Infinity, d1 = -Infinity;
+    for (const e of scr.keys()) { const d = depth3(nodes.get(e)); d0 = Math.min(d0, d); d1 = Math.max(d1, d); }
+    if (d1 > d0) fog = d => 0.35 + 0.65 * (d - d0) / (d1 - d0);
+  }
 
   // busy edges = carrying a packet right now
   const busy = new Set();
@@ -466,7 +522,9 @@ function draw() {
       const b = scr.get(peer); if (!b) return;
       const key = Math.min(n.e, peer) + ":" + Math.max(n.e, peer);
       ctx.strokeStyle = busy.has(key) ? "#5b6b7a" : "#2c353e";
+      if (fog) ctx.globalAlpha = fog((depth3(n) + depth3(nodes.get(peer))) / 2);
       ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke();
+      ctx.globalAlpha = 1;
     });
   }
 
@@ -481,7 +539,9 @@ function draw() {
       const hl = ch === selChain || ch === hoverChain;
       ctx.lineWidth = Math.max(1, dpr * (hl ? 3 : 1.6));
       ctx.strokeStyle = hl ? "#9fb3c8" : busyChain.has(ch.id) ? "#56677a" : "#323d48";
+      if (fog && !hl) ctx.globalAlpha = fog((depth3(nodes.get(ch.a)) + depth3(nodes.get(ch.b))) / 2);
       ctx.beginPath(); ctx.moveTo(A[0], A[1]); ctx.lineTo(B[0], B[1]); ctx.stroke();
+      ctx.globalAlpha = 1;
       const len = Math.hypot(B[0] - A[0], B[1] - A[1]);
       if (len / ch.cables > 7 * dpr) {  // room for a tick per relay
         const nx = -(B[1] - A[1]) / len * 3 * dpr, ny = (B[0] - A[0]) / len * 3 * dpr;
@@ -531,9 +591,11 @@ function draw() {
   if (drawDropMarks(dpr)) animating = true;
   if (animating || replaying) requestFrame();
 
-  // nodes
-  for (const n of nodes.values()) {
+  // nodes (in 3D: back to front, far ones faded)
+  const order = fog ? [...nodes.values()].filter(n => scr.has(n.e)).map(n => [depth3(n), n]).sort((p, q) => p[0] - q[0]) : null;
+  for (const n of order ? order.map(x => x[1]) : nodes.values()) {
     const a = scr.get(n.e); if (!a) continue;
+    if (fog) ctx.globalAlpha = fog(depth3(n));
     const st = TYPE_STYLE[n.type] || TYPE_STYLE.other;
     const hl = n === selected || n === hover || (findRe && matchAddr(n.addr));
     const r = st.size * dpr * (hl ? 1.5 : 1) * Math.min(1.6, Math.max(0.7, cam.s / 3));
@@ -556,6 +618,8 @@ function draw() {
     }
   }
   drawReplay(dpr, "marker");  // the replayed packet, on top of everything
+  if (view === "3d") drawGizmo(dpr);
+  if (orbit.spin && view === "3d") { orbit.yaw += 0.004; requestFrame(); }
 }
 
 // ---------- filters, spam, traffic ----------
@@ -1028,6 +1092,11 @@ document.getElementById("addPlace").onclick = () => {
   document.getElementById("addCancel").onclick = () => { placeMode = null; document.getElementById("simOut").innerHTML = ""; };
 };
 function placeAt(e) {
+  if (view === "3d") {
+    placeMode = null;
+    document.getElementById("simOut").innerHTML = `<div class="note">Switch to Top, Side or Front to place a node; in 3D a tap has no single position.</div>`;
+    return;
+  }
   const dpr = window.devicePixelRatio || 1, rect = cv.getBoundingClientRect();
   const sx = (e.clientX - rect.left) * dpr, sy = (e.clientY - rect.top) * dpr;
   const p = [(sx - cv.width / 2) / cam.s + cam.x, (sy - cv.height / 2) / cam.s + cam.y];
@@ -1496,8 +1565,15 @@ document.getElementById("ymax").oninput = applyY;
 document.querySelectorAll("[data-view]").forEach(b => b.onclick = () => {
   view = b.dataset.view; store("view", view);
   document.querySelectorAll("[data-view]").forEach(x => x.classList.toggle("on", x === b));
+  document.getElementById("row3d").style.display = view === "3d" ? "flex" : "none";
   fit();
 });
+document.getElementById("spin").onclick = () => {
+  orbit.spin = !orbit.spin; document.getElementById("spin").classList.toggle("on", orbit.spin); requestFrame();
+};
+document.getElementById("ortho0").onclick = () => { orbit.pitch = 0; fit(); };
+document.getElementById("ortho1").onclick = () => { orbit.pitch = 0.55; fit(); };
+cv.addEventListener("contextmenu", e => { if (view === "3d") e.preventDefault(); });
 document.getElementById("fit").onclick = fit;
 for (const [id, k] of [["collapse", "collapse"], ["showLabels", "labels"], ["showPackets", "packets"]]) {
   const el = document.getElementById(id); el.checked = load(k, true); opts[k] = el.checked;
@@ -1575,6 +1651,11 @@ function startPinch() {
               wx: (mid[0] - cv.width / 2) / cam.s + cam.x, wy: (mid[1] - cv.height / 2) / cam.s + cam.y };
 }
 cv.addEventListener("pointerdown", e => {
+  if (view === "3d" && e.pointerType === "mouse" && e.button !== 0) {  // right/middle drag: move
+    try { cv.setPointerCapture(e.pointerId); } catch (err) {}
+    pointers.set(e.pointerId, { x: e.clientX, y: e.clientY }); startPan({ x: e.clientX, y: e.clientY }, true);
+    gesture.forcePan = true; cv.classList.add("dragging"); return;
+  }
   if (e.button !== 0 && e.pointerType === "mouse") return;
   try { cv.setPointerCapture(e.pointerId); } catch (err) { /* keep going without capture */ }
   pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
@@ -1589,7 +1670,13 @@ cv.addEventListener("pointermove", e => {
     if (gesture && gesture.kind === "pan" && pointers.size === 1) {
       const dx = (e.clientX - gesture.x) * dpr, dy = (e.clientY - gesture.y) * dpr;
       if (Math.abs(dx) + Math.abs(dy) > (e.pointerType === "touch" ? 8 : 3) * dpr) gesture.moved = true;
-      if (gesture.moved) { cam.x = gesture.cx - dx / cam.s; cam.y = gesture.cy - dy / cam.s; draw(); }
+      if (gesture.moved && view === "3d" && !gesture.forcePan && !e.shiftKey) {  // turn the network
+        if (gesture.yaw0 === undefined) { gesture.yaw0 = orbit.yaw; gesture.pitch0 = orbit.pitch; }
+        orbit.yaw = gesture.yaw0 - dx / dpr * 0.008;
+        orbit.pitch = Math.max(-1.5, Math.min(1.5, gesture.pitch0 + dy / dpr * 0.008));
+        store("orbitYaw", orbit.yaw); store("orbitPitch", orbit.pitch);
+        draw();
+      } else if (gesture.moved) { cam.x = gesture.cx - dx / cam.s; cam.y = gesture.cy - dy / cam.s; draw(); }
     } else if (gesture && gesture.kind === "pinch" && pointers.size >= 2) {
       const [a, b] = [...pointers.values()];
       const mid = canvasPx((a.x + b.x) / 2, (a.y + b.y) / 2);
@@ -1657,6 +1744,7 @@ function resize() {
 window.addEventListener("resize", resize);
 view = load("view", "top");
 document.querySelectorAll("[data-view]").forEach(x => x.classList.toggle("on", x.dataset.view === view));
+document.getElementById("row3d").style.display = view === "3d" ? "flex" : "none";
 resize();
 
 // ---------- offline mode (save file + in-browser simulator) ----------

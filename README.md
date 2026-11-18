@@ -8,8 +8,8 @@ without walking around the tunnels.
 Open (or drop) a save file from `%APPDATA%\tunnet\slot_N.json`. It is simulated in your
 browser; nothing is uploaded. You can then:
 
-- watch packets move on a map of the whole network (top, side and front views; relay
-  chains collapsed into single lines), with pan and zoom on desktop and touch;
+- watch packets move on a map of the whole network (top, side, front and a 3D view you can
+  turn; relay chains collapsed into single lines), with pan and zoom on desktop and touch;
 - see every dropped packet with the reason and replay its route;
 - read each endpoint's send, receive and reply rules;
 - edit filters, hubs and testers, rewire connections and plan new relays, filters and hubs;
