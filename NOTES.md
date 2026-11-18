@@ -563,7 +563,16 @@ from the disassembly (re/reply_region.asm, 0x1402f6900-0x1402f7700).
   from unpkg) on a canvas behind the 2D canvas, with an orthographic camera built from the
   same orbit (yaw, pitch, centre, pan, zoom), so they line up with the nodes and cables
   (which are drawn on top, not hidden by walls). The top of the Height (Y) range is the cut.
-  Live mode: voxels from a chosen save via the server; offline mode: from the opened file.
+  Live mode: voxels from the running game's memory ("live", the default) or a chosen save,
+  via the server; offline mode: from the opened file. The ↻ button reads them again.
+- Voxels in game memory: every chunk is an entity with tunnet::map::chunk::ChunkPosition
+  (0x11d, 3 x i32 chunk coords) and tunnet::map::chunk::Chunk (0x11e, 32768 bytes inline,
+  index (z*32 + y)*32 + x, the same values as the save). LiveNet.chunks() reads both columns
+  of every table that has them: 4527 chunks in 0.4 s (one big table of 4402 + small ones),
+  4524 byte-identical to slot_0.json, 3 differing by 2-124 voxels (map changed since the
+  save). /api/voxels?save=live: ~1.1 s, ~11 MB (gzip level 1).
+  Other map components seen: LoadedChunk, DisplayedChunk, DirtyChunk, EditedChunk, ToDelete,
+  map::dig::Diggable, map::terrain::Terrain (96 B), Events<EditVoxelEvent>.
   The local server serves /api/saves (game saves + out/*.json) and /api/voxels?save=NAME:
   gzip binary, u32 header length + JSON header (chunk keys, nodes [x,y,z,type], edges,
   endpoint labels) + 32768 raw bytes per stored chunk (~7 MB gzipped, ~5-7 s to build,

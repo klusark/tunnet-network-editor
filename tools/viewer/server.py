@@ -544,14 +544,19 @@ class Handler(SimpleHTTPRequestHandler):
                 row = next((d for d in reversed(STATE.drops) if d["id"] == want), None)
                 body = json.dumps(row, separators=(",", ":")).encode()
             return self._send(body)
-        if url.path == "/api/saves":   # saves the voxel viewer can open
-            return self._send(json.dumps(VD.list_saves(), indent=2).encode())
-        if url.path == "/api/voxels":  # one save's map voxels + network, gzip binary (voxel_data.py)
-            name = parse_qs(url.query).get("save", ["slot_0.json"])[0]
-            path = VD.resolve(name)
-            if not path:
-                return self._reply(404, {"error": f"no such save: {name}"})
-            body = VD.build(path)
+        if url.path == "/api/saves":   # voxel sources: the live game, then saves
+            return self._send(json.dumps((["live"] if SHARED.net else []) + VD.list_saves(), indent=2).encode())
+        if url.path == "/api/voxels":  # map voxels (+ a save's network), gzip binary (voxel_data.py)
+            name = parse_qs(url.query).get("save", ["live"])[0]
+            if name == "live":
+                if SHARED.net is None:
+                    return self._reply(503, {"error": "not attached to the game"})
+                body = VD.build_live(SHARED.net)
+            else:
+                path = VD.resolve(name)
+                if not path:
+                    return self._reply(404, {"error": f"no such save: {name}"})
+                body = VD.build(path)
             self.send_response(200)
             self.send_header("Content-Type", "application/octet-stream")
             self.send_header("Content-Encoding", "gzip")

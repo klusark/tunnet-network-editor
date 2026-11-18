@@ -356,6 +356,24 @@ class LiveNet:
             ents = struct.unpack(f"<{f[11]}Q", M.read(self.h, f[10], 8 * f[11])) if f[11] else ()
             yield rec, cols, [e >> 32 for e in ents]
 
+    def chunks(self):
+        """The map's voxel chunks as the game holds them: [((cx, cy, cz), 32768 bytes), ...].
+        Each chunk is an entity with tunnet::map::chunk::ChunkPosition (3 x i32) and
+        tunnet::map::chunk::Chunk (32768 voxel bytes, index (z*32 + y)*32 + x, same as the
+        save). Matches the save's chunks byte for byte except where the map changed since."""
+        ch = self.by_name.get("tunnet::map::chunk::Chunk")
+        cp = self.by_name.get("tunnet::map::chunk::ChunkPosition")
+        out = []
+        for rec, cols, ents in self.tables():
+            if ch in cols and cp in cols and cols[ch][2]:
+                pd, _, n = cols[cp]
+                cd = cols[ch][0]
+                pos = M.read(self.h, pd, 12 * n)
+                vox = M.read(self.h, cd, 32768 * n)
+                for k in range(n):
+                    out.append((struct.unpack_from("<3i", pos, 12 * k), vox[32768 * k: 32768 * (k + 1)]))
+        return out
+
     def _component_slot(self, entity, comp, size):
         c = self.by_name[comp]
         for rec, cols, ents in self.tables():

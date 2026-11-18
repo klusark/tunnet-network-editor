@@ -7,8 +7,8 @@ Binary layout (served gzip-compressed by the viewer server at /api/voxels?save=N
   then 32768 bytes per chunk in header order (index (z*32 + y)*32 + x, value 0 = air).
 type: 0 relay, 1 hub, 2 filter, 3 endpoint, 4 bridge, 5 antenna, 6 tester.
 
-Saves: NAME is a file in the game's save folder (e.g. slot_0.json) or out/NAME.json in this
-project (generated networks).
+Saves: NAME is "live" (the running game's memory), a file in the game's save folder (e.g.
+slot_0.json) or out/NAME.json in this project (generated networks).
 """
 import gzip
 import json
@@ -47,6 +47,19 @@ def resolve(name):
     return p if os.path.isfile(p) else None
 
 
+def pack(keys, raw, nodes=(), edges=(), labels=None, level=5):
+    head = json.dumps({"chunks": keys, "nodes": list(nodes), "edges": list(edges), "labels": labels or {}},
+                      separators=(",", ":")).encode()
+    return gzip.compress(struct.pack("<I", len(head)) + head + b"".join(raw), compresslevel=level)
+
+
+def build_live(net):
+    """Payload from the running game's memory (tunnet_live.LiveNet.chunks): voxels only, the
+    viewer already has the live network."""
+    chunks = net.chunks()
+    return pack([list(k) for k, _ in chunks], [v for _, v in chunks], level=1)
+
+
 def build(path):
     """gzip-compressed voxel payload for the save at path (cached by file time)."""
     key = (path, os.path.getmtime(path))
@@ -71,10 +84,7 @@ def build(path):
     edges = [[a, b] for (a, _), (b, _), *_ in save["edges"]]
     digit = {"Zero": "0", "One": "1", "Two": "2", "Three": "3", "Wildcard": "*"}
     labels = {str(r["node"]): ".".join(digit[d] for d in r["address"]["elements"]) for r in save.get("endpoints", [])}
-    head = json.dumps({"chunks": keys, "nodes": nodes, "edges": edges, "labels": labels},
-                      separators=(",", ":")).encode()
-    body = struct.pack("<I", len(head)) + head + b"".join(raw)
-    gz = gzip.compress(body, compresslevel=5)
+    gz = pack(keys, raw, nodes, edges, labels)
     _cache.clear()
     _cache[key] = gz
     return gz

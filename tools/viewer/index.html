@@ -148,7 +148,8 @@
       </div>
       <div class="row" id="rowVox" style="margin-top:6px;display:none;gap:6px;flex-wrap:wrap;align-items:center">
         <label title="Draw the map's voxels (rock, dirt, tunnels, bunkers) behind the network. The top of the height range below cuts the map, with solid lids where it cuts rock."><input type="checkbox" id="voxOn"> voxels</label>
-        <select id="voxSave" title="Save whose map voxels are drawn (live mode)" style="max-width:170px"></select>
+        <select id="voxSave" title="Where the map voxels come from: the running game (live) or a save" style="max-width:170px"></select>
+        <button id="voxReload" title="Read the voxels again (e.g. after digging in the game)">↻</button>
         <label title="Untick to see only hard rock, bunkers and water"><input type="checkbox" id="voxDirt" checked> dirt</label>
         <span class="note" id="voxStatus" style="margin:0"></span>
       </div>
@@ -1643,7 +1644,7 @@ async function listVoxSaves() {
   if (window.OfflineBackend && OfflineBackend.active) { sel.style.display = "none"; return; }
   try {
     const list = await (await fetch("/api/saves")).json();
-    const keep = load("voxSave", "slot_0.json");
+    const keep = load("voxSave", "live");
     sel.innerHTML = list.map(n => `<option>${n}</option>`).join("");
     if (list.includes(keep)) sel.value = keep;
     sel.style.display = "";
@@ -1652,6 +1653,7 @@ async function listVoxSaves() {
 document.getElementById("voxOn").checked = load("voxOn", false);
 document.getElementById("voxOn").onchange = e => { store("voxOn", e.target.checked); syncVox(); };
 document.getElementById("voxDirt").onchange = () => syncVox();
+document.getElementById("voxReload").onclick = () => { voxSource = null; syncVox(); };
 document.getElementById("voxSave").onchange = e => { store("voxSave", e.target.value); syncVox(); };
 listVoxSaves().then(syncVox);
 document.getElementById("spin").onclick = () => {
