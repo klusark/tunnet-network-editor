@@ -38,6 +38,8 @@
   #info { flex: 1 0 auto; padding: 10px 12px; }
   #info .empty { color: var(--muted); }
   #editor:empty { display: none; }
+  .lks { float: right; } .lk { font-size: 11px; padding: 1px 6px; margin-left: 4px; }
+  #editor .pick { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
   #editor { padding: 10px 12px 0; }
   #editor .ed { border: 1px solid var(--accent); border-radius: 4px; padding: 8px; }
   #editor .ed h3 { margin: 0 0 6px; font-size: 13px; }
@@ -643,7 +645,11 @@ function renderInfo() {
     const peer = port[0] == null ? "not connected"
       : cc ? `<a class="jump" data-e="${far}">${esc(describe(far))}</a> via <a class="jump" data-c="${cc.ch.id}">${cc.ch.relays.length} relays (${cc.ch.cables} ticks)</a>`
       : `<a class="jump" data-e="${port[0]}">${esc(describe(port[0]))}</a>${port[1] != null ? " port " + port[1] : ""}`;
-    h += `<div class="port"><div class="hd">port ${i} → ${peer}</div>`;
+    const lb = port[0] == null
+      ? `<button class="lk" data-link="connect" data-e="${n.e}" data-p="${i}">connect…</button>`
+      : `<button class="lk" data-link="rewire" data-e="${n.e}" data-p="${i}">rewire…</button>`
+        + `<button class="lk" data-link="disconnect" data-e="${n.e}" data-p="${i}">disconnect</button>`;
+    h += `<div class="port"><div class="hd">port ${i} → ${peer} <span class="lks">${lb}</span></div>`;
     for (const [k, label] of [[INBOUND, "in"], [OUTBOUND, "out"]]) {
       for (const p of byPort[i][k]) h += `<div class="pk"><span class="dir">${label}</span><span class="sw" style="background:#${esc(p[3])}"></span>`
         + `<span>${esc(p[4])} → ${esc(p[5])}</span><span class="pl">${esc(p[6])}</span></div>`;
@@ -685,6 +691,7 @@ document.getElementById("info").addEventListener("input", ev => {
 });
 
 function select(n, center) {
+  if (linkPick) { if (n) chooseLinkTarget(n); return; }
   selected = n || null; selChain = null; replay = null;
   if (n && center) { const p = proj(n); cam.x = p[0]; cam.y = p[1]; if (cam.s < 3) cam.s = 3; }
   renderEditor(); renderInfo(); draw();
@@ -754,6 +761,7 @@ function formValue(E, base) {
 }
 function renderEditor(force) {
   const box = document.getElementById("editor");
+  if (linkPick || linkMsg) return renderLinkBox(box);
   const n = selected, kind = editorKind(n), E = EDITORS[kind];
   if (!E || replay || !E.get(n)) { box.innerHTML = ""; ed.e = null; return; }
   if (ed.e === n.e && ed.dirty && !force) return;
@@ -803,6 +811,96 @@ async function applyEdit(n, kind, config, isUndo) {
   }
   renderEditor(true); renderInfo(); draw();
 }
+
+// ---------- connections ----------
+// Rewiring writes the peer fields of the two ports (POST /api/link). The game delivers over
+// the new link at once; the cable meshes in the game stay where they were.
+let linkPick = null;   // {e, p, rewire, target?} while choosing the other end
+let linkMsg = null;    // {text, err, undo: [ops]} after an edit
+async function linkOp(body) {
+  let res, out;
+  try {
+    res = await fetch("/api/link", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+    out = await res.json();
+  } catch (err) { return { error: String(err) }; }
+  return res.ok ? out : { error: out.error || "error" };
+}
+async function runLinkOps(ops, undoOps, okText) {
+  for (const [i, op] of ops.entries()) {
+    const r = await linkOp(op);
+    if (r.error) {
+      // put back what already happened, so a half-done rewire never stays
+      for (const u of undoOps.slice(undoOps.length - i)) await linkOp(u);
+      linkMsg = { text: "Not applied: " + esc(r.error), err: true, undo: null };
+      return finishLink();
+    }
+  }
+  linkMsg = { text: okText, err: false, undo: undoOps.length ? undoOps : null };
+  finishLink();
+}
+function finishLink() { linkPick = null; renderEditor(true); setTimeout(loadStructure, 1200); }
+const portName = (e, p) => `${esc(describe(e))} port ${p}`;
+function startLink(kind, e, p) {
+  const n = nodes.get(e), port = n && n.ports[p];
+  if (!port) return;
+  if (kind === "disconnect") {
+    const [pe, pp] = [port[0], port[1]];
+    if (!confirm(`Disconnect ${describe(e)} port ${p} from ${describe(pe)} port ${pp}?\nPackets sent out of either port are dropped until it is reconnected.`)) return;
+    return runLinkOps([{ op: "disconnect", e, p }], [{ op: "connect", a: [e, p], b: [pe, pp] }],
+                      `Disconnected ${portName(e, p)} from ${portName(pe, pp)}.`);
+  }
+  linkPick = { e, p, rewire: kind === "rewire", old: port[0] != null ? [port[0], port[1]] : null };
+  linkMsg = null; renderEditor(true);
+}
+function chooseLinkTarget(t) {
+  if (t.e === linkPick.e) return;
+  linkPick.target = t.e; renderEditor(true);
+}
+function applyLinkTarget(tp) {
+  const { e, p, old, target } = linkPick;
+  const ops = [], undo = [];
+  if (old) { ops.push({ op: "disconnect", e, p }); }
+  ops.push({ op: "connect", a: [e, p], b: [target, tp] });
+  undo.push({ op: "disconnect", e, p });
+  if (old) undo.push({ op: "connect", a: [e, p], b: old });
+  runLinkOps(ops, undo, `Connected ${portName(e, p)} to ${portName(target, tp)}.`
+    + (old ? ` (was ${portName(old[0], old[1])}, now free)` : ""));
+}
+function renderLinkBox(box) {
+  if (linkMsg && !linkPick) {
+    box.innerHTML = `<div class="ed"><h3>Connection edit</h3><div class="msg${linkMsg.err ? " err" : ""}">${linkMsg.text}</div>`
+      + `<div class="help">The game uses the new link immediately. Cables drawn in the game don't move. Saving in the game after rewiring is untested.</div>`
+      + `<div class="acts">${linkMsg.undo ? `<button id="lkUndo">Undo</button>` : ""}<button id="lkClose">Close</button></div></div>`;
+    document.getElementById("lkClose").onclick = () => { linkMsg = null; renderEditor(true); };
+    const u = document.getElementById("lkUndo");
+    if (u) u.onclick = () => { const ops = linkMsg.undo; linkMsg = null; runLinkOps(ops, [], "Undone."); };
+    return;
+  }
+  const { e, p, rewire, target } = linkPick;
+  let h = `<div class="ed"><h3>${rewire ? "Rewire" : "Connect"} ${portName(e, p)}</h3>`;
+  if (target == null) {
+    h += `<div class="help">Tap the node on the map to connect it to. Only free ports can be used; disconnect a port first to free it.</div>`;
+  } else {
+    const t = nodes.get(target);
+    const free = t.ports.map((q, i) => [q, i]).filter(([q]) => q[0] == null);
+    const already = t.ports.some(q => q[0] === e);
+    h += `<div>to <b>${esc(describe(target))}</b>:</div>`;
+    if (already) h += `<div class="msg err">That node is already linked to this one.</div>`;
+    else if (!free.length) h += `<div class="msg err">It has no free port. Disconnect one of its ports first.</div>`;
+    else h += `<div class="pick">${free.map(([, i]) => `<button data-tp="${i}">port ${i}</button>`).join("")}</div>`;
+    h += `<div class="help">Pick its port. Tap another node to change the target.</div>`;
+  }
+  h += `<div class="acts"><button id="lkCancel">Cancel</button></div></div>`;
+  box.innerHTML = h;
+  box.querySelectorAll("[data-tp]").forEach(b => b.onclick = () => applyLinkTarget(+b.dataset.tp));
+  document.getElementById("lkCancel").onclick = () => { linkPick = null; renderEditor(true); };
+}
+document.getElementById("info").addEventListener("mousedown", ev => {
+  const b = ev.target.closest("[data-link]");
+  if (!b || ev.button !== 0) return;
+  ev.preventDefault(); ev.stopPropagation();
+  startLink(b.dataset.link, +b.dataset.e, +b.dataset.p);
+}, true);
 
 // ---------- dropped packets ----------
 // The server reads the game's own PacketDropEvent queue; we merge its batches by event id.

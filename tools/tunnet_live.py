@@ -381,6 +381,91 @@ class LiveNet:
             raise OSError("write did not stick (read back differs)")
         return {"old": decode(old), "new": decode(back)}
 
+    # ---------- connections ----------
+    # Port +0x80: Option<Entity> peer (u32 tag 1 = Some, then generation u32, index u32);
+    # +0x8c: Option<Entity> cable, same encoding. The transport only uses the peer: it
+    # delivers into the first port on the peer node whose peer is the sender.
+    def _ports(self, entity):
+        """(port array address, port count, full u64 entity) for a node."""
+        nn = self.by_name[NETNODE]
+        for rec, cols, ents in self.tables():
+            if nn in cols and entity in ents:
+                r = ents.index(entity)
+                cap, ptr, ln = struct.unpack("<3Q", M.read(self.h, cols[nn][0] + 24 * r, 24))
+                f = self.q(rec, 12)
+                full = struct.unpack("<Q", M.read(self.h, f[10] + 8 * r, 8))[0]
+                if full >> 32 != entity:
+                    raise RuntimeError("table changed while reading; retry")
+                return ptr, ln, full
+        raise KeyError(f"entity {entity} is not a network node")
+
+    def _link(self, entity, port):
+        ptr, ln, full = self._ports(entity)
+        if not 0 <= port < ln:
+            raise ValueError(f"node {entity} has ports 0..{ln - 1}")
+        addr = ptr + PORT_SIZE * port + 0x80
+        tag, peer, ctag, cable = struct.unpack("<IQIQ", M.read(self.h, addr, 24))
+        return {"addr": addr, "self": full, "connected": tag == 1, "peer": peer if tag == 1 else None,
+                "has_cable": ctag == 1, "cable": cable if ctag == 1 else None}
+
+    def _w(self, addr, data):
+        if not getattr(self, "hw", None):
+            self.hw = M.open_writer(self.pid)
+        M.write(self.hw, addr, data)
+        if M.read(self.h, addr, len(data)) != data:
+            raise OSError("write did not stick (read back differs)")
+
+    def link_info(self, entity, port):
+        """Peer node and port (as the game will deliver) for one port, or None."""
+        L = self._link(entity, port)
+        if not L["connected"]:
+            return None
+        peer = L["peer"] >> 32
+        pptr, pln, _ = self._ports(peer)
+        for k in range(pln):
+            t = self._link(peer, k)
+            if t["connected"] and t["peer"] == L["self"]:
+                return [peer, k]
+        return [peer, None]
+
+    def disconnect(self, entity, port):
+        """Unlink a port and the peer port that points back. Cable fields are kept (so the
+        link can be restored); only the peer tags are cleared."""
+        L = self._link(entity, port)
+        if not L["connected"]:
+            raise ValueError(f"node {entity} port {port} is not connected")
+        other = self.link_info(entity, port)
+        self._w(L["addr"], struct.pack("<I", 0))
+        if other and other[1] is not None:
+            self._w(self._link(*other)["addr"], struct.pack("<I", 0))
+        return {"a": [entity, port], "b": other}
+
+    def connect(self, a_e, a_p, b_e, b_p):
+        """Link two free ports. A port with no cable borrows the other's cable entity so
+        nothing ever points at a missing cable (the game shows the old cable meshes)."""
+        if a_e == b_e:
+            raise ValueError("cannot connect a node to itself")
+        A, B = self._link(a_e, a_p), self._link(b_e, b_p)
+        for (e, p), L in (((a_e, a_p), A), ((b_e, b_p), B)):
+            if L["connected"]:
+                raise ValueError(f"node {e} port {p} is already connected; disconnect it first")
+        for e, other in ((a_e, B["self"]), (b_e, A["self"])):
+            ptr, ln, _ = self._ports(e)
+            for k in range(ln):
+                if self._link(e, k)["peer"] == other:
+                    raise ValueError(f"node {e} already has a link to node {other >> 32} (port {k}); "
+                                     "the game delivers to the first such port, so a second link would be ambiguous")
+        if not A["has_cable"] and not B["has_cable"]:
+            raise ValueError("neither port has a cable entity to use; connect at least one port that "
+                             "was connected before")
+        for L, other_full, cable in ((A, B["self"], A["cable"] or B["cable"]), (B, A["self"], B["cable"] or A["cable"])):
+            if not L["has_cable"]:
+                self._w(L["addr"] + 0x0C, struct.pack("<IQ", 1, cable))
+            # entity first, then the tag, so the game never sees Some(old garbage)
+            self._w(L["addr"] + 4, struct.pack("<Q", other_full))
+            self._w(L["addr"], struct.pack("<I", 1))
+        return {"a": [a_e, a_p], "b": [b_e, b_p]}
+
     def write_tester(self, entity, cfg, expect=None):
         """cfg: any of freq, mode, address, address_type, destination, destination_type."""
         return self._write_component(entity, TESTER_CONFIG, TESTER_SIZE, decode_tester, encode_tester, cfg, expect)
@@ -464,8 +549,9 @@ class LiveNet:
         for e, n in nodes.items():
             for p in n["ports"]:
                 peer = nodes.get(p["peer"])
-                p["peer_port"] = next((k for k, q in enumerate(peer["ports"]) if q["peer"] == e
-                                       and q["cable"] == p["cable"]), None) if peer else None
+                # transport (FUN_14074aa00) delivers into the first peer port whose peer is us
+                p["peer_port"] = next((k for k, q in enumerate(peer["ports"]) if q["peer"] == e), None) \
+                    if peer else None
         return nodes
 
 

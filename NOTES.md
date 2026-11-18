@@ -46,8 +46,8 @@ Port index = the save file's edge port number (verified 1197/1197 edges).
 | 0x00 | INBOUND packet: Option<Packet> (0x40) — just arrived over this port's cable |
 | 0x40 | OUTBOUND packet: Option<Packet> (0x40) — leaving over this port's cable |
 | 0x80 | u32 tag: 1 = connected |
-| 0x84 | peer node Entity (u32 generation, u32 index) |
-| 0x8c | u32, always 1 so far (unknown) |
+| 0x84 | peer node Entity (u32 generation, u32 index) — 0x80..0x8b is Option<Entity> peer |
+| 0x8c | u32 tag: 1 = has cable — 0x8c..0x97 is Option<Entity> cable |
 | 0x90 | cable Entity (u32 generation, u32 index) |
 The peer's port is not stored: find the peer port that points back (same cable).
 Code: `connect_nodes` body FUN_1403adfc0 (auto-connects within 6.0 units with line
@@ -280,6 +280,22 @@ from the disassembly (re/reply_region.asm, 0x1402f6900-0x1402f7700).
 - Verified live: hub 428 dir 1 -> same-tick copies 0->2 and 1->0; flipped to 0 -> 0->1 and
   1->2; restored. Filter 7022 action SendBack -> Drop: drops at it went from ~3 in 4 ticks
   to every tick (ticks 35830-35850); restored.
+
+## Editing connections (LiveNet.disconnect / connect, POST /api/link)
+- Transport (FUN_14074aa00) uses only the peer field: it looks up the peer entity and
+  writes into the FIRST port on it whose peer is the sender. The cable field isn't read
+  there. Free ports have tag 0 at +0x80 and +0x8c (rest is garbage).
+- disconnect: clears the peer tag on both ports; cable fields kept so it can be restored.
+- connect: both ports must be free; refuses a second link between the same two nodes
+  (delivery would be ambiguous). Writes entity then tag. A port with no cable borrows the
+  other port's cable entity, so nothing points at a missing cable; refuses if neither has
+  one. The game's cable meshes don't move.
+- Verified live: disconnect + reconnect; swap A-B, C-D -> A-D, C-B carried 22/23 packets
+  over the new links in 17 ticks, swapped back; full rewire + undo through the viewer.
+  Game kept running. Not tested: saving in the game after rewiring (saves backed up in
+  backups/, which git ignores). Node removal next to a rewired link is also untested.
+- Viewer: per-port connect… / rewire… / disconnect buttons; pick the other node on the map,
+  then its free port; Undo. A failed step in a rewire puts back the steps already done.
 
 ## Config components
 - HubDirection (1 B): 1 = save `dir: true`, 0 = false (96/96 hubs).

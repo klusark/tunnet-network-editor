@@ -10,3 +10,4 @@ re/snapshot.json
 tunnet-extended/
 # local Claude settings
 .claude/settings.local.json
+backups/

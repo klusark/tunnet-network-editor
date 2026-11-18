@@ -536,11 +536,11 @@ class Handler(SimpleHTTPRequestHandler):
         self.wfile.write(body)
 
     def do_POST(self):
-        """Edits to the running game: tester and filter configs, hub direction. EDIT=0 disables."""
+        """Edits to the running game: tester and filter configs, hub direction, links. EDIT=0 disables."""
         url = urlparse(self.path)
         if os.environ.get("EDIT", "1") == "0":
             return self._reply(403, {"error": "editing is disabled (EDIT=0)"})
-        what = {"/api/tester": "tester", "/api/filter": "filter", "/api/hub": "hub"}.get(url.path)
+        what = {"/api/tester": "tester", "/api/filter": "filter", "/api/hub": "hub", "/api/link": "link"}.get(url.path)
         if what is None:
             return self._reply(404, {"error": "unknown"})
         try:
@@ -548,12 +548,26 @@ class Handler(SimpleHTTPRequestHandler):
             net = SHARED.net
             if net is None:
                 return self._reply(503, {"error": "not attached to the game"})
+            if what == "link":
+                if req.get("op") == "disconnect":
+                    res = net.disconnect(int(req["e"]), int(req["p"]))
+                elif req.get("op") == "connect":
+                    res = net.connect(int(req["a"][0]), int(req["a"][1]), int(req["b"][0]), int(req["b"][1]))
+                else:
+                    raise ValueError("op must be connect or disconnect")
+                res["op"] = req["op"]
+                log_edit({"what": "link", **res, "from": self.client_address[0]})
+                return self._reply(200, res)
             fn = {"tester": net.write_tester, "filter": net.write_filter, "hub": net.write_hub}[what]
             res = fn(int(req["e"]), req.get("config") or {}, req.get("expect"))
             log_edit({"what": what, "e": int(req["e"]), **res, "from": self.client_address[0]})
             return self._reply(200, res)
         except (ValueError, KeyError, RuntimeError, OSError) as ex:
             return self._reply(400, {"error": str(ex)})
+        except Exception as ex:  # never drop the connection on a bug; say what failed
+            import traceback
+            traceback.print_exc()
+            return self._reply(500, {"error": f"server error: {type(ex).__name__}: {ex}"})
 
 
 def main():
