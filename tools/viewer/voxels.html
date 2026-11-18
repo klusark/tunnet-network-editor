@@ -116,26 +116,32 @@ const QUAD = [
   [[0,1,0],[0,1,1],[1,1,1],[1,1,0]], [[0,0,0],[1,0,0],[1,0,1],[0,0,1]],
   [[0,0,1],[1,0,1],[1,1,1],[0,1,1]], [[0,0,0],[0,1,0],[1,1,0],[1,0,0]],
 ];
-function mesh(i, s, hideDirt, DIRT, COLOR) {
+// clip: blocks whose bottom is at or above this height are cut away (treated as air), so
+// the solid just below the cut gets a lid instead of being see-through; cut faces are
+// shaded darker than real floors and walls.
+function mesh(i, s, hideDirt, DIRT, COLOR, clip) {
   const [cx, cy, cz] = keys[i], n = 32 / s, b = blocks(i, s, hideDirt, DIRT);
   const nb = DIRS.map(([dx, dy, dz]) => { const j = chunkAt(cx + dx, cy + dy, cz + dz); return j === undefined ? null : blocks(j, s, hideDirt, DIRT); });
   const pos = [], col = [];
   const size = s * 0.5, ox = cx * 16, oy = cy * 16, oz = cz * 16;
+  const kept = Y => oy + Y * size < clip;      // Y: block row, may be -1 or n (chunk below / above)
   for (let z = 0; z < n; z++) for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) {
     const v = b[(z * n + y) * n + x];
-    if (!v) continue;
+    if (!v || !kept(y)) continue;
     const c = COLOR[v], jit = 0.92 + 0.16 * (((x * 73856093) ^ (y * 19349663) ^ (z * 83492791)) & 255) / 255;
     for (let d = 0; d < 6; d++) {
       const [dx, dy, dz] = DIRS[d];
       let X = x + dx, Y = y + dy, Z = z + dz, w;
+      const cut = !kept(Y);
       if (X < 0 || Y < 0 || Z < 0 || X >= n || Y >= n || Z >= n) {
         const o = nb[d];
-        if (!o) continue;                       // unstored chunk next door: solid, no face
+        if (!o && !cut) continue;               // unstored chunk next door: solid, no face
         X = (X + n) % n; Y = (Y + n) % n; Z = (Z + n) % n;
-        w = o[(Z * n + Y) * n + X];
+        w = o ? o[(Z * n + Y) * n + X] : 255;
       } else w = b[(Z * n + Y) * n + X];
-      if (w) continue;
-      const sh = SHADE[d] * jit;
+      if (w && !cut) continue;
+      if (!w && cut) { /* air above the cut: an ordinary face */ }
+      const sh = (w && cut ? 0.58 : SHADE[d]) * jit;
       const q = QUAD[d];
       for (const k of [0, 1, 2, 0, 2, 3]) {
         pos.push(ox + (x + q[k][0]) * size, oy + (y + q[k][1]) * size, oz + (z + q[k][2]) * size);
@@ -155,8 +161,8 @@ onmessage = e => {
   if (m.reset) { blockCache.clear(); return; }
   const out = [];
   for (const i of m.chunks) {
-    const r = mesh(i, m.step, m.hideDirt, m.DIRT, m.COLOR);
-    out.push({ i, pos: r.pos, col: r.col });
+    const r = mesh(i, m.step, m.hideDirt, m.DIRT, m.COLOR, m.clip);
+    out.push({ i, pos: r.pos, col: r.col, eff: m.effs[i] });
   }
   postMessage({ job: m.job, step: m.step, gen: m.gen, out }, out.flatMap(o => [o.pos.buffer, o.col.buffer]));
 };`;
@@ -174,7 +180,8 @@ const camera = new THREE.PerspectiveCamera(55, 1, 0.1, 5000);
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
 const clipPlane = new THREE.Plane(new THREE.Vector3(0, -1, 0), 64);
-const voxMat = new THREE.MeshBasicMaterial({ vertexColors: true, clippingPlanes: [clipPlane], side: THREE.FrontSide });
+// the voxel cut is built into the meshes (solid lids); the plane only clips the network overlay
+const voxMat = new THREE.MeshBasicMaterial({ vertexColors: true, side: THREE.FrontSide });
 const voxGroup = new THREE.Group(); scene.add(voxGroup);
 const netGroup = new THREE.Group(); scene.add(netGroup);
 function resize() { renderer.setSize(innerWidth, innerHeight); camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); }
@@ -199,13 +206,25 @@ function geometry(pos, col) {
 function clearMeshes(map) { for (const m of map.values()) { voxGroup.remove(m); m.geometry.dispose(); } map.clear(); }
 
 let pending = 0, faces = 0;
+// which cut each chunk's mesh was built for (per detail level): a mesh only depends on the
+// cut while the cut height is inside (or at the top of) the chunk
+const effOf = { [COARSE_STEP]: new Map(), 1: new Map() };
+function effective(i, step) {
+  const clip = clipPlane.constant, bottom = world.keys[i][1] * 16, top = bottom + 16;
+  if (clip > top) return "full";
+  if (clip <= bottom) return "empty";
+  return String(Math.ceil(clip / (step * 0.5)));
+}
 worker.onmessage = e => {
   const { step, out } = e.data;
   if (e.data.gen !== gen) return;
   const map = step === COARSE_STEP ? coarse : fine;
-  for (const { i, pos, col } of out) {
+  for (const { i, pos, col, eff } of out) {
+    if (effOf[step].get(i) !== eff) continue;      // a newer cut was asked for meanwhile
+    const isFine = step !== COARSE_STEP;
+    if (isFine && !fineWant.has(i)) continue;
     if (map.has(i)) { voxGroup.remove(map.get(i)); map.get(i).geometry.dispose(); map.delete(i); }
-    if (!pos.length) continue;
+    if (!pos.length) { if (isFine) fineEmpty.add(i); continue; }
     const m = new THREE.Mesh(geometry(pos, col), voxMat);
     m.userData.chunk = i; m.userData.step = step;
     map.set(i, m); voxGroup.add(m);
@@ -217,31 +236,46 @@ worker.onmessage = e => {
     + `${world.nodes.length} nodes, ${world.edges.length} cables\nfocus ${focus.toArray().map(v => v.toFixed(1)).join(", ")}`);
   else status(`meshing… ${pending} batches left`);
 };
+const fineWant = new Set(), fineEmpty = new Set();
 function syncVisibility() {
-  for (const [i, m] of coarse) m.visible = !fine.has(i);
+  for (const [i, m] of coarse) m.visible = !(fine.has(i) || fineEmpty.has(i));
 }
 
-function requestCoarse() {
-  const all = world.keys.map((_, i) => i);
-  for (let k = 0; k < all.length; k += 200) {
+// (re)mesh the given chunks at one detail level for the current cut, skipping chunks whose
+// mesh already matches it
+function remesh(step, idx, batch) {
+  const effs = {}, todo = [];
+  for (const i of idx) {
+    const e = effective(i, step);
+    if (effOf[step].get(i) === e) continue;
+    effOf[step].set(i, e); effs[i] = e; todo.push(i);
+    if (step === 1) fineEmpty.delete(i);
+  }
+  for (let k = 0; k < todo.length; k += batch) {
+    const chunks = todo.slice(k, k + batch), part = {};
+    for (const i of chunks) part[i] = effs[i];
     pending++;
-    worker.postMessage({ job: "coarse", gen, step: COARSE_STEP, chunks: all.slice(k, k + 200), hideDirt: !$("showDirt").checked, DIRT, COLOR });
+    worker.postMessage({ job: step === 1 ? "fine" : "coarse", gen, step, chunks, effs: part, clip: clipPlane.constant,
+                         hideDirt: !$("showDirt").checked, DIRT, COLOR });
   }
 }
+function requestCoarse() { remesh(COARSE_STEP, world.keys.map((_, i) => i), 200); }
 function requestFine() {
   const R = +$("radius").value;
   const fc = [Math.floor(focus.x / 16), Math.floor(focus.y / 16), Math.floor(focus.z / 16)];
-  const want = new Set();
+  fineWant.clear();
   if (R > 0) world.keys.forEach(([x, y, z], i) => {
-    if (Math.abs(x - fc[0]) <= R && Math.abs(z - fc[2]) <= R && Math.abs(y - fc[1]) <= Math.max(1, R - 1)) want.add(i);
+    if (Math.abs(x - fc[0]) <= R && Math.abs(z - fc[2]) <= R && Math.abs(y - fc[1]) <= Math.max(1, R - 1)) fineWant.add(i);
   });
-  for (const [i, m] of fine) if (!want.has(i)) { voxGroup.remove(m); m.geometry.dispose(); fine.delete(i); }
-  const todo = [...want].filter(i => !fine.has(i));
-  for (let k = 0; k < todo.length; k += 8) {
-    pending++;
-    worker.postMessage({ job: "fine", gen, step: 1, chunks: todo.slice(k, k + 8), hideDirt: !$("showDirt").checked, DIRT, COLOR });
-  }
+  for (const [i, m] of fine) if (!fineWant.has(i)) { voxGroup.remove(m); m.geometry.dispose(); fine.delete(i); }
+  for (const i of [...effOf[1].keys()]) if (!fineWant.has(i)) { effOf[1].delete(i); fineEmpty.delete(i); }
+  remesh(1, [...fineWant], 8);
   syncVisibility();
+}
+let cutTimer = null;
+function updateCut() {             // after the cut height changes: only chunks it passes through
+  clearTimeout(cutTimer);
+  cutTimer = setTimeout(() => { if (world) { requestCoarse(); requestFine(); } }, 120);
 }
 
 // ---------- network overlay ----------
@@ -303,7 +337,7 @@ function fromSaveJson(save) {             // the same data, built in the browser
 }
 function start({ head, voxels }) {
   gen++; pending = 0; faces = 0;
-  clearMeshes(coarse); clearMeshes(fine);
+  clearMeshes(coarse); clearMeshes(fine); resetCutState();
   world = { keys: head.chunks, nodes: head.nodes, edges: head.edges, labels: head.labels || {} };
   worker.postMessage({ init: true, keys: world.keys, buf: voxels }, [voxels]);
   buildNetwork();
@@ -330,14 +364,15 @@ function setFocus(p, dist) {
 }
 
 // ---------- controls ----------
-$("clip").oninput = () => { clipPlane.constant = +$("clip").value; $("clipVal").textContent = $("clip").value; };
+$("clip").oninput = () => { clipPlane.constant = +$("clip").value; $("clipVal").textContent = $("clip").value; updateCut(); };
 $("clipVal").textContent = $("clip").value;
 $("clipFocus").onclick = () => { $("clip").value = (Math.round(focus.y * 2) / 2 + 2.5); $("clip").oninput(); };
 $("clipOff").onclick = () => { $("clip").value = 64; $("clip").oninput(); };
 $("radius").oninput = () => { $("radiusVal").textContent = `${+$("radius").value * 2 + 1} chunks`; if (world) requestFine(); };
 $("radius").oninput();
 $("showDirt").onchange = () => { if (!world) return; gen++; pending = 0; worker.postMessage({ reset: true });
-  clearMeshes(coarse); clearMeshes(fine); requestCoarse(); requestFine(); };
+  clearMeshes(coarse); clearMeshes(fine); resetCutState(); requestCoarse(); requestFine(); };
+function resetCutState() { effOf[COARSE_STEP].clear(); effOf[1].clear(); fineEmpty.clear(); }
 $("showNet").onchange = () => { netGroup.visible = $("showNet").checked; };
 $("showRelays").onchange = () => { if (world) buildNetwork(); };
 $("load").onclick = () => loadServer($("save").value);

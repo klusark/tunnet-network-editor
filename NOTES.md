@@ -568,7 +568,9 @@ from the disassembly (re/reply_region.asm, 0x1402f6900-0x1402f7700).
   chunks around the focus (radius slider); meshing (faces between solid and air, none
   toward unstored chunks) runs in a Web Worker. 15.2M faces at full resolution for the
   whole map, 3.1M at 1-unit, so full detail is only near the focus.
-- Height cut (clipping plane) to see inside; "show dirt" off re-meshes with dirt as air,
+- Height cut to see inside: built into the meshes (blocks at or above the cut count as air), so
+  cut rock and walls get a solid, darker lid instead of being see-through; only chunks the cut
+  passes through are re-meshed when it moves. The network overlay is clipped by a plane; "show dirt" off re-meshes with dirt as air,
   leaving hard rock, bunkers and water; double-click moves the focus; "Go to endpoint".
 - Material colours: dirt (1, 3, 10), hard rock (43, 44), metal (6, 8, 16), wood (14),
   water (18-21), stone / other.
