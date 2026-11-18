@@ -10,6 +10,8 @@ network once right after each tick, when the tick's writes are complete.
   /api/live?after=N   long-poll: returns as soon as tick > N (or after ~2 s)
   /api/structure      nodes + wiring; the client re-fetches it when `rev` changes
   /api/drops          every dropped packet seen since the server started (no paths)
+  /api/events         game events seen (map edits, builds, wiring, saves, loads)
+  /api/voxels?save=live[&since=REV]  map chunks from game memory (only those changed after REV)
   /api/drop?id=N      one drop with the full path of the packet up to where it was dropped
   /api/traffic?e=N    what endpoint N sent and received (rates, gaps, destinations, spam)
 
@@ -392,9 +394,10 @@ def poller():
                 SHARED.net = net
             tick = net.tick_count()
             now = time.time()
-            if tick == last_tick and now - last_read < IDLE_READ_S:
+            if tick == last_tick and now - last_read < IDLE_READ_S and not SHARED.force_read:
                 time.sleep(WATCH_S)
                 continue
+            SHARED.force_read = False
             ticked = tick != last_tick
             snap = net.snapshot()
             last_read = time.time()
@@ -439,13 +442,15 @@ def poller():
         publish({"status": "ok", "pid": net.pid, "rev": published_rev, "tick": tick, "ticked": ticked,
                  "tick_period": period, "read_ms": round((last_read - now) * 1000),
                  "time": now, "packets": packets, "drops": recent, "drop_total": drop_total,
-                 "drop_missed": drop_missed, "counts": counts})
+                 "drop_missed": drop_missed, "counts": counts, "voxel_rev": VOX.rev,
+                 "game_events": [dict(r) for r in list(EVENT_LOG)[-5:]]})
 
 
 class Shared:  # handed between the network poller and the drop watcher
     net = None
     snap = None
     tick = None
+    force_read = False  # set by the event watcher: read the network now (built / wired / loaded)
     pending = []  # (row, packet signature, ticks waited): drops waiting for their path
 
 
@@ -488,6 +493,125 @@ def drop_watcher():
         except Exception:
             net = None  # the poller will re-attach; pick it up again
         time.sleep(DROP_POLL_S)
+
+
+# ---------- game events ----------
+# Bevy's Events<T> resource starts with a u64 count of every event of that type ever sent
+# (the events themselves live ~2 frames). Comparing counts tells us an event happened, even
+# though these events' contents are not decoded. Reactions:
+#   map edits  -> re-read the chunks, find the ones that changed, bump the voxel revision
+#   build/wire -> read the network now instead of at the next tick
+#   load       -> new map and network: full voxel reload and a fresh read
+GAME_EVENTS = {
+    "tunnet::map::edit::EditVoxelEvent": ("voxels", "voxels edited (dig / fill)"),
+    "tunnet::map::dig::ExplosionEvent": ("voxels", "explosion"),
+    "tunnet::map::terrain::GenerateTerrain": ("voxels", "terrain generated"),
+    "tunnet::earthquake::EarthquakeEvent": ("voxels", "earthquake"),
+    "tunnet::net::build::BuildNodeEvent": ("network", "node built"),
+    "tunnet::net::build::ManualWiring": ("network", "cable wired by hand"),
+    "tunnet::save::LoadEvent": ("load", "save loaded"),
+    "tunnet::save::SaveEvent": ("save", "game saved"),
+}
+EVENT_POLL_S = 0.05
+VOXEL_SETTLE_S = 0.3   # wait this long after the last map event before re-reading chunks
+
+
+class Voxels:
+    """Live map chunks and which changed when (for /api/voxels?save=live&since=REV)."""
+    lock = threading.Lock()
+    rev = 0            # bumps whenever chunks change
+    full_rev = 0       # clients older than this must reload everything (a save was loaded)
+    data = {}          # (cx, cy, cz) -> 32768 bytes, as last read
+    changed_at = {}    # (cx, cy, cz) -> rev of its last change
+
+
+VOX = Voxels()
+EVENT_LOG = collections.deque(maxlen=500)
+EVENT_COUNTS = collections.Counter()
+
+
+def read_chunks(net, full=False):
+    """Re-read every chunk; record the changed ones. Returns the number that changed."""
+    new = dict(net.chunks())
+    with VOX.lock:
+        if full or not VOX.data:
+            VOX.rev += 1
+            VOX.full_rev = VOX.rev
+            VOX.data = new
+            VOX.changed_at = {k: VOX.rev for k in new}
+            return len(new)
+        changed = [k for k, b in new.items() if VOX.data.get(k) != b]
+        if changed:
+            VOX.rev += 1
+            for k in changed:
+                VOX.data[k] = new[k]
+                VOX.changed_at[k] = VOX.rev
+        return len(changed)
+
+
+def voxel_payload(since):
+    """gzip payload of the live chunks: all of them, or only those changed after `since`."""
+    with VOX.lock:
+        partial = since is not None and since >= VOX.full_rev
+        keys = [k for k in VOX.data if not partial or VOX.changed_at.get(k, 0) > since]
+        raw = [VOX.data[k] for k in keys]
+        rev = VOX.rev
+    return VD.pack([list(k) for k in keys], raw, level=1, extra={"rev": rev, "partial": partial})
+
+
+def log_event(row):
+    EVENT_LOG.append(row)
+    os.makedirs(LOG_DIR, exist_ok=True)
+    with open(os.path.join(LOG_DIR, "events.jsonl"), "a", encoding="utf-8") as f:
+        f.write(json.dumps(dict(row, time=datetime.datetime.fromtimestamp(row["time"]).isoformat(timespec="milliseconds")),
+                           separators=(",", ":")) + "\n")
+
+
+def event_watcher():
+    net, addrs, last = None, {}, {}
+    voxel_due = None
+    while True:
+        try:
+            if SHARED.net is not net:                     # (re)attached: new addresses, fresh baseline
+                net = SHARED.net
+                addrs, last, voxel_due = {}, {}, None
+                if net is None:
+                    time.sleep(0.2)
+                    continue
+                for name in GAME_EVENTS:
+                    a = net.resource(f"bevy_ecs::event::Events<{name}>")
+                    if a:
+                        addrs[name] = a
+                        last[name] = net.q(a)[0]
+                read_chunks(net, full=True)
+            now = time.time()
+            for name, a in addrs.items():
+                c = net.q(a)[0]
+                if c == last[name]:
+                    continue
+                n, last[name] = c - last[name], c
+                kind, what = GAME_EVENTS[name]
+                EVENT_COUNTS[name.rsplit("::", 1)[-1]] += n
+                row = {"time": now, "tick": SHARED.tick, "event": name.rsplit("::", 1)[-1], "kind": kind,
+                       "what": what, "count": n}
+                if kind == "voxels":
+                    voxel_due = now + VOXEL_SETTLE_S
+                elif kind == "network":
+                    SHARED.force_read = True
+                elif kind == "load":
+                    SHARED.force_read = True
+                    voxel_due = now + 1.0                  # let the game finish loading the map
+                    row["full"] = True
+                log_event(row)
+            if voxel_due and now >= voxel_due:
+                full = any(r.get("full") for r in list(EVENT_LOG)[-20:] if r["time"] > now - 5)
+                n = read_chunks(net, full=full)
+                voxel_due = None
+                log_event({"time": time.time(), "tick": SHARED.tick, "event": "chunks re-read", "kind": "voxels",
+                           "what": f"{n} chunks {'loaded' if full else 'changed'}", "count": n, "rev": VOX.rev})
+        except Exception:
+            net = None
+        time.sleep(EVENT_POLL_S)
 
 
 class Handler(SimpleHTTPRequestHandler):
@@ -544,6 +668,9 @@ class Handler(SimpleHTTPRequestHandler):
                 row = next((d for d in reversed(STATE.drops) if d["id"] == want), None)
                 body = json.dumps(row, separators=(",", ":")).encode()
             return self._send(body)
+        if url.path == "/api/events":  # game events seen (counts + the most recent ones)
+            return self._send(json.dumps({"counts": dict(EVENT_COUNTS), "voxel_rev": VOX.rev,
+                                          "recent": list(EVENT_LOG)[-100:]}, indent=2).encode())
         if url.path == "/api/saves":   # voxel sources: the live game, then saves
             return self._send(json.dumps((["live"] if SHARED.net else []) + VD.list_saves(), indent=2).encode())
         if url.path == "/api/voxels":  # map voxels (+ a save's network), gzip binary (voxel_data.py)
@@ -551,7 +678,10 @@ class Handler(SimpleHTTPRequestHandler):
             if name == "live":
                 if SHARED.net is None:
                     return self._reply(503, {"error": "not attached to the game"})
-                body = VD.build_live(SHARED.net)
+                since = parse_qs(url.query).get("since", [None])[0]
+                if not VOX.data:
+                    read_chunks(SHARED.net, full=True)
+                body = voxel_payload(int(since) if since not in (None, "") else None)
             else:
                 path = VD.resolve(name)
                 if not path:
@@ -666,6 +796,7 @@ def main():
     threading.stack_size(64 * 1024 * 1024)  # ...so give worker threads room for that depth
     threading.Thread(target=poller, daemon=True).start()
     threading.Thread(target=drop_watcher, daemon=True).start()
+    threading.Thread(target=event_watcher, daemon=True).start()
     class Server(ThreadingHTTPServer):
         daemon_threads = True
 

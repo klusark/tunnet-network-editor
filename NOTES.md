@@ -593,6 +593,24 @@ from the disassembly (re/reply_region.asm, 0x1402f6900-0x1402f7700).
 - Material colours: dirt (1, 3, 10), hard rock (43, 44), metal (6, 8, 16), wood (14),
   water (18-21), stone / other.
 
+## Game events (server event watcher, /api/events, logs/events.jsonl)
+- 86 Events<T> resources are registered (input, window, assets, Steam, and the game's own:
+  net, map, save, death, boss, audio, achievements...). Each Events<T> starts with a u64
+  count of all events ever sent, then two buffers holding ~2 frames of events; only
+  PacketDropEvent and NetTockEvent payloads are decoded so far.
+- The server's event watcher polls the counts of 8 of them every 50 ms (counts never miss
+  an event, unlike reading the buffers): EditVoxelEvent, ExplosionEvent, GenerateTerrain,
+  EarthquakeEvent -> re-read the chunks 0.3 s after the last one and record which changed
+  (voxel revision); BuildNodeEvent, ManualWiring -> read the network now; LoadEvent -> full
+  voxel reload (1 s later) and a fresh read; SaveEvent -> logged. Every event is logged to
+  logs/events.jsonl and shown in the viewer ("Game events: ...").
+- Counts seen right after loading slot_0: BuildNodeEvent 6974 (one per node built while
+  the save loaded), LoadEvent 1, GenerateTerrain 1, EarthquakeEvent 297 (the game shakes
+  often; most change no voxels).
+- /api/voxels?save=live&since=REV returns only chunks changed after REV (header partial,
+  rev); a save load forces a full payload. The live payload carries voxel_rev; the viewer's
+  3D voxels fetch the changes and re-mesh only those chunks and their neighbours (~1 s).
+
 ## Map voxels in the save (digging)
 - save["chunks"]: 4527 entries [{x,y,z}, rle]; rle = [[count, value], ...] covering 32^3
   voxels. Chunk = 16 world units, voxel = 0.5 units: voxel = floor(world * 2), chunk =

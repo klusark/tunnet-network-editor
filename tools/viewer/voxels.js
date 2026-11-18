@@ -27,16 +27,41 @@ const SHADE = [[0.80, 0.70], [1.00, 0.45], [0.88, 0.62]];
 const CUT_SHADE = 0.58;
 let air = null;                                   // per material value: counts as air?
 let CLASS = null, COLOR = null;
-function init(m) {
-  keys = m.keys; data = new Uint8Array(m.buf);
-  const index = new Map(); keys.forEach((k, i) => index.set(k.join(","), i));
+let index = new Map();
+function relink() {                                // neighbours, column tops, flood buffer
+  index = new Map(); keys.forEach((k, i) => index.set(k.join(","), i));
   nb = new Int32Array(keys.length * 6);
   // the highest stored chunk of each column: above it is open sky
   colTop = new Map();
   for (const [x, y, z] of keys) { const k = x + "," + z; if (!(colTop.get(k) >= y)) colTop.set(k, y); }
   keys.forEach(([x, y, z], i) => { for (let d = 0; d < 6; d++) { const j = index.get((x + DX[d]) + "," + (y + DY[d]) + "," + (z + DZ[d])); nb[i * 6 + d] = j === undefined ? -1 : j; } });
   ext = new Uint8Array(keys.length * V);
+}
+function init(m) {
+  keys = m.keys; data = new Uint8Array(m.buf);
+  relink();
   meshedKey = new Map();
+}
+// changed chunks from the live game: replace their voxels (adding new chunks), and make
+// them and their neighbours re-mesh on the next build
+function update(m) {
+  const buf = new Uint8Array(m.buf), touched = [], fresh = [];
+  m.keys.forEach((k, n) => {
+    const i = index.get(k.join(","));
+    if (i === undefined) fresh.push([k, n]);
+    else { data.set(buf.subarray(n * V, (n + 1) * V), i * V); touched.push(i); }
+  });
+  if (fresh.length) {
+    const nd = new Uint8Array((keys.length + fresh.length) * V);
+    nd.set(data);
+    for (const [k, n] of fresh) { nd.set(buf.subarray(n * V, (n + 1) * V), keys.length * V); touched.push(keys.length); keys.push(k); }
+    data = nd;
+    relink();
+  }
+  for (const i of touched) {
+    meshedKey.delete(i);
+    for (let d = 0; d < 6; d++) { const j = nb[i * 6 + d]; if (j >= 0) meshedKey.delete(j); }
+  }
 }
 // flood the air reachable from outside (sky above the top chunks, or the space above the cut)
 function flood(clip) {
@@ -159,7 +184,7 @@ async function build(m) {
   }
   postMessage({ gen: my, done: true, ms: Math.round(performance.now() - t0) });
 }
-onmessage = e => { const m = e.data; if (m.init) init(m); else build(m); };`;
+onmessage = e => { const m = e.data; if (m.init) init(m); else if (m.update) update(m); else build(m); };`;
 
 // ---------- the layer ----------
 // A WebGL canvas behind the viewer's 2D canvas. Its orthographic camera is built from the
@@ -234,10 +259,28 @@ export function createVoxelLayer(stage, { onUpdate = () => {}, onStatus = () => 
     canvas,
     get loaded() { return !!world; },
     // binary payload from the server's /api/voxels (tools/voxel_data.py)
+    rev: null,                     // live voxel revision of what is loaded (server's VOX.rev)
     loadBinary(buf) {
       const dv = new DataView(buf), n = dv.getUint32(0, true);
       const head = JSON.parse(new TextDecoder().decode(new Uint8Array(buf, 4, n)));
+      this.rev = head.rev ?? null;
       start(head.chunks, buf.slice(4 + n));
+      return head;
+    },
+    // only the chunks that changed (server: /api/voxels?save=live&since=REV); a full
+    // payload (a save was loaded) replaces everything
+    updateBinary(buf) {
+      const dv = new DataView(buf), n = dv.getUint32(0, true);
+      const head = JSON.parse(new TextDecoder().decode(new Uint8Array(buf, 4, n)));
+      if (!head.partial || !world) return this.loadBinary(buf);
+      this.rev = head.rev;
+      if (head.chunks.length) {
+        const data = buf.slice(4 + n);
+        worker.postMessage({ update: true, keys: head.chunks, buf: data }, [data]);
+        for (const k of head.chunks) if (!world.keys.some(w => w[0] === k[0] && w[1] === k[1] && w[2] === k[2])) world.keys.push(k);
+        rebuild(false);
+      }
+      return head;
     },
     // a save file's JSON (offline mode)
     loadSave(save) {

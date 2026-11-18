@@ -113,6 +113,7 @@
     <div class="sec">
       <div id="status"><span class="dot" id="sdot"></span><span id="stext">connecting…</span></div>
       <div id="stats" style="color:var(--muted);margin-top:4px"></div>
+      <div id="gameEvents" class="note" style="margin-top:4px" title="Game events the server saw (map edits, builds, wiring, saves, loads); all in logs/events.jsonl"></div>
     </div>
     <div class="sec" id="srcSec">
       <h2>Data source</h2>
@@ -1533,6 +1534,8 @@ async function poll() {
     const dot = document.getElementById("sdot"), txt = document.getElementById("stext");
     if (live.status === "ok") {
       if (live.rev !== rev) { rev = live.rev; await loadStructure(); }
+      if (live.voxel_rev != null) voxLiveUpdate(live.voxel_rev);
+      showGameEvents(live.game_events);
       if (live.ticked && packets.length) {
         anims = buildAnims(packets, live.packets);
         animStart = performance.now();
@@ -1638,6 +1641,27 @@ async function syncVox() {
     voxLoading = false;
   }
   draw();
+}
+// live game: when the server's voxel revision moves on (map edited, explosion, save loaded),
+// fetch only the chunks that changed since ours and re-mesh those
+let voxUpdating = false;
+async function voxLiveUpdate(r) {
+  if (!vox || voxSource !== "live" || !vox.loaded || voxUpdating || vox.rev == null || r === vox.rev) return;
+  voxUpdating = true;
+  try {
+    const res = await fetch("/api/voxels?save=live&since=" + vox.rev);
+    if (res.ok) {
+      const head = vox.updateBinary(await res.arrayBuffer());
+      if (head && head.partial) document.getElementById("voxStatus").textContent = `${head.chunks.length} chunks changed in the game`;
+    }
+  } catch (e) {}
+  voxUpdating = false;
+}
+function showGameEvents(list) {
+  const el = document.getElementById("gameEvents");
+  if (!el || !list || !list.length) return;
+  el.innerHTML = "Game events: " + list.slice(-3).reverse().map(r =>
+    `${esc(r.what)}${r.count > 1 ? " ×" + r.count : ""} <span style="opacity:.6">${new Date(r.time * 1000).toLocaleTimeString()}</span>`).join(" · ");
 }
 async function listVoxSaves() {
   const sel = document.getElementById("voxSave");

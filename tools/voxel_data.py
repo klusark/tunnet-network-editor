@@ -47,9 +47,9 @@ def resolve(name):
     return p if os.path.isfile(p) else None
 
 
-def pack(keys, raw, nodes=(), edges=(), labels=None, level=5):
-    head = json.dumps({"chunks": keys, "nodes": list(nodes), "edges": list(edges), "labels": labels or {}},
-                      separators=(",", ":")).encode()
+def pack(keys, raw, nodes=(), edges=(), labels=None, level=5, extra=None):
+    head = json.dumps(dict({"chunks": keys, "nodes": list(nodes), "edges": list(edges), "labels": labels or {}},
+                           **(extra or {})), separators=(",", ":")).encode()
     return gzip.compress(struct.pack("<I", len(head)) + head + b"".join(raw), compresslevel=level)
 
 
