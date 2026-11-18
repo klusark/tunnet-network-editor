@@ -38,6 +38,7 @@ import tracker as TR  # noqa: E402
 import reply_rules as RR  # noqa: E402
 import sim as SIM  # noqa: E402
 import save_export as SX  # noqa: E402
+import voxel_data as VD  # noqa: E402
 
 DROP_CLAIM_TICKS = 4  # how long a drop waits for its packet's track before giving up
 
@@ -543,6 +544,22 @@ class Handler(SimpleHTTPRequestHandler):
                 row = next((d for d in reversed(STATE.drops) if d["id"] == want), None)
                 body = json.dumps(row, separators=(",", ":")).encode()
             return self._send(body)
+        if url.path == "/api/saves":   # saves the voxel viewer can open
+            return self._send(json.dumps(VD.list_saves(), indent=2).encode())
+        if url.path == "/api/voxels":  # one save's map voxels + network, gzip binary (voxel_data.py)
+            name = parse_qs(url.query).get("save", ["slot_0.json"])[0]
+            path = VD.resolve(name)
+            if not path:
+                return self._reply(404, {"error": f"no such save: {name}"})
+            body = VD.build(path)
+            self.send_response(200)
+            self.send_header("Content-Type", "application/octet-stream")
+            self.send_header("Content-Encoding", "gzip")
+            self.send_header("Cache-Control", "no-store")
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+            return
         if url.path == "/":
             self.path = "/index.html"
         return super().do_GET()

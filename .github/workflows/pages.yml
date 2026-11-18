@@ -26,7 +26,7 @@ jobs:
       - name: Collect the static editor files
         run: |
           mkdir -p _site
-          cp tools/viewer/index.html tools/viewer/sim.js tools/viewer/offline.js tools/viewer/sim_data.json _site/
+          cp tools/viewer/index.html tools/viewer/voxels.html tools/viewer/sim.js tools/viewer/offline.js tools/viewer/sim_data.json _site/
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:

@@ -558,6 +558,21 @@ from the disassembly (re/reply_region.asm, 0x1402f6900-0x1402f7700).
   the air (vertical drops), 73 in rock; all 1095 hubs/filters on a floor or in a drop.
 - Not tested: whether the game loads edited chunk data.
 
+## Voxel viewer (tools/viewer/voxels.html, tools/voxel_data.py)
+- 3D view of a save's map voxels with its network on top (three.js 0.160 from unpkg).
+  The local server serves /api/saves (game saves + out/*.json) and /api/voxels?save=NAME:
+  gzip binary, u32 header length + JSON header (chunk keys, nodes [x,y,z,type], edges,
+  endpoint labels) + 32768 raw bytes per stored chunk (~7 MB gzipped, ~5-7 s to build,
+  cached by file time). Without the server, "Open file..." parses a save in the browser.
+- Whole map at 2-unit blocks (4^3 voxels, majority solid), full 0.5-unit detail for the
+  chunks around the focus (radius slider); meshing (faces between solid and air, none
+  toward unstored chunks) runs in a Web Worker. 15.2M faces at full resolution for the
+  whole map, 3.1M at 1-unit, so full detail is only near the focus.
+- Height cut (clipping plane) to see inside; "show dirt" off re-meshes with dirt as air,
+  leaving hard rock, bunkers and water; double-click moves the focus; "Go to endpoint".
+- Material colours: dirt (1, 3, 10), hard rock (43, 44), metal (6, 8, 16), wood (14),
+  water (18-21), stone / other.
+
 ## Map voxels in the save (digging)
 - save["chunks"]: 4527 entries [{x,y,z}, rle]; rle = [[count, value], ...] covering 32^3
   voxels. Chunk = 16 world units, voxel = 0.5 units: voxel = floor(world * 2), chunk =

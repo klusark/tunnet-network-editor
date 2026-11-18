@@ -1,0 +1,383 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tunnet Voxels</title>
+<style>
+  :root { --bg: #14161a; --panel: #1d2026ee; --fg: #e4e6ea; --muted: #9aa1ad; --line: #343a44; --accent: #e0a040; }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--fg);
+               font: 13px/1.4 system-ui, -apple-system, Segoe UI, sans-serif; overflow: hidden; }
+  #view { position: fixed; inset: 0; }
+  #panel { position: fixed; top: 10px; left: 10px; width: 270px; max-height: calc(100% - 20px); overflow: auto;
+           background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; }
+  #panel h1 { font-size: 14px; margin: 0 0 8px; }
+  label { display: block; margin: 8px 0 2px; color: var(--muted); font-size: 12px; }
+  select, input[type=text], button { width: 100%; box-sizing: border-box; background: #262a31; color: var(--fg);
+           border: 1px solid var(--line); border-radius: 5px; padding: 5px 6px; font: inherit; }
+  button { cursor: pointer; margin-top: 4px; }
+  button:hover { border-color: var(--accent); }
+  input[type=range] { width: 100%; }
+  .row { display: flex; gap: 6px; align-items: center; }
+  .row > * { flex: 1; }
+  .check { display: flex; gap: 6px; align-items: center; margin: 4px 0; color: var(--fg); font-size: 12px; }
+  .check input { width: auto; margin: 0; }
+  #status { margin-top: 8px; color: var(--muted); font-size: 12px; white-space: pre-line; }
+  #legend { margin-top: 8px; display: grid; grid-template-columns: 1fr 1fr; gap: 2px 8px; font-size: 12px; }
+  #legend span::before { content: ""; display: inline-block; width: 10px; height: 10px; margin-right: 5px;
+                         vertical-align: -1px; border-radius: 2px; background: var(--c); }
+  .hint { color: var(--muted); font-size: 11px; margin-top: 8px; }
+  a { color: var(--accent); }
+</style>
+</head>
+<body>
+<div id="view"></div>
+<div id="panel">
+  <h1>Tunnet voxels</h1>
+  <label for="save">Save</label>
+  <select id="save"></select>
+  <div class="row"><button id="load">Load</button><button id="openFile">Open file…</button></div>
+  <input type="file" id="file" accept=".json" hidden>
+
+  <label for="find">Go to endpoint</label>
+  <div class="row"><input type="text" id="find" placeholder="0.2.0.0"><button id="go" style="flex:0 0 46px">Go</button></div>
+
+  <label for="clip">Cut away above height <b id="clipVal"></b></label>
+  <input type="range" id="clip" min="-80" max="64" step="0.5" value="64">
+  <div class="row"><button id="clipFocus">Cut just above focus</button><button id="clipOff">No cut</button></div>
+
+  <label for="radius">Full detail around focus: <b id="radiusVal"></b></label>
+  <input type="range" id="radius" min="0" max="4" step="1" value="2">
+
+  <div class="check"><input type="checkbox" id="showDirt" checked><span>Show dirt</span></div>
+  <div class="check"><input type="checkbox" id="showNet" checked><span>Show network</span></div>
+  <div class="check"><input type="checkbox" id="showRelays" checked><span>Show relays</span></div>
+
+  <div id="legend"></div>
+  <div id="status">Loading…</div>
+  <div class="hint">Drag to orbit, right-drag to pan, wheel to zoom. Double-click a surface or a node to move the
+    focus there (full detail loads around it). <a href="index.html">Network viewer</a></div>
+</div>
+
+<script type="importmap">
+{ "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+               "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/" } }
+</script>
+<script type="module">
+import * as THREE from "three";
+import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+
+// ---------- materials (voxel values; see tools/dig.py and NOTES.md) ----------
+const MAT = {
+  dirt:  { c: [139, 98, 62],  vals: [1, 3, 10], name: "dirt (diggable)" },
+  hard:  { c: [112, 112, 118], vals: [43, 44], name: "hard rock" },
+  metal: { c: [120, 140, 160], vals: [6, 8, 16], name: "metal" },
+  wood:  { c: [160, 112, 60],  vals: [14], name: "wood" },
+  water: { c: [58, 120, 200],  vals: [18, 19, 20, 21], name: "water" },
+  stone: { c: [168, 164, 148], vals: [], name: "stone / other" },
+};
+const COLOR = new Array(256).fill(MAT.stone.c);
+for (const m of Object.values(MAT)) for (const v of m.vals) COLOR[v] = m.c;
+const DIRT = new Uint8Array(256); for (const v of MAT.dirt.vals) DIRT[v] = 1;
+document.getElementById("legend").innerHTML = Object.values(MAT)
+  .map(m => `<span style="--c:rgb(${m.c})">${m.name}</span>`).join("")
+  + `<span style="--c:#f2c14e">endpoint</span><span style="--c:#62d2a2">hub</span>`
+  + `<span style="--c:#e26d5c">filter</span><span style="--c:#c9ccd3">relay</span>`;
+
+// ---------- meshing worker: faces between solid and air, per chunk, at a block size ----------
+const workerSrc = `
+let keys = null, data = null, index = new Map();
+const blockCache = new Map();
+function chunkAt(cx, cy, cz) { return index.get(cx + "," + cy + "," + cz); }
+// block values of chunk i at step s (s = 1 voxel, 2, 4): majority solid, value of first solid
+function blocks(i, s, hideDirt, DIRT) {
+  const key = i + ":" + s + ":" + hideDirt;
+  let b = blockCache.get(key);
+  if (b) return b;
+  const n = 32 / s, base = i * 32768;
+  b = new Uint8Array(n * n * n);
+  for (let z = 0; z < n; z++) for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) {
+    let solid = 0, val = 0;
+    for (let dz = 0; dz < s; dz++) for (let dy = 0; dy < s; dy++) for (let dx = 0; dx < s; dx++) {
+      const v = data[base + (((z * s + dz) * 32 + (y * s + dy)) * 32 + (x * s + dx))];
+      if (v && !(hideDirt && DIRT[v])) { solid++; if (!val) val = v; }
+    }
+    b[(z * n + y) * n + x] = solid * 2 >= s * s * s ? val : 0;
+  }
+  if (blockCache.size > 3000) blockCache.clear();
+  blockCache.set(key, b);
+  return b;
+}
+const DIRS = [[1,0,0],[-1,0,0],[0,1,0],[0,-1,0],[0,0,1],[0,0,-1]];
+const SHADE = [0.80, 0.70, 1.00, 0.45, 0.88, 0.62];
+// quad corners (unit cube) per direction, counter-clockwise seen from outside
+const QUAD = [
+  [[1,0,0],[1,1,0],[1,1,1],[1,0,1]], [[0,0,0],[0,0,1],[0,1,1],[0,1,0]],
+  [[0,1,0],[0,1,1],[1,1,1],[1,1,0]], [[0,0,0],[1,0,0],[1,0,1],[0,0,1]],
+  [[0,0,1],[1,0,1],[1,1,1],[0,1,1]], [[0,0,0],[0,1,0],[1,1,0],[1,0,0]],
+];
+function mesh(i, s, hideDirt, DIRT, COLOR) {
+  const [cx, cy, cz] = keys[i], n = 32 / s, b = blocks(i, s, hideDirt, DIRT);
+  const nb = DIRS.map(([dx, dy, dz]) => { const j = chunkAt(cx + dx, cy + dy, cz + dz); return j === undefined ? null : blocks(j, s, hideDirt, DIRT); });
+  const pos = [], col = [];
+  const size = s * 0.5, ox = cx * 16, oy = cy * 16, oz = cz * 16;
+  for (let z = 0; z < n; z++) for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) {
+    const v = b[(z * n + y) * n + x];
+    if (!v) continue;
+    const c = COLOR[v], jit = 0.92 + 0.16 * (((x * 73856093) ^ (y * 19349663) ^ (z * 83492791)) & 255) / 255;
+    for (let d = 0; d < 6; d++) {
+      const [dx, dy, dz] = DIRS[d];
+      let X = x + dx, Y = y + dy, Z = z + dz, w;
+      if (X < 0 || Y < 0 || Z < 0 || X >= n || Y >= n || Z >= n) {
+        const o = nb[d];
+        if (!o) continue;                       // unstored chunk next door: solid, no face
+        X = (X + n) % n; Y = (Y + n) % n; Z = (Z + n) % n;
+        w = o[(Z * n + Y) * n + X];
+      } else w = b[(Z * n + Y) * n + X];
+      if (w) continue;
+      const sh = SHADE[d] * jit;
+      const q = QUAD[d];
+      for (const k of [0, 1, 2, 0, 2, 3]) {
+        pos.push(ox + (x + q[k][0]) * size, oy + (y + q[k][1]) * size, oz + (z + q[k][2]) * size);
+        col.push(Math.min(255, c[0] * sh), Math.min(255, c[1] * sh), Math.min(255, c[2] * sh));
+      }
+    }
+  }
+  return { pos: new Float32Array(pos), col: new Uint8Array(col) };
+}
+onmessage = e => {
+  const m = e.data;
+  if (m.init) {
+    keys = m.keys; data = new Uint8Array(m.buf); index = new Map(); blockCache.clear();
+    keys.forEach((k, i) => index.set(k.join(","), i));
+    return;
+  }
+  if (m.reset) { blockCache.clear(); return; }
+  const out = [];
+  for (const i of m.chunks) {
+    const r = mesh(i, m.step, m.hideDirt, m.DIRT, m.COLOR);
+    out.push({ i, pos: r.pos, col: r.col });
+  }
+  postMessage({ job: m.job, step: m.step, gen: m.gen, out }, out.flatMap(o => [o.pos.buffer, o.col.buffer]));
+};`;
+const worker = new Worker(URL.createObjectURL(new Blob([workerSrc], { type: "text/javascript" })));
+
+// ---------- scene ----------
+const view = document.getElementById("view");
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.localClippingEnabled = true;
+view.appendChild(renderer.domElement);
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x14161a);
+const camera = new THREE.PerspectiveCamera(55, 1, 0.1, 5000);
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+const clipPlane = new THREE.Plane(new THREE.Vector3(0, -1, 0), 64);
+const voxMat = new THREE.MeshBasicMaterial({ vertexColors: true, clippingPlanes: [clipPlane], side: THREE.FrontSide });
+const voxGroup = new THREE.Group(); scene.add(voxGroup);
+const netGroup = new THREE.Group(); scene.add(netGroup);
+function resize() { renderer.setSize(innerWidth, innerHeight); camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); }
+addEventListener("resize", resize); resize();
+renderer.setAnimationLoop(() => { controls.update(); renderer.render(scene, camera); });
+
+// ---------- state ----------
+let world = null;            // { keys, nodes, edges, labels }
+let gen = 0;                 // bumps on every reload / remesh so stale results are ignored
+const coarse = new Map(), fine = new Map();   // chunk index -> Mesh
+let focus = new THREE.Vector3();
+const COARSE_STEP = 4;
+const $ = id => document.getElementById(id);
+const status = s => { $("status").textContent = s; };
+
+function geometry(pos, col) {
+  const g = new THREE.BufferGeometry();
+  g.setAttribute("position", new THREE.BufferAttribute(pos, 3));
+  g.setAttribute("color", new THREE.BufferAttribute(col, 3, true));
+  return g;
+}
+function clearMeshes(map) { for (const m of map.values()) { voxGroup.remove(m); m.geometry.dispose(); } map.clear(); }
+
+let pending = 0, faces = 0;
+worker.onmessage = e => {
+  const { step, out } = e.data;
+  if (e.data.gen !== gen) return;
+  const map = step === COARSE_STEP ? coarse : fine;
+  for (const { i, pos, col } of out) {
+    if (map.has(i)) { voxGroup.remove(map.get(i)); map.get(i).geometry.dispose(); map.delete(i); }
+    if (!pos.length) continue;
+    const m = new THREE.Mesh(geometry(pos, col), voxMat);
+    m.userData.chunk = i; m.userData.step = step;
+    map.set(i, m); voxGroup.add(m);
+    faces += pos.length / 18;
+  }
+  pending--;
+  syncVisibility();
+  if (pending <= 0) status(`${world.keys.length} chunks, ${coarse.size} coarse + ${fine.size} in full detail\n`
+    + `${world.nodes.length} nodes, ${world.edges.length} cables\nfocus ${focus.toArray().map(v => v.toFixed(1)).join(", ")}`);
+  else status(`meshing… ${pending} batches left`);
+};
+function syncVisibility() {
+  for (const [i, m] of coarse) m.visible = !fine.has(i);
+}
+
+function requestCoarse() {
+  const all = world.keys.map((_, i) => i);
+  for (let k = 0; k < all.length; k += 200) {
+    pending++;
+    worker.postMessage({ job: "coarse", gen, step: COARSE_STEP, chunks: all.slice(k, k + 200), hideDirt: !$("showDirt").checked, DIRT, COLOR });
+  }
+}
+function requestFine() {
+  const R = +$("radius").value;
+  const fc = [Math.floor(focus.x / 16), Math.floor(focus.y / 16), Math.floor(focus.z / 16)];
+  const want = new Set();
+  if (R > 0) world.keys.forEach(([x, y, z], i) => {
+    if (Math.abs(x - fc[0]) <= R && Math.abs(z - fc[2]) <= R && Math.abs(y - fc[1]) <= Math.max(1, R - 1)) want.add(i);
+  });
+  for (const [i, m] of fine) if (!want.has(i)) { voxGroup.remove(m); m.geometry.dispose(); fine.delete(i); }
+  const todo = [...want].filter(i => !fine.has(i));
+  for (let k = 0; k < todo.length; k += 8) {
+    pending++;
+    worker.postMessage({ job: "fine", gen, step: 1, chunks: todo.slice(k, k + 8), hideDirt: !$("showDirt").checked, DIRT, COLOR });
+  }
+  syncVisibility();
+}
+
+// ---------- network overlay ----------
+const TYPE_COLOR = [0xc9ccd3, 0x62d2a2, 0xe26d5c, 0xf2c14e, 0xb48cf2, 0x5ec8f0, 0xf08cc8];
+function buildNetwork() {
+  for (const c of [...netGroup.children]) { netGroup.remove(c); c.geometry.dispose(); }
+  const showRelays = $("showRelays").checked;
+  const pts = [], cols = [], big = [], bigCols = [];
+  const col = new THREE.Color();
+  for (const [x, y, z, t] of world.nodes) {
+    col.set(TYPE_COLOR[t] ?? 0xffffff);
+    if (t === 0) { if (showRelays) { pts.push(x, y + 0.25, z); cols.push(col.r, col.g, col.b); } }
+    else { big.push(x, y + 0.3, z); bigCols.push(col.r, col.g, col.b); }
+  }
+  const mk = (p, c, size) => {
+    const g = new THREE.BufferGeometry();
+    g.setAttribute("position", new THREE.Float32BufferAttribute(p, 3));
+    g.setAttribute("color", new THREE.Float32BufferAttribute(c, 3));
+    return new THREE.Points(g, new THREE.PointsMaterial({ size, vertexColors: true, sizeAttenuation: true, clippingPlanes: [clipPlane] }));
+  };
+  if (pts.length) netGroup.add(mk(pts, cols, 0.35));
+  if (big.length) netGroup.add(mk(big, bigCols, 0.7));
+  const lp = [];
+  for (const [a, b] of world.edges) {
+    const A = world.nodes[a], B = world.nodes[b];
+    if (!A || !B) continue;
+    lp.push(A[0], A[1] + 0.25, A[2], B[0], B[1] + 0.25, B[2]);
+  }
+  const lg = new THREE.BufferGeometry();
+  lg.setAttribute("position", new THREE.Float32BufferAttribute(lp, 3));
+  netGroup.add(new THREE.LineSegments(lg, new THREE.LineBasicMaterial({ color: 0xe0a040, transparent: true, opacity: 0.7, clippingPlanes: [clipPlane] })));
+  netGroup.visible = $("showNet").checked;
+}
+
+// ---------- loading ----------
+function parseBinary(buf) {
+  const dv = new DataView(buf), n = dv.getUint32(0, true);
+  const head = JSON.parse(new TextDecoder().decode(new Uint8Array(buf, 4, n)));
+  return { head, voxels: buf.slice(4 + n) };
+}
+function fromSaveJson(save) {             // the same data, built in the browser from a save file
+  const keys = [], parts = [];
+  for (const [c, rle] of save.chunks) {
+    const a = new Uint8Array(32768); let o = 0;
+    for (const [cnt, v] of rle) { a.fill(Math.min(v, 255), o, o + cnt); o += cnt; }
+    if (o !== 32768) continue;
+    keys.push([c.x, c.y, c.z]); parts.push(a);
+  }
+  const vox = new Uint8Array(parts.length * 32768);
+  parts.forEach((p, i) => vox.set(p, i * 32768));
+  const TYPES = { relays: 0, hubs: 1, filters: 2, endpoints: 3, bridges: 4, antennas: 5, testers: 6 };
+  const typ = {};
+  for (const [lst, t] of Object.entries(TYPES)) for (const r of save[lst] || []) typ[r.node] = t;
+  const D = { Zero: "0", One: "1", Two: "2", Three: "3", Wildcard: "*" };
+  const labels = {};
+  for (const r of save.endpoints || []) labels[r.node] = r.address.elements.map(d => D[d]).join(".");
+  return { head: { chunks: keys, nodes: save.nodes.map((n, i) => [...n.pos, typ[i] ?? 0]),
+                   edges: save.edges.map(e => [e[0][0], e[1][0]]), labels }, voxels: vox.buffer };
+}
+function start({ head, voxels }) {
+  gen++; pending = 0; faces = 0;
+  clearMeshes(coarse); clearMeshes(fine);
+  world = { keys: head.chunks, nodes: head.nodes, edges: head.edges, labels: head.labels || {} };
+  worker.postMessage({ init: true, keys: world.keys, buf: voxels }, [voxels]);
+  buildNetwork();
+  // focus: centre of the endpoints, camera above and to the side
+  const ends = world.nodes.filter(n => n[3] === 3);
+  const src = ends.length ? ends : world.nodes;
+  const c = src.reduce((a, n) => [a[0] + n[0], a[1] + n[1], a[2] + n[2]], [0, 0, 0]).map(v => v / Math.max(1, src.length));
+  setFocus(new THREE.Vector3(...c), 260);
+  requestCoarse();
+}
+async function loadServer(name) {
+  status(`loading ${name}…`);
+  const r = await fetch(`/api/voxels?save=${encodeURIComponent(name)}`);
+  if (!r.ok) { status(`could not load ${name}: ${r.status}`); return; }
+  start(parseBinary(await r.arrayBuffer()));
+}
+function setFocus(p, dist) {
+  const off = dist ? new THREE.Vector3(0.6, 0.8, 0.6).normalize().multiplyScalar(dist)
+                   : camera.position.clone().sub(controls.target);
+  focus.copy(p);
+  controls.target.copy(p);
+  camera.position.copy(p).add(off);
+  if (world) requestFine();
+}
+
+// ---------- controls ----------
+$("clip").oninput = () => { clipPlane.constant = +$("clip").value; $("clipVal").textContent = $("clip").value; };
+$("clipVal").textContent = $("clip").value;
+$("clipFocus").onclick = () => { $("clip").value = (Math.round(focus.y * 2) / 2 + 2.5); $("clip").oninput(); };
+$("clipOff").onclick = () => { $("clip").value = 64; $("clip").oninput(); };
+$("radius").oninput = () => { $("radiusVal").textContent = `${+$("radius").value * 2 + 1} chunks`; if (world) requestFine(); };
+$("radius").oninput();
+$("showDirt").onchange = () => { if (!world) return; gen++; pending = 0; worker.postMessage({ reset: true });
+  clearMeshes(coarse); clearMeshes(fine); requestCoarse(); requestFine(); };
+$("showNet").onchange = () => { netGroup.visible = $("showNet").checked; };
+$("showRelays").onchange = () => { if (world) buildNetwork(); };
+$("load").onclick = () => loadServer($("save").value);
+$("openFile").onclick = () => $("file").click();
+$("file").onchange = async () => {
+  const f = $("file").files[0]; if (!f) return;
+  status(`reading ${f.name} (${(f.size / 1e6).toFixed(0)} MB)…`);
+  try { start(fromSaveJson(JSON.parse(await f.text()))); } catch (e) { status("could not read that file: " + e.message); }
+};
+const go = () => {
+  const want = $("find").value.trim(); if (!world || !want) return;
+  const k = Object.keys(world.labels).find(i => world.labels[i] === want);
+  if (k === undefined) { status(`no endpoint ${want} in this save`); return; }
+  const n = world.nodes[+k];
+  setFocus(new THREE.Vector3(n[0], n[1], n[2]), 40);
+};
+$("go").onclick = go;
+$("find").onkeydown = e => { if (e.key === "Enter") go(); };
+renderer.domElement.addEventListener("dblclick", e => {
+  const ray = new THREE.Raycaster();
+  ray.params.Points.threshold = 0.5;
+  ray.setFromCamera(new THREE.Vector2(e.clientX / innerWidth * 2 - 1, -(e.clientY / innerHeight) * 2 + 1), camera);
+  const hits = ray.intersectObjects([...voxGroup.children.filter(m => m.visible), ...(netGroup.visible ? netGroup.children : [])], false)
+    .filter(h => h.point.y <= clipPlane.constant + 0.01);
+  if (hits.length) setFocus(hits[0].point.clone());
+});
+
+// ---------- saves list ----------
+(async () => {
+  try {
+    const list = await (await fetch("/api/saves")).json();
+    $("save").innerHTML = list.map(n => `<option>${n}</option>`).join("");
+    const want = new URLSearchParams(location.search).get("save") || "slot_0.json";
+    if (list.includes(want)) $("save").value = want;
+    loadServer($("save").value);
+  } catch {
+    $("save").innerHTML = "<option>(no local server)</option>";
+    status("No local server: use Open file… to load a save (e.g. %APPDATA%\\tunnet\\slot_0.json).");
+  }
+})();
+</script>
+</body>
+</html>
