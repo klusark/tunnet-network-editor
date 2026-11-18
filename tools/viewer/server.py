@@ -536,19 +536,21 @@ class Handler(SimpleHTTPRequestHandler):
         self.wfile.write(body)
 
     def do_POST(self):
-        """Edits to the running game. Only tester configs for now. EDIT=0 disables."""
+        """Edits to the running game: tester and filter configs, hub direction. EDIT=0 disables."""
         url = urlparse(self.path)
         if os.environ.get("EDIT", "1") == "0":
             return self._reply(403, {"error": "editing is disabled (EDIT=0)"})
-        if url.path != "/api/tester":
+        what = {"/api/tester": "tester", "/api/filter": "filter", "/api/hub": "hub"}.get(url.path)
+        if what is None:
             return self._reply(404, {"error": "unknown"})
         try:
             req = json.loads(self.rfile.read(int(self.headers.get("Content-Length", "0") or 0)) or b"{}")
             net = SHARED.net
             if net is None:
                 return self._reply(503, {"error": "not attached to the game"})
-            res = net.write_tester(int(req["e"]), req.get("config") or {}, req.get("expect"))
-            log_edit({"what": "tester", "e": int(req["e"]), **res, "from": self.client_address[0]})
+            fn = {"tester": net.write_tester, "filter": net.write_filter, "hub": net.write_hub}[what]
+            res = fn(int(req["e"]), req.get("config") or {}, req.get("expect"))
+            log_edit({"what": what, "e": int(req["e"]), **res, "from": self.client_address[0]})
             return self._reply(200, res)
         except (ValueError, KeyError, RuntimeError, OSError) as ex:
             return self._reply(400, {"error": str(ex)})

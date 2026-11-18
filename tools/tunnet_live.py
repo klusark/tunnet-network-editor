@@ -85,6 +85,34 @@ def encode_tester(cfg, old):
             + _enc_addr(cur["destination"], cur["destination_type"]) + old[15:16])
 
 
+def _rev(d, v, what):
+    r = {name: k for k, name in d.items()}.get(v)
+    if r is None:
+        raise ValueError(f"bad {what} {v!r}: one of {', '.join(d.values())}")
+    return r
+
+
+def _enc_mask(text):
+    rev = {v: k for k, v in DIGIT.items()}
+    parts = text.split(".")
+    if len(parts) != 4 or any(p not in rev for p in parts):
+        raise ValueError(f"bad mask {text!r}: four digits 0-3 or *, e.g. 0.*.1.*")
+    return bytes(rev[p] for p in parts)
+
+
+def encode_filter(cfg, old):
+    """New 24 FilterConfig bytes; keys missing from cfg keep their old value. Padding kept."""
+    cur = decode_filter(old)
+    cur.update({k: v for k, v in cfg.items() if v is not None})
+    port = int(cur["port"])
+    if port not in (0, 1):
+        raise ValueError("port must be 0 or 1")
+    return (struct.pack("<Q", port) + _enc_mask(cur["mask"])
+            + bytes([_rev(MASK_TYPE, cur["mask_type"], "mask type"), _rev(COLLISION, cur["collision"], "collision"),
+                     _rev(FILTER_ADDR, cur["addr"], "address field"), _rev(FILTER_ACTION, cur["action"], "action"),
+                     _rev(FILTER_OP, cur["op"], "operation")]) + old[0x11:0x18])
+
+
 COMP_REC = 0x50   # ComponentInfo stride
 COL_SIZE = 0x58   # Column stride; fields below are qword indexes
 C_ID, C_ISIZE, C_IALIGN, C_LEN, C_DATA, C_DROP = 0, 4, 5, 7, 8, 10
@@ -327,32 +355,51 @@ class LiveNet:
             ents = struct.unpack(f"<{f[11]}Q", M.read(self.h, f[10], 8 * f[11])) if f[11] else ()
             yield rec, cols, [e >> 32 for e in ents]
 
-    def _tester_slot(self, entity):
-        tc = self.by_name[TESTER_CONFIG]
+    def _component_slot(self, entity, comp, size):
+        c = self.by_name[comp]
         for rec, cols, ents in self.tables():
-            if tc in cols and entity in ents:
-                return cols[tc][0] + TESTER_SIZE * ents.index(entity)
-        raise KeyError(f"entity {entity} has no TesterConfig")
+            if c in cols and entity in ents:
+                return cols[c][0] + size * ents.index(entity)
+        raise KeyError(f"entity {entity} has no {comp.rsplit('::', 1)[-1]}")
 
-    def write_tester(self, entity, cfg, expect=None):
-        """Edit one tester's config in the running game. cfg: any of freq, mode, address,
-        address_type, destination, destination_type. If `expect` (the decoded config the
+    def _write_component(self, entity, comp, size, decode, encode, cfg, expect):
+        """Read-check-write-verify one component value. If `expect` (the decoded value the
         caller last saw) is given and memory no longer matches it, nothing is written."""
-        addr = self._tester_slot(entity)
-        old = M.read(self.h, addr, TESTER_SIZE)
-        if len(old) != TESTER_SIZE:
-            raise OSError("could not read the tester config")
-        if expect is not None and decode_tester(old) != expect:
-            raise RuntimeError("tester config changed in the game since it was read; reload and retry")
-        new = encode_tester(cfg, old)
+        addr = self._component_slot(entity, comp, size)
+        old = M.read(self.h, addr, size)
+        if len(old) != size:
+            raise OSError("could not read the current value")
+        if expect is not None and decode(old) != expect:
+            raise RuntimeError("changed in the game since it was read; reload and retry")
+        new = encode(cfg, old)
         if new != old:
             if not getattr(self, "hw", None):
                 self.hw = M.open_writer(self.pid)
             M.write(self.hw, addr, new)
-        back = M.read(self.h, addr, TESTER_SIZE)
+        back = M.read(self.h, addr, size)
         if back != new:
             raise OSError("write did not stick (read back differs)")
-        return {"old": decode_tester(old), "new": decode_tester(back)}
+        return {"old": decode(old), "new": decode(back)}
+
+    def write_tester(self, entity, cfg, expect=None):
+        """cfg: any of freq, mode, address, address_type, destination, destination_type."""
+        return self._write_component(entity, TESTER_CONFIG, TESTER_SIZE, decode_tester, encode_tester, cfg, expect)
+
+    def write_filter(self, entity, cfg, expect=None):
+        """cfg: any of port, mask, mask_type, collision, addr, action, op (decoded names)."""
+        return self._write_component(entity, FILTER_CONFIG, 24, decode_filter, encode_filter, cfg, expect)
+
+    def write_hub(self, entity, cfg, expect=None):
+        """cfg: {"hub_dir": 0 or 1}. 0 = to the next port (0->1->2->0), 1 = to the previous."""
+        def dec(b):
+            return {"hub_dir": b[0]}
+
+        def enc(c, old):
+            v = c.get("hub_dir", old[0])
+            if v not in (0, 1, True, False):
+                raise ValueError("hub_dir must be 0 or 1")
+            return bytes([int(v)])
+        return self._write_component(entity, HUB_DIR, 1, dec, enc, cfg, expect)
 
     def _packet(self, s):
         if s[0x3A] == 2:  # Option::None niche

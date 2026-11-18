@@ -691,9 +691,10 @@ function select(n, center) {
 }
 function selectChain(ch) { selChain = ch || null; selected = null; replay = null; renderEditor(); renderInfo(); draw(); }
 
-// ---------- tester editor ----------
+// ---------- live editors (tester, filter, hub) ----------
 // Lives outside #info (which is rebuilt every tick) so typing isn't interrupted. Writes go
-// to the running game via POST /api/tester; the server logs old and new values.
+// to the running game via POST /api/<kind>; the server checks the value is still what we
+// saw, writes, reads back, and logs old and new values to logs/edits.jsonl.
 const TESTER_MODES = {
   Single: "Sends one PING to the destination when Send is pressed in the game, and logs the PONG.",
   Repeat: "Sends a PING to the destination every <b>freq</b> ticks. Wildcard digits (*) in the destination step through every match in turn.",
@@ -701,57 +702,106 @@ const TESTER_MODES = {
   Snoop: "Logs packets going from <b>address</b> to <b>destination</b>.",
 };
 const ADDR_TYPES = ["Endpoint", "Filter", "UnrestrictedFilter"];
+const EDITORS = {
+  tester: {
+    title: "Edit tester settings (live)", api: "/api/tester",
+    get: n => n.tester, set: (n, v) => { n.tester = v; },
+    fields: [
+      { k: "mode", label: "mode", sel: Object.keys(TESTER_MODES) },
+      { k: "freq", label: "freq (ticks)", num: [1, 100000], show: v => v.mode === "Repeat" },
+      { k: "address", label: "address", addr: true, pair: "address_type" },
+      { k: "destination", label: "destination", addr: true, pair: "destination_type" },
+    ],
+    help: v => (TESTER_MODES[v.mode] || "") + "<br>Digits 0-3, or * for any. One tick is about 0.5 s.",
+    note: "The game's own tester screen may show the old values until it is reopened.",
+  },
+  filter: {
+    title: "Edit filter (live)", api: "/api/filter",
+    get: n => n.filter, set: (n, v) => { n.filter = v; },
+    fields: [
+      { k: "port", label: "filtered port", sel: [0, 1] },
+      { k: "addr", label: "test", sel: ["Dst", "Src"], names: { Dst: "destination", Src: "source" } },
+      { k: "op", label: "when it", sel: ["Match", "Differ"], names: { Match: "matches", Differ: "does not match" } },
+      { k: "mask", label: "mask", addr: true, pair: "mask_type" },
+      { k: "action", label: "then", sel: ["Drop", "SendBack"], names: { Drop: "drop it", SendBack: "send it back" } },
+      { k: "collision", label: "if busy", sel: ["DropInbound", "DropOutbound", "SendBackOutbound"],
+        names: { DropInbound: "replace the waiting packet", DropOutbound: "drop the arriving packet", SendBackOutbound: "send the arriving packet back" } },
+    ],
+    help: (v, n) => filterRuleHtml(Object.assign({}, n, { filter: v })),
+    note: "The game's own filter screen may show the old values until it is reopened.",
+  },
+  hub: {
+    title: "Edit hub (live)", api: "/api/hub",
+    get: n => n.hub_dir != null ? { hub_dir: n.hub_dir } : null, set: (n, v) => { n.hub_dir = v.hub_dir; },
+    fields: [{ k: "hub_dir", label: "rotation", sel: [0, 1],
+               names: { 0: "next port: 0→1, 1→2, 2→0", 1: "previous port: 0→2, 2→1, 1→0" } }],
+    help: () => "Each frame the hub copies a packet waiting on a port to the outbound slot of the port it rotates to.",
+    note: "The hub's arrow in the game may not turn until the area is reloaded.",
+  },
+};
+const editorKind = n => n && (n.tester ? "tester" : n.filter ? "filter" : n.hub_dir != null ? "hub" : null);
 let ed = { e: null, dirty: false, undo: null, msg: "", err: false };
+function formValue(E, base) {
+  const v = Object.assign({}, base);
+  for (const f of E.fields) {
+    const el = document.getElementById("ed_" + f.k); if (!el) continue;
+    let x = el.value;
+    if (f.num || typeof base[f.k] === "number") x = +x;
+    v[f.k] = f.addr ? x.trim() : x;
+    if (f.pair) v[f.pair] = document.getElementById("ed_" + f.pair).value;
+  }
+  return v;
+}
 function renderEditor(force) {
   const box = document.getElementById("editor");
-  const n = selected;
-  if (!n || !n.tester || replay) { box.innerHTML = ""; ed.e = null; return; }
+  const n = selected, kind = editorKind(n), E = EDITORS[kind];
+  if (!E || replay || !E.get(n)) { box.innerHTML = ""; ed.e = null; return; }
   if (ed.e === n.e && ed.dirty && !force) return;
   if (ed.e !== n.e) ed = { e: n.e, dirty: false, undo: null, msg: "", err: false };
-  const t = n.tester;
-  ed.shown = JSON.stringify(t);
-  const opt = (list, v) => list.map(x => `<option${x === v ? " selected" : ""}>${x}</option>`).join("");
-  box.innerHTML = `<div class="ed"><h3>Edit tester settings (live)</h3>
-    <label>mode <select id="edMode">${opt(Object.keys(TESTER_MODES), t.mode)}</select></label>
-    <div class="help" id="edHelp">${TESTER_MODES[t.mode] || ""}</div>
-    <label id="edFreqRow">freq (ticks) <input id="edFreq" type="number" min="1" max="100000" step="1" inputmode="numeric" value="${t.freq}"></label>
-    <label>address <span class="row2"><input id="edAddr" value="${esc(t.address)}" placeholder="0.0.1.2" autocapitalize="off" spellcheck="false">
-      <select id="edAddrT">${opt(ADDR_TYPES, t.address_type)}</select></span></label>
-    <label>destination <span class="row2"><input id="edDst" value="${esc(t.destination)}" placeholder="0.2.1.1" autocapitalize="off" spellcheck="false">
-      <select id="edDstT">${opt(ADDR_TYPES, t.destination_type)}</select></span></label>
-    <div class="help">Digits 0-3, or * for any. One tick is about 0.5 s.</div>
+  const v = E.get(n);
+  ed.shown = JSON.stringify(v);
+  const opt = (f, cur) => f.sel.map(x => `<option value="${esc(x)}"${String(x) === String(cur) ? " selected" : ""}>${esc(f.names ? f.names[x] : x)}</option>`).join("");
+  const field = f => {
+    let inp;
+    if (f.sel) inp = `<select id="ed_${f.k}">${opt(f, v[f.k])}</select>`;
+    else if (f.num) inp = `<input id="ed_${f.k}" type="number" min="${f.num[0]}" max="${f.num[1]}" step="1" inputmode="numeric" value="${esc(v[f.k])}">`;
+    else inp = `<input id="ed_${f.k}" value="${esc(v[f.k])}" autocapitalize="off" spellcheck="false">`;
+    if (f.pair) inp = `<span class="row2">${inp}<select id="ed_${f.pair}">${ADDR_TYPES.map(t => `<option${t === v[f.pair] ? " selected" : ""}>${t}</option>`).join("")}</select></span>`;
+    return `<label id="edrow_${f.k}">${esc(f.label)} ${inp}</label>`;
+  };
+  box.innerHTML = `<div class="ed"><h3>${E.title}</h3>${E.fields.map(field).join("")}
+    <div class="help" id="edHelp"></div>
     <div class="acts"><button id="edSave">Apply to game</button><button id="edReset">Reset</button>
       ${ed.undo ? `<button id="edUndo">Undo last edit</button>` : ""}</div>
     <div class="msg${ed.err ? " err" : ""}" id="edMsg">${ed.msg}</div></div>`;
-  const freqRow = () => { document.getElementById("edFreqRow").style.display = document.getElementById("edMode").value === "Repeat" ? "" : "none"; };
-  freqRow();
-  box.querySelectorAll("input,select").forEach(el => el.addEventListener("input", () => {
-    ed.dirty = true; freqRow();
-    document.getElementById("edHelp").innerHTML = TESTER_MODES[document.getElementById("edMode").value] || "";
-  }));
+  const refresh = () => {
+    const cur = formValue(E, v);
+    for (const f of E.fields) if (f.show) document.getElementById("edrow_" + f.k).style.display = f.show(cur) ? "" : "none";
+    document.getElementById("edHelp").innerHTML = E.help(cur, n);
+  };
+  refresh();
+  box.querySelectorAll("input,select").forEach(el => el.addEventListener("input", () => { ed.dirty = true; refresh(); }));
   document.getElementById("edReset").onclick = () => { ed.dirty = false; ed.msg = ""; ed.err = false; renderEditor(true); };
-  document.getElementById("edSave").onclick = () => applyTester(n, {
-    mode: document.getElementById("edMode").value, freq: +document.getElementById("edFreq").value,
-    address: document.getElementById("edAddr").value.trim(), address_type: document.getElementById("edAddrT").value,
-    destination: document.getElementById("edDst").value.trim(), destination_type: document.getElementById("edDstT").value });
+  document.getElementById("edSave").onclick = () => applyEdit(n, kind, formValue(E, v));
   const u = document.getElementById("edUndo");
-  if (u) u.onclick = () => applyTester(n, ed.undo, true);
+  if (u) u.onclick = () => applyEdit(n, kind, ed.undo, true);
 }
-async function applyTester(n, config, isUndo) {
+async function applyEdit(n, kind, config, isUndo) {
+  const E = EDITORS[kind];
   let res, body;
   try {
-    res = await fetch("/api/tester", { method: "POST", headers: { "Content-Type": "application/json" },
-                                       body: JSON.stringify({ e: n.e, config, expect: n.tester }) });
+    res = await fetch(E.api, { method: "POST", headers: { "Content-Type": "application/json" },
+                               body: JSON.stringify({ e: n.e, config, expect: E.get(n) }) });
     body = await res.json();
   } catch (err) { body = { error: String(err) }; res = { ok: false }; }
   if (res.ok) {
-    n.tester = body.new;
+    E.set(n, body.new);
     ed = { e: n.e, dirty: false, undo: isUndo ? null : body.old, err: false,
-           msg: isUndo ? "Undone." : "Applied to the game. The game's own tester screen may show the old values until it is reopened." };
+           msg: isUndo ? "Undone." : "Applied to the game. " + E.note };
   } else {
     ed.err = true; ed.msg = "Not applied: " + esc(body.error || "error");
   }
-  renderEditor(true); renderInfo();
+  renderEditor(true); renderInfo(); draw();
 }
 
 // ---------- dropped packets ----------
@@ -1051,7 +1101,8 @@ async function loadStructure() {
   computeChains();
   setupYRange();
   selected = old != null ? nodes.get(old) || null : null;
-  if (selected && selected.tester && !ed.dirty && JSON.stringify(selected.tester) !== ed.shown) renderEditor(true);
+  { const E = EDITORS[editorKind(selected)];
+    if (E && !ed.dirty && JSON.stringify(E.get(selected)) !== ed.shown) renderEditor(true); }
   selChain = oldChain ? chains.find(c => c.a === oldChain[0] && c.ap === oldChain[1]) || null : null;
   if (needsFit) { needsFit = false; fit(); }
 }

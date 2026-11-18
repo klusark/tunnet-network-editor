@@ -272,6 +272,15 @@ from the disassembly (re/reply_region.asm, 0x1402f6900-0x1402f7700).
   The game's own tester screen isn't refreshed (no Bevy change detection on our write);
   whether an in-game save keeps the edit is not checked yet.
 
+## Editing filters and hubs
+- Same read-check-write-verify path (LiveNet._write_component): write_filter (24 B
+  FilterConfig, padding bytes kept), write_hub (1 B HubDirection). POST /api/filter,
+  /api/hub. Viewer: one form for tester/filter/hub with a live preview of the filter rule.
+- All 100 filters round-trip byte-exactly through decode/encode.
+- Verified live: hub 428 dir 1 -> same-tick copies 0->2 and 1->0; flipped to 0 -> 0->1 and
+  1->2; restored. Filter 7022 action SendBack -> Drop: drops at it went from ~3 in 4 ticks
+  to every tick (ticks 35830-35850); restored.
+
 ## Config components
 - HubDirection (1 B): 1 = save `dir: true`, 0 = false (96/96 hubs).
 - FilterConfig (24 B), verified 100/100 filters against the save on every field:
