@@ -60,7 +60,10 @@ class State:
         self.drops = collections.deque(maxlen=DROPS_KEEP)
         self.drop_total = 0
         self.drop_missed = 0  # gaps in event ids: drops that came and went between polls
-        self.synthetic_id = 0  # negative ids for losses the game reports no event for
+        # Drop ids are the server's own, always increasing (they start at the current time in
+        # ms so they also keep increasing across server restarts). The game's event ids start
+        # again from 1 when the game restarts, and the page treats ids it has passed as old.
+        self.next_id = int(time.time() * 1000)
         # traffic per endpoint/bridge entity: deques of (tick, time, peer address, kind, spam)
         self.sent = collections.defaultdict(lambda: collections.deque(maxlen=1000))
         self.recv = collections.defaultdict(lambda: collections.deque(maxlen=1000))
@@ -246,9 +249,8 @@ def find_overwrites(trk, snap, tick, ended, tracking_since):
         trk.ended.remove(t)
         n = snap[e]
         rec = TR.drop_record(t, [], tick, snap, tracking_since)
-        STATE.synthetic_id -= 1
         rows.append({
-            "id": STATE.synthetic_id, "time": time.time(), "tick": tick,
+            "id": new_drop_id(), "time": time.time(), "tick": tick,
             "reason": OVERWRITE_REASON.get(n["type"], "overwritten (no game drop event)"),
             "flag": None, "synthetic": True, "node": [e, n["type"], n.get("address")],
             "pos": [round(v, 2) for v in n.get("pos", (0, 0, 0))],
@@ -265,6 +267,11 @@ def find_overwrites(trk, snap, tick, ended, tracking_since):
         log_drops(rows)
 
 
+def new_drop_id():
+    STATE.next_id += 1
+    return STATE.next_id
+
+
 def enrich_drop(d, snap, tick):
     pos = d["pos"]
     best, bd = None, 1e9
@@ -277,7 +284,7 @@ def enrich_drop(d, snap, tick):
     node = best[1] if best and bd < 2.0 else None
     pk = d["packet"]
     return {
-        "id": d["id"], "time": time.time(), "tick": tick,
+        "id": new_drop_id(), "event": d["id"], "time": time.time(), "tick": tick,
         "reason": drop_reason(node, d["flag"], pk), "flag": d["flag"],
         "node": [best[0], node["type"], node.get("address")] if node else None,
         "pos": [round(v, 2) for v in pos],
