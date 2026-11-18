@@ -113,6 +113,23 @@
       <div id="status"><span class="dot" id="sdot"></span><span id="stext">connecting…</span></div>
       <div id="stats" style="color:var(--muted);margin-top:4px"></div>
     </div>
+    <div class="sec" id="srcSec">
+      <h2>Data source</h2>
+      <div class="note" id="srcNote">Live game. To work without the game, open a Tunnet save file
+        (%APPDATA%\tunnet\slot_N.json); it is simulated in this browser, nothing is uploaded.</div>
+      <div class="row" style="margin-top:6px;gap:6px;display:flex;flex-wrap:wrap;align-items:center">
+        <button id="srcOpen">Open save file…</button>
+        <input type="file" id="srcFile" accept=".json,application/json" style="display:none">
+        <span id="srcSpeed" style="display:none">
+          <button id="spPause" title="Pause / resume">⏸</button>
+          <select id="spRate" title="Simulation speed"><option value="1">1×</option><option value="2">2×</option>
+            <option value="5">5×</option><option value="10">10×</option><option value="25">25×</option></select>
+          <button id="spStep" title="One tick">step</button>
+        </span>
+        <button id="srcLive" style="display:none">Back to live game</button>
+      </div>
+      <div class="msg err" id="srcErr" style="display:none"></div>
+    </div>
     <div class="sec">
       <h2>View</h2>
       <div class="row">
@@ -188,6 +205,8 @@
     <div id="info"><div class="empty">Click a node to inspect its ports and packets.</div></div>
   </div>
 </div>
+<script src="sim.js"></script>
+<script src="offline.js"></script>
 <script>
 "use strict";
 const TYPE_STYLE = {
@@ -840,6 +859,7 @@ function renderEditor(force) {
   };
   const u = document.getElementById("edUndo");
   if (u) u.onclick = () => applyEdit(n, kind, ed.undo, true);
+  if (OB && OB.active) document.getElementById("edSave").textContent = "Apply";
   if (n.sim) { document.getElementById("edSave").style.display = "none"; box.querySelector("h3").textContent += " (planned node)"; }
 }
 async function applyEdit(n, kind, config, isUndo) {
@@ -853,7 +873,7 @@ async function applyEdit(n, kind, config, isUndo) {
   if (res.ok) {
     E.set(n, body.new);
     ed = { e: n.e, dirty: false, undo: isUndo ? null : body.old, err: false,
-           msg: isUndo ? "Undone." : "Applied to the game. " + E.note };
+           msg: isUndo ? "Undone." : OB && OB.active ? "Applied to the simulation." : "Applied to the game. " + E.note };
   } else {
     ed.err = true; ed.msg = "Not applied: " + esc(body.error || "error");
   }
@@ -1041,7 +1061,7 @@ loadSlots();
 async function doExport(write) {
   const out = document.getElementById("expOut");
   const base = +document.getElementById("expBase").value, slot = +document.getElementById("expSlot").value;
-  if (write && !confirm(`Write the exported network to slot ${slot}?` + (slot === base ? "\nThis is the base save itself." : "")
+  if (write && !(OB && OB.active) && !confirm(`Write the exported network to slot ${slot}?` + (slot === base ? "\nThis is the base save itself." : "")
       + "\nThe current slot file is backed up to backups/ first.")) return;
   out.innerHTML = `<div class="note">${write ? "Writing" : "Building"}…</div>`;
   const edits = document.getElementById("expEdits").checked ? simEdits.map(({ label, ...x }) => x) : [];
@@ -1056,7 +1076,8 @@ async function doExport(write) {
     removed_links: "removed links", long_links: "links longer than 6 units (the game never makes these)" };
   out.innerHTML = Object.entries(r.report).map(([k, v]) => `<div class="port"><div class="hd">${esc(names[k] || k)} (${v.length})</div>`
     + v.slice(0, 20).map(x => `<div>${esc(x)}</div>`).join("") + (v.length > 20 ? `<div class="note">… ${v.length - 20} more</div>` : "") + `</div>`).join("")
-    + (r.written ? `<div class="msg">Written to ${esc(r.written)}${r.backup ? "; previous file backed up to " + esc(r.backup) : ""}. Load slot ${r.slot} in the game to use it.</div>` : `<div class="note">Preview only; nothing written.</div>`);
+    + (r.written && OB && OB.active ? `<div class="msg">Downloaded ${esc(r.written.replace(" (downloaded)", ""))}. To play it, back up your own %APPDATA%\tunnet\slot_${r.slot}.json, copy this file there, and load slot ${r.slot} in the game.</div>`
+       : r.written ? `<div class="msg">Written to ${esc(r.written)}${r.backup ? "; previous file backed up to " + esc(r.backup) : ""}. Load slot ${r.slot} in the game to use it.</div>` : `<div class="note">Preview only; nothing written.</div>`);
   if (r.written) loadSlots();
 }
 document.getElementById("expPreview").onclick = () => doExport(false);
@@ -1431,12 +1452,13 @@ async function poll() {
         const d = drops.get(replay.d.id);
         if (d && d.origin !== "pending") openReplay(d);
       }
-      dot.className = "dot ok"; txt.textContent = `live · tunnet.exe pid ${live.pid}`;
+      dot.className = "dot ok";
+      txt.textContent = live.offline ? `offline · ${live.name} · simulated${live.paused ? " (paused)" : ""}` : `live · tunnet.exe pid ${live.pid}`;
       const inb = packets.filter(p => p[2] === INBOUND).length;
       document.getElementById("stats").textContent =
         `${nodes.size} nodes · ${packets.length} packets (${inb} in / ${packets.length - inb} out)` +
         ` · tick ${live.tick}` + (live.tick_period ? ` (${live.tick_period.toFixed(2)} s)` : "") +
-        ` · read ${live.read_ms} ms`;
+        (live.offline ? "" : ` · read ${live.read_ms} ms`);
       banner.style.display = "none";
       if (selected || selChain) renderInfo();
       draw();
@@ -1447,8 +1469,10 @@ async function poll() {
     }
   } catch (e) {
     document.getElementById("sdot").className = "dot bad";
-    document.getElementById("stext").textContent = "viewer server not reachable";
-    wait = 1000;
+    document.getElementById("stext").textContent = "no game connection";
+    banner.innerHTML = "No live game here. <b>Open a save file</b> (Data source, in the side panel) to view, edit and simulate it in this browser.";
+    banner.style.display = "block";
+    wait = noServer ? 3000 : 1000;
   }
   setTimeout(poll, wait);
 }
@@ -1634,7 +1658,66 @@ window.addEventListener("resize", resize);
 view = load("view", "top");
 document.querySelectorAll("[data-view]").forEach(x => x.classList.toggle("on", x.dataset.view === view));
 resize();
-poll();
+
+// ---------- offline mode (save file + in-browser simulator) ----------
+const OB = window.OfflineBackend;
+let noServer = false;
+async function openSave(file) {
+  const err = document.getElementById("srcErr");
+  err.style.display = "none";
+  document.getElementById("stext").textContent = `reading ${file.name}…`;
+  let save;
+  try {
+    save = JSON.parse(await file.text());
+    if (!save.nodes || !save.edges) throw new Error("not a Tunnet save file (no nodes/edges)");
+    await OB.load(save, file.name);
+  } catch (e) {
+    err.textContent = `Could not open ${file.name}: ${e.message || e}`; err.style.display = "block"; return;
+  }
+  // fresh state for the new network
+  drops.clear(); dropMax = -1; dropClearedAt = -1; dropTotal = 0; reasonFilter = null;
+  traffic.clear(); simEdits = []; renderSimEdits(); selected = null; selChain = null; replay = null;
+  packets = []; anims = []; seq = -1; rev = null; needsFit = true;
+  document.getElementById("simOut").innerHTML = ""; document.getElementById("expOut").innerHTML = "";
+  const story = save.story && save.story.state, want = OB.data.story_state;
+  document.getElementById("srcNote").innerHTML = `Simulating <b>${esc(file.name)}</b> in this browser (nothing is uploaded). `
+    + `Edits change the simulation; Export save downloads a file.`
+    + (story && story !== want ? ` <span style="color:var(--warn)">This save is at story stage ${esc(story)}; endpoint send schedules were read from the game at ${esc(want)}, so some endpoints may send differently.</span>` : "");
+  document.getElementById("srcSpeed").style.display = "";
+  document.getElementById("srcLive").style.display = noServer ? "none" : "";
+  document.getElementById("expBase").innerHTML = `<option value="0">${esc(file.name)}</option>`;
+  document.getElementById("expBase").disabled = true;
+  document.getElementById("expWrite").textContent = "Download save";
+  document.getElementById("expSlot").innerHTML = [0, 1, 2, 3].map(k => `<option value="${k}"${k === 1 ? " selected" : ""}>slot_${k}.json</option>`).join("");
+  banner.style.display = "none";
+  await loadStructure(); renderInfo(); renderEditor(); fit(); draw();
+}
+document.getElementById("srcOpen").onclick = () => document.getElementById("srcFile").click();
+document.getElementById("srcFile").onchange = e => { const f = e.target.files[0]; if (f) openSave(f); e.target.value = ""; };
+document.getElementById("srcLive").onclick = () => location.reload();
+document.getElementById("spPause").onclick = () => { OB.paused = !OB.paused; document.getElementById("spPause").textContent = OB.paused ? "▶" : "⏸"; OB.schedule(); };
+document.getElementById("spRate").onchange = e => { OB.speed = +e.target.value; OB.schedule(); };
+document.getElementById("spStep").onclick = () => { if (!OB.paused) document.getElementById("spPause").click(); OB.step(); };
+// drop a save file anywhere on the page
+window.addEventListener("dragover", e => { e.preventDefault(); });
+window.addEventListener("drop", e => { e.preventDefault(); const f = e.dataTransfer.files[0]; if (f) openSave(f); });
+
+(async function start() {
+  const offlineOnly = new URLSearchParams(location.search).has("offline");
+  if (!offlineOnly) {
+    try {
+      const r = await fetch("/api/structure", { cache: "no-store" });
+      if (r.ok && (r.headers.get("content-type") || "").includes("json")) { poll(); return; }
+    } catch (e) {}
+  }
+  noServer = true;   // static hosting (or ?offline): no game, no server
+  document.getElementById("srcNote").textContent = "No live game here. Open a Tunnet save file (%APPDATA%\\tunnet\\slot_N.json, or drop it on the page). It is simulated in this browser; nothing is uploaded.";
+  document.getElementById("stext").textContent = "offline: open a save file";
+  document.getElementById("sdot").className = "dot warn";
+  banner.innerHTML = "Open a Tunnet save file to start (Data source in the side panel, or drop the file here).";
+  banner.style.display = "block";
+  poll();
+})();
 </script>
 </body>
 </html>

@@ -343,6 +343,27 @@ from the disassembly (re/reply_region.asm, 0x1402f6900-0x1402f7700).
   the map (planned nodes have a dashed ring); links to planned nodes always go to the
   simulator.
 
+## Offline editor (no game): save importer + JavaScript simulator
+- tools/save_import.py: save -> snapshot-shaped network (entity = save node index,
+  empty packet slots). `python tools/save_import.py slot_0.json 200` simulates a save.
+- tools/viewer/sim.js: JavaScript port of sim.py + importSave/exportSave. sim.py and
+  sim.js share a mulberry32 PRNG seeded per (seed, node, tick); a 100-tick run of slot 0
+  gives IDENTICAL state fingerprints every tick in both (checking this found that the
+  Python tester rule had never been attached to Net; fixed). JS export of an unedited
+  import reproduces the save (same nodes, type lists, other sections; same edge set).
+- tools/viewer/sim_data.json (tools/build_sim_data.py): send table, reply rules,
+  per-endpoint receive/reply rules, spam rates, and the story stage the send table was
+  read at (DestroyCorruptedMainframe); other stages may send differently (warned).
+- tools/viewer/offline.js: an in-page backend answering the viewer's /api/... requests
+  from the simulator (live, structure, drops with exact replay paths, traffic, edits,
+  links, what-if, export as a download). Used when no server answers (static hosting, or
+  ?offline), or after "Open save file" / dropping a save on the page. Speed 1-25x, pause,
+  step. A 52 MB save imports in ~1.1 s; what-if 300 ticks ~0.4 s.
+- Tested on a plain static server: load, ticking, traffic panel, filter edit, replay,
+  added hub + link, what-if, export download (correct name and contents).
+- Hosting: needs only index.html, sim.js, offline.js, sim_data.json on any static host.
+  A claude.ai artifact would need changes (downloads and confirm() are blocked there).
+
 ## Config components
 - HubDirection (1 B): 1 = save `dir: true`, 0 = false (96/96 hubs).
 - FilterConfig (24 B), verified 100/100 filters against the save on every field:

@@ -26,6 +26,35 @@ SPAM_COLOR = "a93b3b"
 SPAM_RATE = {"0.0.1.1": 0.26, "0.2.1.3": 0.11}   # spam sends per free tick, measured over 150 ticks
 
 
+class Rng:
+    """Small portable PRNG (mulberry32) so the JavaScript port (sim.js) draws exactly the same
+    numbers. Seeded per (seed, node, tick)."""
+    def __init__(self, *parts):
+        h = 0x811C9DC5
+        for p in parts:
+            h = ((h ^ (int(p) & 0xFFFFFFFF)) * 0x01000193) & 0xFFFFFFFF
+        self.a = h
+
+    def u32(self):
+        self.a = (self.a + 0x6D2B79F5) & 0xFFFFFFFF
+        t = self.a
+        t = ((t ^ (t >> 15)) * (t | 1)) & 0xFFFFFFFF
+        t ^= (t + (((t ^ (t >> 7)) * (t | 61)) & 0xFFFFFFFF)) & 0xFFFFFFFF
+        return (t ^ (t >> 14)) & 0xFFFFFFFF
+
+    def random(self):
+        return self.u32() / 4294967296.0
+
+    def randint(self, a, b):
+        return a + self.u32() % (b - a + 1)
+
+    def choice(self, seq):
+        return seq[self.u32() % len(seq)]
+
+    def getrandbits(self, n):
+        return self.u32()
+
+
 def addr_match(addr, mask):
     """FUN_1406b6550: per digit, mask '*' matches anything, else digits must be equal."""
     return all(m == "*" or a == m for a, m in zip(addr.split("."), mask.split(".")))
@@ -68,7 +97,7 @@ class Net:
         self.delivered = []  # (tick, endpoint entity, packet)
         self.sent = []       # (tick, endpoint entity, packet) new packets (schedule/reply/spam)
         self.seed = seed
-        self.rng = random.Random(seed)
+        self.rng = Rng(seed)
 
     # ---------- step ----------
     def transport(self, tick):
@@ -88,7 +117,7 @@ class Net:
         for e, ports in self.state.items():
             # Randomness per (seed, node, tick): a what-if run and its baseline draw the same
             # numbers wherever the network is unchanged.
-            self.rng = random.Random(hash((self.seed, e, tick)))
+            self.rng = Rng(self.seed, e, tick)
             fn = getattr(self, "upd_" + self.nodes[e]["type"], None)
             if fn:
                 fn(e, ports, tick)
@@ -244,24 +273,27 @@ class Net:
                    f3a=1 if budget is not None else 0, f3b=1 if s.get("no_bounce") else 0)
 
 
+def _upd_tester(self, e, P, tick):
+    """Tester (FUN_14044eae0). Repeat: every freq ticks sends PING from `address` to the
+    destination, stepping wildcard digits through every match. NOT validated live (the
+    tester was in Single mode); the wildcard order is a guess (last digit fastest)."""
+    t = self.nodes[e]["tester"]
+    if not t or t["mode"] != "Repeat" or tick % max(1, t["freq"]) != 0:
+        return
+    d = t["destination"].split(".")
+    wild = [i for i, x in enumerate(d) if x == "*"]
+    n = tick // max(1, t["freq"])
+    for i in reversed(wild):
+        d[i] = str(n % 4)
+        n //= 4
+    P[0][OUT] = pkt("a0938e", t["address"], ".".join(d), "PING")
+
+
+Net.upd_tester = _upd_tester
+
+
 def clone(net):
     return copy.deepcopy(net)
-
-    def upd_tester(self, e, P, tick):
-        """Tester (FUN_14044eae0). Repeat: every freq ticks sends PING from `address` to the
-        destination, stepping wildcard digits through every match. NOT validated live (the
-        tester was in Single mode); the wildcard order is a guess (last digit fastest)."""
-        t = self.nodes[e]["tester"]
-        if not t or t["mode"] != "Repeat" or tick % max(1, t["freq"]) != 0:
-            return
-        d = t["destination"].split(".")
-        wild = [i for i, x in enumerate(d) if x == "*"]
-        n = tick // max(1, t["freq"])
-        for i in reversed(wild):
-            d[i] = str(n % 4)
-            n //= 4
-        P[0][OUT] = pkt("a0938e", t["address"], ".".join(d), "PING")
-
 
 # ---------- what-if ----------
 def apply_edits(net, edits):
