@@ -449,6 +449,13 @@ from the disassembly (re/reply_region.asm, 0x1402f6900-0x1402f7700).
   endpoint. Generated networks leave the old tester out (Gen.keep_testers).
   Result (relays every 6): 83.2% mean flow delivery, 219 flows covered, 23746 packets,
   zero TTL losses (was 82.1%, 216, 23714, 159 TTL losses).
+- Run length matters: at 2100 ticks, 18 required flows (cycle 2048) simply hadn't sent
+  yet. Over 8192 ticks the direct network reaches 89.6% mean flow delivery and 234/244
+  possible flows. Left: 5 flows (cycle 256) never sent because their endpoint receives
+  a packet on its send tick every cycle (the game skips the send); 5 flows sent but lost
+  every time (e.g. 0.3.0.2 -> 0.0.0.2, 494/494) because their timing always lines up with
+  another packet at a merge (fixable by shifting timing); the 9 impossible flows.
+- JSON files written by the tools are pretty-printed (indent 2), incl. exported saves.
 
 ## Map voxels in the save (digging)
 - save["chunks"]: 4527 entries [{x,y,z}, rle]; rle = [[count, value], ...] covering 32^3

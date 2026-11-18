@@ -1,301 +1,301 @@
 {
- "0.1.3": {
-  "order": [
-   "3",
-   "1",
-   "2",
-   "0"
-  ],
-  "dir": "down",
-  "cc": "SendBackOutbound"
- },
- "0.3": {
-  "order": [
-   "0",
-   "1",
-   "2",
-   "3"
+  "0.1.3": {
+    "order": [
+      "3",
+      "1",
+      "2",
+      "0"
+    ],
+    "dir": "down",
+    "cc": "SendBackOutbound"
+  },
+  "0.3": {
+    "order": [
+      "0",
+      "1",
+      "2",
+      "3"
+    ]
+  },
+  "0.2.1": {
+    "dir": "up",
+    "order": [
+      "1",
+      "3",
+      "0",
+      "2"
+    ],
+    "bare": [
+      "3"
+    ],
+    "cc": "DropOutbound",
+    "rc": "DropInbound"
+  },
+  "0.1.0": {
+    "dir": "down",
+    "rc": "DropInbound",
+    "cc": "SendBackOutbound"
+  },
+  "0.2": {
+    "dir": "down",
+    "rc": "DropOutbound",
+    "cc": "DropOutbound"
+  },
+  "0.3.1": {
+    "dir": "down",
+    "order": [
+      "0",
+      "1",
+      "2",
+      "3"
+    ],
+    "bare": [
+      "3"
+    ],
+    "cc": "SendBackOutbound"
+  },
+  "3.0.1": {
+    "cc": "SendBackOutbound",
+    "bare": [
+      "0",
+      "2"
+    ],
+    "dir": "down",
+    "rc": "DropOutbound",
+    "order": [
+      "0",
+      "1",
+      "3",
+      "2"
+    ]
+  },
+  "0.1.1": {
+    "cc": "DropOutbound",
+    "order": [
+      "0",
+      "1",
+      "2",
+      "3"
+    ],
+    "rc": "DropInbound"
+  },
+  "0.0.1": {
+    "dir": "up",
+    "order": [
+      "0",
+      "2",
+      "1",
+      "3"
+    ],
+    "rc": "DropInbound",
+    "bare": [
+      "1",
+      "2",
+      "3"
+    ],
+    "cc": "DropInbound"
+  },
+  "": {
+    "order": [
+      "2",
+      "3",
+      "0"
+    ],
+    "rc": "DropOutbound",
+    "dir": "down",
+    "cc": "SendBackOutbound"
+  },
+  "0.3.3": {
+    "dir": "down",
+    "bare": [],
+    "rc": "SendBackOutbound",
+    "order": [
+      "2",
+      "1",
+      "0",
+      "3"
+    ],
+    "cc": "DropOutbound"
+  },
+  "2.1.2": {
+    "rc": "DropOutbound",
+    "cc": "DropOutbound",
+    "dir": "down",
+    "order": [
+      "0",
+      "3",
+      "2",
+      "1"
+    ],
+    "bare": [
+      "2",
+      "3"
+    ]
+  },
+  "0.2.0": {
+    "cc": "SendBackOutbound",
+    "bare": [
+      "2"
+    ],
+    "order": [
+      "0",
+      "1",
+      "2",
+      "3"
+    ]
+  },
+  "0.3.2": {
+    "dir": "up",
+    "order": [
+      "1",
+      "0",
+      "2",
+      "3"
+    ],
+    "cc": "SendBackOutbound",
+    "bare": [
+      "1"
+    ],
+    "rc": "SendBackOutbound"
+  },
+  "0.2.3": {
+    "dir": "down",
+    "order": [
+      "0",
+      "1",
+      "2",
+      "3"
+    ],
+    "bare": [
+      "1"
+    ],
+    "cc": "SendBackOutbound"
+  },
+  "3.0": {
+    "order": [
+      "1",
+      "0"
+    ],
+    "cc": "DropInbound",
+    "bare": [
+      "0"
+    ],
+    "dir": "down",
+    "rc": "DropOutbound"
+  },
+  "0.0": {
+    "order": [
+      "1",
+      "0",
+      "3"
+    ],
+    "cc": "DropOutbound",
+    "rc": "DropInbound"
+  },
+  "0.1": {
+    "cc": "SendBackOutbound",
+    "order": [
+      "0",
+      "1",
+      "3",
+      "2"
+    ],
+    "rc": "DropInbound"
+  },
+  "0.0.3": {
+    "order": [
+      "3",
+      "1",
+      "2",
+      "0"
+    ],
+    "bare": [
+      "0",
+      "1",
+      "2"
+    ],
+    "cc": "DropInbound",
+    "rc": "DropInbound"
+  },
+  "0.3.0": {
+    "cc": "SendBackOutbound",
+    "rc": "DropInbound",
+    "bare": [
+      "0"
+    ]
+  },
+  "0.0.0": {
+    "cc": "DropOutbound",
+    "order": [
+      "0",
+      "2",
+      "3",
+      "1"
+    ],
+    "dir": "down",
+    "rc": "DropOutbound"
+  },
+  "0.2.2": {
+    "cc": "SendBackOutbound",
+    "order": [
+      "0",
+      "1",
+      "2",
+      "3"
+    ],
+    "rc": "SendBackOutbound"
+  },
+  "0": {
+    "cc": "DropOutbound",
+    "rc": "SendBackOutbound"
+  },
+  "0.1.2": {
+    "rc": "SendBackOutbound",
+    "order": [
+      "3",
+      "0",
+      "2",
+      "1"
+    ],
+    "cc": "SendBackOutbound"
+  },
+  "_sc_exit": "SendBackOutbound",
+  "_shortcuts": [
+    [
+      "0.1.1.2",
+      "0.1.1.0"
+    ],
+    [
+      "0.1.0",
+      "0.1.1"
+    ],
+    [
+      "0.2.0.2",
+      "0.2.1.0"
+    ],
+    [
+      "0.1.3.0",
+      "0.1.3.2"
+    ],
+    [
+      "0.3.1.2",
+      "0.3.1.0"
+    ],
+    [
+      "0.3.0.0",
+      "2.1.2.0"
+    ],
+    [
+      "0.3.3.2",
+      "0.3.3.0"
+    ],
+    [
+      "0.3.3.0",
+      "0.3.3.2"
+    ],
+    [
+      "0.1.3.2",
+      "0.1.3.0"
+    ]
   ]
- },
- "0.2.1": {
-  "dir": "up",
-  "order": [
-   "1",
-   "3",
-   "0",
-   "2"
-  ],
-  "bare": [
-   "3"
-  ],
-  "cc": "DropOutbound",
-  "rc": "DropInbound"
- },
- "0.1.0": {
-  "dir": "down",
-  "rc": "DropInbound",
-  "cc": "SendBackOutbound"
- },
- "0.2": {
-  "dir": "down",
-  "rc": "DropOutbound",
-  "cc": "DropOutbound"
- },
- "0.3.1": {
-  "dir": "down",
-  "order": [
-   "0",
-   "1",
-   "2",
-   "3"
-  ],
-  "bare": [
-   "3"
-  ],
-  "cc": "SendBackOutbound"
- },
- "3.0.1": {
-  "cc": "SendBackOutbound",
-  "bare": [
-   "0",
-   "2"
-  ],
-  "dir": "down",
-  "rc": "DropOutbound",
-  "order": [
-   "0",
-   "1",
-   "3",
-   "2"
-  ]
- },
- "0.1.1": {
-  "cc": "DropOutbound",
-  "order": [
-   "0",
-   "1",
-   "2",
-   "3"
-  ],
-  "rc": "DropInbound"
- },
- "0.0.1": {
-  "dir": "up",
-  "order": [
-   "0",
-   "2",
-   "1",
-   "3"
-  ],
-  "rc": "DropInbound",
-  "bare": [
-   "1",
-   "2",
-   "3"
-  ],
-  "cc": "DropInbound"
- },
- "": {
-  "order": [
-   "2",
-   "3",
-   "0"
-  ],
-  "rc": "DropOutbound",
-  "dir": "down",
-  "cc": "SendBackOutbound"
- },
- "0.3.3": {
-  "dir": "down",
-  "bare": [],
-  "rc": "SendBackOutbound",
-  "order": [
-   "2",
-   "1",
-   "0",
-   "3"
-  ],
-  "cc": "DropOutbound"
- },
- "2.1.2": {
-  "rc": "DropOutbound",
-  "cc": "DropOutbound",
-  "dir": "down",
-  "order": [
-   "0",
-   "3",
-   "2",
-   "1"
-  ],
-  "bare": [
-   "2",
-   "3"
-  ]
- },
- "0.2.0": {
-  "cc": "SendBackOutbound",
-  "bare": [
-   "2"
-  ],
-  "order": [
-   "0",
-   "1",
-   "2",
-   "3"
-  ]
- },
- "0.3.2": {
-  "dir": "up",
-  "order": [
-   "1",
-   "0",
-   "2",
-   "3"
-  ],
-  "cc": "SendBackOutbound",
-  "bare": [
-   "1"
-  ],
-  "rc": "SendBackOutbound"
- },
- "0.2.3": {
-  "dir": "down",
-  "order": [
-   "0",
-   "1",
-   "2",
-   "3"
-  ],
-  "bare": [
-   "1"
-  ],
-  "cc": "SendBackOutbound"
- },
- "3.0": {
-  "order": [
-   "1",
-   "0"
-  ],
-  "cc": "DropInbound",
-  "bare": [
-   "0"
-  ],
-  "dir": "down",
-  "rc": "DropOutbound"
- },
- "0.0": {
-  "order": [
-   "1",
-   "0",
-   "3"
-  ],
-  "cc": "DropOutbound",
-  "rc": "DropInbound"
- },
- "0.1": {
-  "cc": "SendBackOutbound",
-  "order": [
-   "0",
-   "1",
-   "3",
-   "2"
-  ],
-  "rc": "DropInbound"
- },
- "0.0.3": {
-  "order": [
-   "3",
-   "1",
-   "2",
-   "0"
-  ],
-  "bare": [
-   "0",
-   "1",
-   "2"
-  ],
-  "cc": "DropInbound",
-  "rc": "DropInbound"
- },
- "0.3.0": {
-  "cc": "SendBackOutbound",
-  "rc": "DropInbound",
-  "bare": [
-   "0"
-  ]
- },
- "0.0.0": {
-  "cc": "DropOutbound",
-  "order": [
-   "0",
-   "2",
-   "3",
-   "1"
-  ],
-  "dir": "down",
-  "rc": "DropOutbound"
- },
- "0.2.2": {
-  "cc": "SendBackOutbound",
-  "order": [
-   "0",
-   "1",
-   "2",
-   "3"
-  ],
-  "rc": "SendBackOutbound"
- },
- "0": {
-  "cc": "DropOutbound",
-  "rc": "SendBackOutbound"
- },
- "0.1.2": {
-  "rc": "SendBackOutbound",
-  "order": [
-   "3",
-   "0",
-   "2",
-   "1"
-  ],
-  "cc": "SendBackOutbound"
- },
- "_sc_exit": "SendBackOutbound",
- "_shortcuts": [
-  [
-   "0.1.1.2",
-   "0.1.1.0"
-  ],
-  [
-   "0.1.0",
-   "0.1.1"
-  ],
-  [
-   "0.2.0.2",
-   "0.2.1.0"
-  ],
-  [
-   "0.1.3.0",
-   "0.1.3.2"
-  ],
-  [
-   "0.3.1.2",
-   "0.3.1.0"
-  ],
-  [
-   "0.3.0.0",
-   "2.1.2.0"
-  ],
-  [
-   "0.3.3.2",
-   "0.3.3.0"
-  ],
-  [
-   "0.3.3.0",
-   "0.3.3.2"
-  ],
-  [
-   "0.1.3.2",
-   "0.1.3.0"
-  ]
- ]
 }

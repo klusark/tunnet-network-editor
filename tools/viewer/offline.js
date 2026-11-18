@@ -181,7 +181,7 @@
     const res = { report, base: "imported", slot: body.slot };
     if (body.write) {
       const name = `slot_${body.slot}.json`;
-      const url = URL.createObjectURL(new Blob([JSON.stringify(save)], { type: "application/json" }));
+      const url = URL.createObjectURL(new Blob([JSON.stringify(save, null, 2)], { type: "application/json" }));
       const a = Object.assign(document.createElement("a"), { href: url, download: name });
       document.body.appendChild(a); a.click(); a.remove();
       setTimeout(() => URL.revokeObjectURL(url), 30000);

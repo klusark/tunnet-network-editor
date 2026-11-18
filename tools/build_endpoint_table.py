@@ -113,7 +113,7 @@ def main():
                     "slots": {str(t): e for t, e in slots.items()}}
     out = os.path.join(ROOT, "re", "endpoint_rules.json")
     json.dump({"source": "FUN_1402f9a40 emulated in Ghidra, story state from live game",
-               "ticks_emulated": 2048, "errors": dict(errors), "endpoints": table}, open(out, "w"), indent=1)
+               "ticks_emulated": 2048, "errors": dict(errors), "endpoints": table}, open(out, "w"), indent=2)
     print("errors:", dict(errors) or "none", "->", out)
     for a, t in table.items():
         dsts = Counter(e["dst"] for e in t["slots"].values())

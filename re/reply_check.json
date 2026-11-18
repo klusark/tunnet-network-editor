@@ -1,1039 +1,1039 @@
 {
- "results": [
-  [
-   [
-    "0.x.3.0",
-    "TX <hex>",
-    "-> BLK TX <hex>",
-    "to sender",
-    "col 5e3643 same",
-    "budget 1"
-   ],
-   80
-  ],
-  [
-   [
-    "0.x.3.0",
-    "TX <hex>",
-    "-> BLK TX <hex>",
-    "to sender",
-    "col 394778 same",
-    "budget 1"
-   ],
-   60
-  ],
-  [
-   [
-    "0.1.3.2",
-    "BLK TX <hex>",
-    "no reply"
-   ],
-   60
-  ],
-  [
-   [
-    "0.3.0.0",
-    "Token",
-    "no reply"
-   ],
-   59
-  ],
-  [
-   [
-    "2.1.2.1",
-    "Token",
-    "-> Token",
-    "to 2.1.2.2",
-    "col a05b53 same",
-    "budget 0"
-   ],
-   58
-  ],
-  [
-   [
-    "0.2.0.0",
-    "Status Report",
-    "no reply"
-   ],
-   58
-  ],
-  [
-   [
-    "2.1.2.2",
-    "Token",
-    "-> Token",
-    "to sender",
-    "col ffaeb6",
-    "budget 0"
-   ],
-   58
-  ],
-  [
-   [
-    "2.1.2.3",
-    "Token",
-    "-> Token",
-    "to 2.1.2.1",
-    "col a05b53 same",
-    "budget 0"
-   ],
-   58
-  ],
-  [
-   [
-    "2.1.2.0",
-    "Token",
-    "-> Token",
-    "to 2.1.2.3",
-    "col a05b53 same",
-    "budget 0"
-   ],
-   58
-  ],
-  [
-   [
-    "0.1.2.1",
-    "We need ammunition",
-    "no reply"
-   ],
-   39
-  ],
-  [
-   [
-    "0.x.2.0",
-    "Search query",
-    "-> Search result",
-    "to sender",
-    "col eea160 same",
-    "budget 0"
-   ],
-   30
-  ],
-  [
-   [
-    "0.2.3.3",
-    "Track #<n>",
-    "no reply"
-   ],
-   30
-  ],
-  [
-   [
-    "0.2.1.1",
-    "I need <n>kg of corn",
-    "no reply"
-   ],
-   29
-  ],
-  [
-   [
-    "0.2.2.3",
-    "Track #<n>",
-    "no reply"
-   ],
-   29
-  ],
-  [
-   [
-    "0.1.3.1",
-    "One bottle of corn oil, please",
-    "no reply"
-   ],
-   17
-  ],
-  [
-   [
-    "0.3.0.2",
-    "Student Exchange Program",
-    "no reply"
-   ],
-   15
-  ],
-  [
-   [
-    "0.2.3.3",
-    "Meeting minutes",
-    "no reply"
-   ],
-   15
-  ],
-  [
-   [
-    "0.x.3.0",
-    "TX <hex>",
-    "-> BLK TX <hex>",
-    "to sender",
-    "col 5a5353 same",
-    "budget 1"
-   ],
-   15
-  ],
-  [
-   [
-    "0.2.0.2",
-    "Student Exchange Program",
-    "no reply"
-   ],
-   15
-  ],
-  [
-   [
-    "0.2.3.2",
-    "BLK TX <hex>",
-    "no reply"
-   ],
-   15
-  ],
-  [
-   [
-    "0.1.3.1",
-    "One battery, please",
-    "no reply"
-   ],
-   12
-  ],
-  [
-   [
-    "1.x.1.0",
-    "Bless you!!!",
-    "-> Re: Bless you!!!",
-    "to sender",
-    "col 71aa34 same",
-    "budget 4"
-   ],
-   10
-  ],
-  [
-   [
-    "1.x.1.0",
-    "corn bread recipe",
-    "-> Re: corn bread recipe",
-    "to sender",
-    "col 71aa34 same",
-    "budget 4"
-   ],
-   10
-  ],
-  [
-   [
-    "1.x.1.0",
-    "Where are the Architects?",
-    "-> Re: Where are the Architects?",
-    "to sender",
-    "col 397b44 same",
-    "budget 4"
-   ],
-   10
-  ],
-  [
-   [
-    "1.x.1.0",
-    "Good morning",
-    "-> Re: Good morning",
-    "to sender",
-    "col 71aa34 same",
-    "budget 4"
-   ],
-   8
-  ],
-  [
-   [
-    "1.x.1.0",
-    "happy birthday?",
-    "-> Re: happy birthday?",
-    "to sender",
-    "col 71aa34 same",
-    "budget 4"
-   ],
-   8
-  ],
-  [
-   [
-    "1.x.1.0",
-    "how do I delete this",
-    "-> Re: how do I delete this",
-    "to sender",
-    "col 71aa34 same",
-    "budget 4"
-   ],
-   8
-  ],
-  [
-   [
-    "1.x.1.0",
-    ":)",
-    "-> Re: :)",
-    "to sender",
-    "col 71aa34 same",
-    "budget 4"
-   ],
-   7
-  ],
-  [
-   [
-    "1.x.1.0",
-    "how to recharge battery?",
-    "-> Re: how to recharge battery?",
-    "to sender",
-    "col 71aa34 same",
-    "budget 4"
-   ],
-   7
-  ],
-  [
-   [
-    "1.x.1.0",
-    "Did anyone survive the Apocalypse?",
-    "-> Re: Did anyone survive the Apocalypse?",
-    "to sender",
-    "col 397b44 same",
-    "budget 4"
-   ],
-   7
-  ],
-  [
-   [
-    "1.x.1.0",
-    "Who are the Architects?",
-    "-> Re: Who are the Architects?",
-    "to sender",
-    "col 397b44 same",
-    "budget 4"
-   ],
-   6
-  ],
-  [
-   [
-    "0.2.0.0",
-    "Search request",
-    "no reply"
-   ],
-   6
-  ],
-  [
-   [
-    "1.x.1.0",
-    "hello",
-    "-> Re: hello",
-    "to sender",
-    "col 71aa34 same",
-    "budget 4"
-   ],
-   6
-  ],
-  [
-   [
-    "1.x.1.0",
-    "Where is everyone?",
-    "-> Re: Where is everyone?",
-    "to sender",
-    "col 397b44 same",
-    "budget 4"
-   ],
-   6
-  ],
-  [
-   [
-    "0.0.0.1",
-    "Contribute to science",
-    "no reply"
-   ],
-   5
-  ],
-  [
-   [
-    "0.2.1.2",
-    "Re: how to recharge battery?",
-    "no reply"
-   ],
-   5
-  ],
-  [
-   [
-    "0.x.1.1",
-    "INVEST NOW!",
-    "-> I wanna buy <n> crypto coins",
-    "to sender",
-    "col 5e3643 same",
-    "budget 0"
-   ],
-   5
-  ],
-  [
-   [
-    "0.0.0.2",
-    "[PATCH] Fix netcode",
-    "no reply"
-   ],
-   5
-  ],
-  [
-   [
-    "1.x.1.0",
-    "<n> TUNNET",
-    "-> Re: <n> TUNNET",
-    "to sender",
-    "col 71aa34 same",
-    "budget 4"
-   ],
-   5
-  ],
-  [
-   [
-    "1.x.1.0",
-    "teddy bear pattern",
-    "-> Re: teddy bear pattern",
-    "to sender",
-    "col 71aa34 same",
-    "budget 4"
-   ],
-   5
-  ],
-  [
-   [
-    "1.x.1.0",
-    "family pictures",
-    "-> Re: family pictures",
-    "to sender",
-    "col 71aa34 same",
-    "budget 4"
-   ],
-   5
-  ],
-  [
-   [
-    "0.0.0.1",
-    "Firmware update",
-    "no reply"
-   ],
-   5
-  ],
-  [
-   [
-    "0.0.0.2",
-    "Firmware update",
-    "no reply"
-   ],
-   4
-  ],
-  [
-   [
-    "0.0.0.3",
-    "[PATCH] Fix netcode",
-    "no reply"
-   ],
-   4
-  ],
-  [
-   [
-    "1.x.1.0",
-    "corn bread recipe",
-    "-> Re: corn bread recipe",
-    "to sender",
-    "col cfc6b8 same",
-    "budget 4"
-   ],
-   4
-  ],
-  [
-   [
-    "0.0.0.3",
-    "Test",
-    "no reply"
-   ],
-   4
-  ],
-  [
-   [
-    "0.2.1.2",
-    "Re: family pictures",
-    "no reply"
-   ],
-   4
-  ],
-  [
-   [
-    "1.x.1.0",
-    "how do i use the computer?",
-    "-> Re: how do i use the computer?",
-    "to sender",
-    "col 71aa34 same",
-    "budget 4"
-   ],
-   4
-  ],
-  [
-   [
-    "0.0.0.3",
-    "Firmware update",
-    "no reply"
-   ],
-   4
-  ],
-  [
-   [
-    "0.0.0.2",
-    "Test",
-    "no reply"
-   ],
-   4
-  ],
-  [
-   [
-    "1.x.1.0",
-    "how do I delete this",
-    "-> Re: how do I delete this",
-    "to sender",
-    "col cfc6b8 same",
-    "budget 4"
-   ],
-   4
-  ],
-  [
-   [
-    "0.2.1.2",
-    "Re: how do I delete this",
-    "no reply"
-   ],
-   4
-  ],
-  [
-   [
-    "0.3.1.2",
-    "Track #<n>",
-    "no reply"
-   ],
-   4
-  ],
-  [
-   [
-    "0.2.2.0",
-    "We haven't seen you at church today",
-    "no reply"
-   ],
-   3
-  ],
-  [
-   [
-    "0.3.2.3",
-    "Track #<n>",
-    "no reply"
-   ],
-   3
-  ],
-  [
-   [
-    "0.2.1.2",
-    "Re: teddy bear pattern",
-    "no reply"
-   ],
-   3
-  ],
-  [
-   [
-    "0.0.0.3",
-    "Contribute to science",
-    "no reply"
-   ],
-   3
-  ],
-  [
-   [
-    "1.x.1.0",
-    "<n> TUNNET",
-    "-> Re: <n> TUNNET",
-    "to sender",
-    "col cfc6b8 same",
-    "budget 4"
-   ],
-   3
-  ],
-  [
-   [
-    "1.x.1.0",
-    "how to recharge battery?",
-    "-> Re: how to recharge battery?",
-    "to sender",
-    "col cfc6b8 same",
-    "budget 4"
-   ],
-   3
-  ],
-  [
-   [
-    "1.x.1.0",
-    "happy birthday?",
-    "-> Re: happy birthday?",
-    "to sender",
-    "col cfc6b8 same",
-    "budget 4"
-   ],
-   3
-  ],
-  [
-   [
-    "0.2.2.2",
-    "Call To Prayer",
-    "no reply"
-   ],
-   3
-  ],
-  [
-   [
-    "0.0.0.1",
-    "Test",
-    "no reply"
-   ],
-   3
-  ],
-  [
-   [
-    "0.2.1.2",
-    "Re: happy birthday?",
-    "no reply"
-   ],
-   3
-  ],
-  [
-   [
-    "1.x.1.0",
-    "family pictures",
-    "-> Re: family pictures",
-    "to sender",
-    "col cfc6b8 same",
-    "budget 4"
-   ],
-   3
-  ],
-  [
-   [
-    "1.x.1.0",
-    "do you get these messages?",
-    "-> Re: do you get these messages?",
-    "to sender",
-    "col 71aa34 same",
-    "budget 4"
-   ],
-   3
-  ],
-  [
-   [
-    "0.0.1.3",
-    "Contribute to science",
-    "no reply"
-   ],
-   3
-  ],
-  [
-   [
-    "0.0.1.2",
-    "Test",
-    "no reply"
-   ],
-   3
-  ],
-  [
-   [
-    "1.x.1.0",
-    "I have lost <n> pounds since June",
-    "-> Re: I have lost <n> pounds since June",
-    "to sender",
-    "col 71aa34 same",
-    "budget 4"
-   ],
-   3
-  ],
-  [
-   [
-    "0.0.1.3",
-    "Firmware update",
-    "no reply"
-   ],
-   2
-  ],
-  [
-   [
-    "0.2.1.2",
-    "Re: how do i use the computer?",
-    "no reply"
-   ],
-   2
-  ],
-  [
-   [
-    "0.0.1.2",
-    "[PATCH] Fix netcode",
-    "no reply"
-   ],
-   2
-  ],
-  [
-   [
-    "1.x.1.0",
-    ":)",
-    "-> Re: :)",
-    "to sender",
-    "col cfc6b8 same",
-    "budget 4"
-   ],
-   2
-  ],
-  [
-   [
-    "0.2.1.2",
-    "Re: corn bread recipe",
-    "no reply"
-   ],
-   2
-  ],
-  [
-   [
-    "0.0.1.3",
-    "Test",
-    "no reply"
-   ],
-   2
-  ],
-  [
-   [
-    "0.0.0.2",
-    "Contribute to science",
-    "no reply"
-   ],
-   2
-  ],
-  [
-   [
-    "1.x.1.0",
-    "Good morning",
-    "-> Re: Good morning",
-    "to sender",
-    "col cfc6b8 same",
-    "budget 4"
-   ],
-   2
-  ],
-  [
-   [
-    "0.3.1.1",
-    "Purchase Order",
-    "no reply"
-   ],
-   2
-  ],
-  [
-   [
-    "0.2.1.2",
-    "Re: <n> TUNNET",
-    "no reply"
-   ],
-   2
-  ],
-  [
-   [
-    "0.x.1.1",
-    "My money is working for me",
-    "-> I wanna buy <n> crypto coins",
-    "to sender",
-    "col 5e3643 same",
-    "budget 0"
-   ],
-   2
-  ],
-  [
-   [
-    "0.0.0.1",
-    "[PATCH] Fix netcode",
-    "no reply"
-   ],
-   2
-  ],
-  [
-   [
-    "1.x.1.0",
-    "teddy bear pattern",
-    "-> Re: teddy bear pattern",
-    "to sender",
-    "col cfc6b8 same",
-    "budget 4"
-   ],
-   2
-  ],
-  [
-   [
-    "1.x.1.0",
-    "hello",
-    "-> Re: hello",
-    "to sender",
-    "col cfc6b8 same",
-    "budget 4"
-   ],
-   1
-  ],
-  [
-   [
-    "0.2.0.3",
-    "Online CNC Machining Service",
-    "no reply"
-   ],
-   1
-  ],
-  [
-   [
-    "0.2.1.2",
-    "Re: I have lost <n> pounds since June",
-    "no reply"
-   ],
-   1
-  ],
-  [
-   [
-    "1.x.1.0",
-    "how do i use the computer?",
-    "-> Re: how do i use the computer?",
-    "to sender",
-    "col cfc6b8 same",
-    "budget 4"
-   ],
-   1
-  ],
-  [
-   [
-    "0.0.1.2",
-    "Firmware update",
-    "no reply"
-   ],
-   1
-  ],
-  [
-   [
-    "0.2.1.2",
-    "Re: hello",
-    "no reply"
-   ],
-   1
-  ],
-  [
-   [
-    "0.3.2.3",
-    "Join us!",
-    "no reply"
-   ],
-   1
-  ],
-  [
-   [
-    "0.3.2.0",
-    "Join us!",
-    "no reply"
-   ],
-   1
-  ],
-  [
-   [
-    "0.3.2.2",
-    "Join us!",
-    "no reply"
-   ],
-   1
-  ],
-  [
-   [
-    "0.2.1.2",
-    "Re: :)",
-    "no reply"
-   ],
-   1
-  ],
-  [
-   [
-    "0.2.2.0",
-    "Call To Prayer",
-    "no reply"
-   ],
-   1
-  ],
-  [
-   [
-    "0.3.0.3",
-    "Join us!",
-    "no reply"
-   ],
-   1
-  ],
-  [
-   [
-    "0.3.0.1",
-    "Join us!",
-    "no reply"
-   ],
-   1
-  ],
-  [
-   [
-    "0.1.3.1",
-    "HUGE DISCOUNT!",
-    "no reply"
-   ],
-   1
-  ],
-  [
-   [
-    "0.3.2.1",
-    "Join us!",
-    "no reply"
-   ],
-   1
-  ],
-  [
-   [
-    "0.0.3.1",
-    "BEST PRICES",
-    "no reply"
-   ],
-   1
-  ],
-  [
-   [
-    "0.0.1.2",
-    "Contribute to science",
-    "no reply"
-   ],
-   1
-  ],
-  [
-   [
-    "0.2.1.2",
-    "Re: Good morning",
-    "no reply"
-   ],
-   1
-  ],
-  [
-   [
-    "0.3.1.1",
-    "Join us!",
-    "no reply"
-   ],
-   1
-  ],
-  [
-   [
-    "1.x.1.0",
-    "need corn oil",
-    "-> Re: need corn oil",
-    "to sender",
-    "col cfc6b8 same",
-    "budget 4"
-   ],
-   1
-  ],
-  [
-   [
-    "0.1.2.3",
-    "Online CNC Machining Service",
-    "no reply"
-   ],
-   1
-  ],
-  [
-   [
-    "1.x.1.0",
-    "Join us!",
-    "-> Re: Join us!",
-    "to sender",
-    "col 827094 same",
-    "budget 4"
-   ],
-   1
-  ],
-  [
-   [
-    "0.0.3.2",
-    "BEST PRICES",
-    "no reply"
-   ],
-   1
-  ],
-  [
-   [
-    "0.2.2.3",
-    "Online CNC Machining Service",
-    "no reply"
-   ],
-   1
-  ],
-  [
-   [
-    "1.x.1.0",
-    "need corn oil",
-    "-> Re: need corn oil",
-    "to sender",
-    "col 71aa34 same",
-    "budget 4"
-   ],
-   1
-  ],
-  [
-   [
-    "0.1.3.2",
-    "BEST PRICES",
-    "no reply"
-   ],
-   1
-  ],
-  [
-   [
-    "0.2.1.2",
-    "Re: need corn oil",
-    "no reply"
-   ],
-   1
-  ],
-  [
-   [
-    "0.3.0.0",
-    "Join us!",
-    "no reply"
-   ],
-   1
-  ],
-  [
-   [
-    "0.0.1.3",
-    "[PATCH] Fix netcode",
-    "no reply"
-   ],
-   1
-  ],
-  [
-   [
-    "1.x.1.0",
-    "I have lost <n> pounds since June",
-    "-> Re: I have lost <n> pounds since June",
-    "to sender",
-    "col cfc6b8 same",
-    "budget 4"
-   ],
-   1
-  ],
-  [
-   [
-    "0.3.1.2",
-    "Join us!",
-    "no reply"
-   ],
-   1
-  ],
-  [
-   [
-    "0.3.3.0",
-    "Join us!",
-    "no reply"
-   ],
-   1
-  ]
- ],
- "unexplained": [],
- "examples": []
+  "results": [
+    [
+      [
+        "0.x.3.0",
+        "TX <hex>",
+        "-> BLK TX <hex>",
+        "to sender",
+        "col 5e3643 same",
+        "budget 1"
+      ],
+      80
+    ],
+    [
+      [
+        "0.x.3.0",
+        "TX <hex>",
+        "-> BLK TX <hex>",
+        "to sender",
+        "col 394778 same",
+        "budget 1"
+      ],
+      60
+    ],
+    [
+      [
+        "0.1.3.2",
+        "BLK TX <hex>",
+        "no reply"
+      ],
+      60
+    ],
+    [
+      [
+        "0.3.0.0",
+        "Token",
+        "no reply"
+      ],
+      59
+    ],
+    [
+      [
+        "2.1.2.1",
+        "Token",
+        "-> Token",
+        "to 2.1.2.2",
+        "col a05b53 same",
+        "budget 0"
+      ],
+      58
+    ],
+    [
+      [
+        "0.2.0.0",
+        "Status Report",
+        "no reply"
+      ],
+      58
+    ],
+    [
+      [
+        "2.1.2.2",
+        "Token",
+        "-> Token",
+        "to sender",
+        "col ffaeb6",
+        "budget 0"
+      ],
+      58
+    ],
+    [
+      [
+        "2.1.2.3",
+        "Token",
+        "-> Token",
+        "to 2.1.2.1",
+        "col a05b53 same",
+        "budget 0"
+      ],
+      58
+    ],
+    [
+      [
+        "2.1.2.0",
+        "Token",
+        "-> Token",
+        "to 2.1.2.3",
+        "col a05b53 same",
+        "budget 0"
+      ],
+      58
+    ],
+    [
+      [
+        "0.1.2.1",
+        "We need ammunition",
+        "no reply"
+      ],
+      39
+    ],
+    [
+      [
+        "0.x.2.0",
+        "Search query",
+        "-> Search result",
+        "to sender",
+        "col eea160 same",
+        "budget 0"
+      ],
+      30
+    ],
+    [
+      [
+        "0.2.3.3",
+        "Track #<n>",
+        "no reply"
+      ],
+      30
+    ],
+    [
+      [
+        "0.2.1.1",
+        "I need <n>kg of corn",
+        "no reply"
+      ],
+      29
+    ],
+    [
+      [
+        "0.2.2.3",
+        "Track #<n>",
+        "no reply"
+      ],
+      29
+    ],
+    [
+      [
+        "0.1.3.1",
+        "One bottle of corn oil, please",
+        "no reply"
+      ],
+      17
+    ],
+    [
+      [
+        "0.3.0.2",
+        "Student Exchange Program",
+        "no reply"
+      ],
+      15
+    ],
+    [
+      [
+        "0.2.3.3",
+        "Meeting minutes",
+        "no reply"
+      ],
+      15
+    ],
+    [
+      [
+        "0.x.3.0",
+        "TX <hex>",
+        "-> BLK TX <hex>",
+        "to sender",
+        "col 5a5353 same",
+        "budget 1"
+      ],
+      15
+    ],
+    [
+      [
+        "0.2.0.2",
+        "Student Exchange Program",
+        "no reply"
+      ],
+      15
+    ],
+    [
+      [
+        "0.2.3.2",
+        "BLK TX <hex>",
+        "no reply"
+      ],
+      15
+    ],
+    [
+      [
+        "0.1.3.1",
+        "One battery, please",
+        "no reply"
+      ],
+      12
+    ],
+    [
+      [
+        "1.x.1.0",
+        "Bless you!!!",
+        "-> Re: Bless you!!!",
+        "to sender",
+        "col 71aa34 same",
+        "budget 4"
+      ],
+      10
+    ],
+    [
+      [
+        "1.x.1.0",
+        "corn bread recipe",
+        "-> Re: corn bread recipe",
+        "to sender",
+        "col 71aa34 same",
+        "budget 4"
+      ],
+      10
+    ],
+    [
+      [
+        "1.x.1.0",
+        "Where are the Architects?",
+        "-> Re: Where are the Architects?",
+        "to sender",
+        "col 397b44 same",
+        "budget 4"
+      ],
+      10
+    ],
+    [
+      [
+        "1.x.1.0",
+        "Good morning",
+        "-> Re: Good morning",
+        "to sender",
+        "col 71aa34 same",
+        "budget 4"
+      ],
+      8
+    ],
+    [
+      [
+        "1.x.1.0",
+        "happy birthday?",
+        "-> Re: happy birthday?",
+        "to sender",
+        "col 71aa34 same",
+        "budget 4"
+      ],
+      8
+    ],
+    [
+      [
+        "1.x.1.0",
+        "how do I delete this",
+        "-> Re: how do I delete this",
+        "to sender",
+        "col 71aa34 same",
+        "budget 4"
+      ],
+      8
+    ],
+    [
+      [
+        "1.x.1.0",
+        ":)",
+        "-> Re: :)",
+        "to sender",
+        "col 71aa34 same",
+        "budget 4"
+      ],
+      7
+    ],
+    [
+      [
+        "1.x.1.0",
+        "how to recharge battery?",
+        "-> Re: how to recharge battery?",
+        "to sender",
+        "col 71aa34 same",
+        "budget 4"
+      ],
+      7
+    ],
+    [
+      [
+        "1.x.1.0",
+        "Did anyone survive the Apocalypse?",
+        "-> Re: Did anyone survive the Apocalypse?",
+        "to sender",
+        "col 397b44 same",
+        "budget 4"
+      ],
+      7
+    ],
+    [
+      [
+        "1.x.1.0",
+        "Who are the Architects?",
+        "-> Re: Who are the Architects?",
+        "to sender",
+        "col 397b44 same",
+        "budget 4"
+      ],
+      6
+    ],
+    [
+      [
+        "0.2.0.0",
+        "Search request",
+        "no reply"
+      ],
+      6
+    ],
+    [
+      [
+        "1.x.1.0",
+        "hello",
+        "-> Re: hello",
+        "to sender",
+        "col 71aa34 same",
+        "budget 4"
+      ],
+      6
+    ],
+    [
+      [
+        "1.x.1.0",
+        "Where is everyone?",
+        "-> Re: Where is everyone?",
+        "to sender",
+        "col 397b44 same",
+        "budget 4"
+      ],
+      6
+    ],
+    [
+      [
+        "0.0.0.1",
+        "Contribute to science",
+        "no reply"
+      ],
+      5
+    ],
+    [
+      [
+        "0.2.1.2",
+        "Re: how to recharge battery?",
+        "no reply"
+      ],
+      5
+    ],
+    [
+      [
+        "0.x.1.1",
+        "INVEST NOW!",
+        "-> I wanna buy <n> crypto coins",
+        "to sender",
+        "col 5e3643 same",
+        "budget 0"
+      ],
+      5
+    ],
+    [
+      [
+        "0.0.0.2",
+        "[PATCH] Fix netcode",
+        "no reply"
+      ],
+      5
+    ],
+    [
+      [
+        "1.x.1.0",
+        "<n> TUNNET",
+        "-> Re: <n> TUNNET",
+        "to sender",
+        "col 71aa34 same",
+        "budget 4"
+      ],
+      5
+    ],
+    [
+      [
+        "1.x.1.0",
+        "teddy bear pattern",
+        "-> Re: teddy bear pattern",
+        "to sender",
+        "col 71aa34 same",
+        "budget 4"
+      ],
+      5
+    ],
+    [
+      [
+        "1.x.1.0",
+        "family pictures",
+        "-> Re: family pictures",
+        "to sender",
+        "col 71aa34 same",
+        "budget 4"
+      ],
+      5
+    ],
+    [
+      [
+        "0.0.0.1",
+        "Firmware update",
+        "no reply"
+      ],
+      5
+    ],
+    [
+      [
+        "0.0.0.2",
+        "Firmware update",
+        "no reply"
+      ],
+      4
+    ],
+    [
+      [
+        "0.0.0.3",
+        "[PATCH] Fix netcode",
+        "no reply"
+      ],
+      4
+    ],
+    [
+      [
+        "1.x.1.0",
+        "corn bread recipe",
+        "-> Re: corn bread recipe",
+        "to sender",
+        "col cfc6b8 same",
+        "budget 4"
+      ],
+      4
+    ],
+    [
+      [
+        "0.0.0.3",
+        "Test",
+        "no reply"
+      ],
+      4
+    ],
+    [
+      [
+        "0.2.1.2",
+        "Re: family pictures",
+        "no reply"
+      ],
+      4
+    ],
+    [
+      [
+        "1.x.1.0",
+        "how do i use the computer?",
+        "-> Re: how do i use the computer?",
+        "to sender",
+        "col 71aa34 same",
+        "budget 4"
+      ],
+      4
+    ],
+    [
+      [
+        "0.0.0.3",
+        "Firmware update",
+        "no reply"
+      ],
+      4
+    ],
+    [
+      [
+        "0.0.0.2",
+        "Test",
+        "no reply"
+      ],
+      4
+    ],
+    [
+      [
+        "1.x.1.0",
+        "how do I delete this",
+        "-> Re: how do I delete this",
+        "to sender",
+        "col cfc6b8 same",
+        "budget 4"
+      ],
+      4
+    ],
+    [
+      [
+        "0.2.1.2",
+        "Re: how do I delete this",
+        "no reply"
+      ],
+      4
+    ],
+    [
+      [
+        "0.3.1.2",
+        "Track #<n>",
+        "no reply"
+      ],
+      4
+    ],
+    [
+      [
+        "0.2.2.0",
+        "We haven't seen you at church today",
+        "no reply"
+      ],
+      3
+    ],
+    [
+      [
+        "0.3.2.3",
+        "Track #<n>",
+        "no reply"
+      ],
+      3
+    ],
+    [
+      [
+        "0.2.1.2",
+        "Re: teddy bear pattern",
+        "no reply"
+      ],
+      3
+    ],
+    [
+      [
+        "0.0.0.3",
+        "Contribute to science",
+        "no reply"
+      ],
+      3
+    ],
+    [
+      [
+        "1.x.1.0",
+        "<n> TUNNET",
+        "-> Re: <n> TUNNET",
+        "to sender",
+        "col cfc6b8 same",
+        "budget 4"
+      ],
+      3
+    ],
+    [
+      [
+        "1.x.1.0",
+        "how to recharge battery?",
+        "-> Re: how to recharge battery?",
+        "to sender",
+        "col cfc6b8 same",
+        "budget 4"
+      ],
+      3
+    ],
+    [
+      [
+        "1.x.1.0",
+        "happy birthday?",
+        "-> Re: happy birthday?",
+        "to sender",
+        "col cfc6b8 same",
+        "budget 4"
+      ],
+      3
+    ],
+    [
+      [
+        "0.2.2.2",
+        "Call To Prayer",
+        "no reply"
+      ],
+      3
+    ],
+    [
+      [
+        "0.0.0.1",
+        "Test",
+        "no reply"
+      ],
+      3
+    ],
+    [
+      [
+        "0.2.1.2",
+        "Re: happy birthday?",
+        "no reply"
+      ],
+      3
+    ],
+    [
+      [
+        "1.x.1.0",
+        "family pictures",
+        "-> Re: family pictures",
+        "to sender",
+        "col cfc6b8 same",
+        "budget 4"
+      ],
+      3
+    ],
+    [
+      [
+        "1.x.1.0",
+        "do you get these messages?",
+        "-> Re: do you get these messages?",
+        "to sender",
+        "col 71aa34 same",
+        "budget 4"
+      ],
+      3
+    ],
+    [
+      [
+        "0.0.1.3",
+        "Contribute to science",
+        "no reply"
+      ],
+      3
+    ],
+    [
+      [
+        "0.0.1.2",
+        "Test",
+        "no reply"
+      ],
+      3
+    ],
+    [
+      [
+        "1.x.1.0",
+        "I have lost <n> pounds since June",
+        "-> Re: I have lost <n> pounds since June",
+        "to sender",
+        "col 71aa34 same",
+        "budget 4"
+      ],
+      3
+    ],
+    [
+      [
+        "0.0.1.3",
+        "Firmware update",
+        "no reply"
+      ],
+      2
+    ],
+    [
+      [
+        "0.2.1.2",
+        "Re: how do i use the computer?",
+        "no reply"
+      ],
+      2
+    ],
+    [
+      [
+        "0.0.1.2",
+        "[PATCH] Fix netcode",
+        "no reply"
+      ],
+      2
+    ],
+    [
+      [
+        "1.x.1.0",
+        ":)",
+        "-> Re: :)",
+        "to sender",
+        "col cfc6b8 same",
+        "budget 4"
+      ],
+      2
+    ],
+    [
+      [
+        "0.2.1.2",
+        "Re: corn bread recipe",
+        "no reply"
+      ],
+      2
+    ],
+    [
+      [
+        "0.0.1.3",
+        "Test",
+        "no reply"
+      ],
+      2
+    ],
+    [
+      [
+        "0.0.0.2",
+        "Contribute to science",
+        "no reply"
+      ],
+      2
+    ],
+    [
+      [
+        "1.x.1.0",
+        "Good morning",
+        "-> Re: Good morning",
+        "to sender",
+        "col cfc6b8 same",
+        "budget 4"
+      ],
+      2
+    ],
+    [
+      [
+        "0.3.1.1",
+        "Purchase Order",
+        "no reply"
+      ],
+      2
+    ],
+    [
+      [
+        "0.2.1.2",
+        "Re: <n> TUNNET",
+        "no reply"
+      ],
+      2
+    ],
+    [
+      [
+        "0.x.1.1",
+        "My money is working for me",
+        "-> I wanna buy <n> crypto coins",
+        "to sender",
+        "col 5e3643 same",
+        "budget 0"
+      ],
+      2
+    ],
+    [
+      [
+        "0.0.0.1",
+        "[PATCH] Fix netcode",
+        "no reply"
+      ],
+      2
+    ],
+    [
+      [
+        "1.x.1.0",
+        "teddy bear pattern",
+        "-> Re: teddy bear pattern",
+        "to sender",
+        "col cfc6b8 same",
+        "budget 4"
+      ],
+      2
+    ],
+    [
+      [
+        "1.x.1.0",
+        "hello",
+        "-> Re: hello",
+        "to sender",
+        "col cfc6b8 same",
+        "budget 4"
+      ],
+      1
+    ],
+    [
+      [
+        "0.2.0.3",
+        "Online CNC Machining Service",
+        "no reply"
+      ],
+      1
+    ],
+    [
+      [
+        "0.2.1.2",
+        "Re: I have lost <n> pounds since June",
+        "no reply"
+      ],
+      1
+    ],
+    [
+      [
+        "1.x.1.0",
+        "how do i use the computer?",
+        "-> Re: how do i use the computer?",
+        "to sender",
+        "col cfc6b8 same",
+        "budget 4"
+      ],
+      1
+    ],
+    [
+      [
+        "0.0.1.2",
+        "Firmware update",
+        "no reply"
+      ],
+      1
+    ],
+    [
+      [
+        "0.2.1.2",
+        "Re: hello",
+        "no reply"
+      ],
+      1
+    ],
+    [
+      [
+        "0.3.2.3",
+        "Join us!",
+        "no reply"
+      ],
+      1
+    ],
+    [
+      [
+        "0.3.2.0",
+        "Join us!",
+        "no reply"
+      ],
+      1
+    ],
+    [
+      [
+        "0.3.2.2",
+        "Join us!",
+        "no reply"
+      ],
+      1
+    ],
+    [
+      [
+        "0.2.1.2",
+        "Re: :)",
+        "no reply"
+      ],
+      1
+    ],
+    [
+      [
+        "0.2.2.0",
+        "Call To Prayer",
+        "no reply"
+      ],
+      1
+    ],
+    [
+      [
+        "0.3.0.3",
+        "Join us!",
+        "no reply"
+      ],
+      1
+    ],
+    [
+      [
+        "0.3.0.1",
+        "Join us!",
+        "no reply"
+      ],
+      1
+    ],
+    [
+      [
+        "0.1.3.1",
+        "HUGE DISCOUNT!",
+        "no reply"
+      ],
+      1
+    ],
+    [
+      [
+        "0.3.2.1",
+        "Join us!",
+        "no reply"
+      ],
+      1
+    ],
+    [
+      [
+        "0.0.3.1",
+        "BEST PRICES",
+        "no reply"
+      ],
+      1
+    ],
+    [
+      [
+        "0.0.1.2",
+        "Contribute to science",
+        "no reply"
+      ],
+      1
+    ],
+    [
+      [
+        "0.2.1.2",
+        "Re: Good morning",
+        "no reply"
+      ],
+      1
+    ],
+    [
+      [
+        "0.3.1.1",
+        "Join us!",
+        "no reply"
+      ],
+      1
+    ],
+    [
+      [
+        "1.x.1.0",
+        "need corn oil",
+        "-> Re: need corn oil",
+        "to sender",
+        "col cfc6b8 same",
+        "budget 4"
+      ],
+      1
+    ],
+    [
+      [
+        "0.1.2.3",
+        "Online CNC Machining Service",
+        "no reply"
+      ],
+      1
+    ],
+    [
+      [
+        "1.x.1.0",
+        "Join us!",
+        "-> Re: Join us!",
+        "to sender",
+        "col 827094 same",
+        "budget 4"
+      ],
+      1
+    ],
+    [
+      [
+        "0.0.3.2",
+        "BEST PRICES",
+        "no reply"
+      ],
+      1
+    ],
+    [
+      [
+        "0.2.2.3",
+        "Online CNC Machining Service",
+        "no reply"
+      ],
+      1
+    ],
+    [
+      [
+        "1.x.1.0",
+        "need corn oil",
+        "-> Re: need corn oil",
+        "to sender",
+        "col 71aa34 same",
+        "budget 4"
+      ],
+      1
+    ],
+    [
+      [
+        "0.1.3.2",
+        "BEST PRICES",
+        "no reply"
+      ],
+      1
+    ],
+    [
+      [
+        "0.2.1.2",
+        "Re: need corn oil",
+        "no reply"
+      ],
+      1
+    ],
+    [
+      [
+        "0.3.0.0",
+        "Join us!",
+        "no reply"
+      ],
+      1
+    ],
+    [
+      [
+        "0.0.1.3",
+        "[PATCH] Fix netcode",
+        "no reply"
+      ],
+      1
+    ],
+    [
+      [
+        "1.x.1.0",
+        "I have lost <n> pounds since June",
+        "-> Re: I have lost <n> pounds since June",
+        "to sender",
+        "col cfc6b8 same",
+        "budget 4"
+      ],
+      1
+    ],
+    [
+      [
+        "0.3.1.2",
+        "Join us!",
+        "no reply"
+      ],
+      1
+    ],
+    [
+      [
+        "0.3.3.0",
+        "Join us!",
+        "no reply"
+      ],
+      1
+    ]
+  ],
+  "unexplained": [],
+  "examples": []
 }

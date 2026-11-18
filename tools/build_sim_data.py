@@ -17,5 +17,5 @@ replies = {a: [r for r in RR.rules_for(a) if not r.get("boss")] for a in sorted(
 out = {"incoming": incoming, "replies": replies, "endpoint_rules": rules["endpoints"], "reply_rules": RR.RULES, "spam_rate": S.SPAM_RATE,
        "story_state": "DestroyCorruptedMainframe",
        "note": "Endpoint send table emulated from the game's generator at this story stage."}
-json.dump(out, open(os.path.join(ROOT, "tools", "viewer", "sim_data.json"), "w"), separators=(",", ":"))
+json.dump(out, open(os.path.join(ROOT, "tools", "viewer", "sim_data.json"), "w"), indent=2)
 print("wrote sim_data.json")

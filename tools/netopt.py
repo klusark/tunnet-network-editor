@@ -121,8 +121,8 @@ def main():
                 print(f"[{n}] {time.time() - t0:.0f}s score {sc}: mean flow delivery {100 * r2['mean_flow']:.1f}%, flows covered {r2['covered']}/{len(REQ)}, delivered {r2['delivered']}/{r2['sent']} "
                       f"({100 * r2['rate']:.1f}%), never {len(r2['flows_never_delivered'])}", flush=True)
             best, best_cfg, r, save = sc, cand, r2, s2
-    json.dump(best_cfg, open(out + "_cfg.json", "w"), indent=1)
-    json.dump(save, open(out + ".json", "w", encoding="utf-8"), separators=(",", ":"))
+    json.dump(best_cfg, open(out + "_cfg.json", "w"), indent=2)
+    json.dump(save, open(out + ".json", "w", encoding="utf-8"), indent=2)
     print(f"best score {best}: mean flow delivery {100 * r['mean_flow']:.1f}%, covered {r['covered']}/{len(REQ)}, spam {r['spam']}, delivered {r['delivered']}/{r['sent']} ({100 * r['rate']:.1f}%), "
           f"never delivered: {r['flows_never_delivered']}", flush=True)
 

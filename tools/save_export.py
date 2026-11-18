@@ -286,6 +286,6 @@ def write(save, slot):
         shutil.copy2(path, backup)
     tmp = path + ".tmp"
     with open(tmp, "w", encoding="utf-8") as f:
-        json.dump(save, f, separators=(",", ":"))
+        json.dump(save, f, indent=2)
     os.replace(tmp, path)
     return path, backup

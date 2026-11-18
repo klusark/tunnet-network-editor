@@ -306,7 +306,7 @@ def main():
     base = json.load(open(path, encoding="utf-8"))
     g = Gen(base, a.spine, a.child_collision, a.root_collision, a.leaf_collision, a.bare_leaves)
     save = g.generate(flow_destinations())
-    json.dump(save, open(a.out, "w", encoding="utf-8"), separators=(",", ":"))
+    json.dump(save, open(a.out, "w", encoding="utf-8"), indent=2)
     c = collections.Counter(n["type"] for n in g.nodes)
     print(f"generated {dict(c)}, {len(save['edges'])} links -> {a.out}")
     for n in g.notes:

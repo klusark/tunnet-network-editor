@@ -174,7 +174,7 @@ class LiveNet:
         net._find_tock(chunks)
         json.dump({"cbase": net.cbase, "ncomp": net.ncomp, "tables_start": net.tables_start,
                    "ntables": net.ntables, "tock": net.tock, "res_start": net.res_start,
-                   "nres": net.nres}, open(cache, "w"))
+                   "nres": net.nres}, open(cache, "w"), indent=2)
         return net
 
     def _find_tock(self, chunks):

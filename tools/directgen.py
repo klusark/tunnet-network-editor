@@ -201,7 +201,7 @@ def main():
     g = Direct(base, a.merge_collision)
     g.relay_spacing = a.relay_spacing or None
     save = g.generate_direct()
-    json.dump(save, open(a.out, "w", encoding="utf-8"), separators=(",", ":"))
+    json.dump(save, open(a.out, "w", encoding="utf-8"), indent=2)
     c = collections.Counter(n["type"] for n in g.nodes)
     print(f"{g.n_lines} lines; generated {dict(c)}, {len(save['edges'])} links -> {a.out}")
     r = F.score(F.TrackedNet(I.load(save)), 0, a.ticks)
