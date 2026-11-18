@@ -539,6 +539,7 @@ class LiveNet:
                 node = {"entity": e, "type": kind, "ports": ports}
                 if pos_data:
                     node["pos"] = list(struct.unpack_from("<3f", pos_data, 48 * r + 16))
+                    node["rot"] = list(struct.unpack_from("<4f", pos_data, 48 * r))  # quaternion x,y,z,w
                 if adr_data:
                     node["address"] = fmt_addr(adr_data[5 * r: 5 * r + 5])
                 if fc_data and len(fc_data) >= 24 * (r + 1):

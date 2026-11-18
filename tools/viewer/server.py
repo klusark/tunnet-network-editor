@@ -37,6 +37,7 @@ import tunnet_live as T  # noqa: E402
 import tracker as TR  # noqa: E402
 import reply_rules as RR  # noqa: E402
 import sim as SIM  # noqa: E402
+import save_export as SX  # noqa: E402
 
 DROP_CLAIM_TICKS = 4  # how long a drop waits for its packet's track before giving up
 
@@ -498,6 +499,17 @@ class Handler(SimpleHTTPRequestHandler):
 
     def do_GET(self):
         url = urlparse(self.path)
+        if url.path == "/api/slots":
+            out = []
+            for k in range(4):
+                p = SX.save_path(k)
+                if os.path.exists(p):
+                    st = os.stat(p)
+                    out.append({"slot": k, "size": st.st_size,
+                                "modified": datetime.datetime.fromtimestamp(st.st_mtime).isoformat(timespec="minutes")})
+                else:
+                    out.append({"slot": k, "size": 0, "modified": None})
+            return self._send(json.dumps(out).encode())
         if url.path == "/api/live":
             after = int(parse_qs(url.query).get("after", ["-1"])[0])
             with STATE.cond:
@@ -540,6 +552,35 @@ class Handler(SimpleHTTPRequestHandler):
         """Edits to the running game: tester and filter configs, hub direction, links. EDIT=0 disables.
         /api/sim runs the simulator (no game writes)."""
         url = urlparse(self.path)
+        if url.path == "/api/export":
+            # Build a save from the live network (+ staged edits) on top of a base save; write
+            # it only when "write" is true. EDIT=0 also disables writing saves.
+            try:
+                req = json.loads(self.rfile.read(int(self.headers.get("Content-Length", "0") or 0)) or b"{}")
+                snap = SHARED.snap
+                if not snap:
+                    return self._reply(503, {"error": "no live snapshot yet"})
+                base_slot, slot = int(req.get("base", 0)), int(req.get("slot", 1))
+                if not (0 <= base_slot <= 3 and 0 <= slot <= 3):
+                    raise ValueError("slots are 0..3")
+                base = json.load(open(SX.save_path(base_slot), encoding="utf-8"))
+                net = SIM.Net(snap)
+                SIM.apply_edits(net, req.get("edits") or [])
+                save, report = SX.build(base, snap, net)
+                SX.check(save)
+                res = {"report": report, "base": base_slot, "slot": slot}
+                if req.get("write"):
+                    if os.environ.get("EDIT", "1") == "0":
+                        return self._reply(403, {"error": "writing is disabled (EDIT=0)"})
+                    path, backup = SX.write(save, slot)
+                    res.update(written=path, backup=backup)
+                    log_edit({"what": "export", "base": base_slot, "slot": slot, "backup": backup,
+                              "edits": len(req.get("edits") or []), "from": self.client_address[0]})
+                return self._reply(200, res)
+            except Exception as ex:
+                import traceback
+                traceback.print_exc()
+                return self._reply(400, {"error": f"{type(ex).__name__}: {ex}"})
         if url.path == "/api/sim":
             try:
                 req = json.loads(self.rfile.read(int(self.headers.get("Content-Length", "0") or 0)) or b"{}")

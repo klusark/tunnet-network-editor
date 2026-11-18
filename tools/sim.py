@@ -57,6 +57,7 @@ class Net:
                 "hub_dir": n.get("hub_dir"), "tester": dict(n["tester"]) if n.get("tester") else None,
                 "links": [(p["peer"], p["peer_port"]) for p in n["ports"]],
                 "infected": n.get("infection") == 5,
+                "rot": n.get("rot"),
             }
         self.state = {e: [[from_live(p["slots"][0]), from_live(p["slots"][1])] for p in n["ports"]]
                       for e, n in snap.items()}
@@ -269,7 +270,11 @@ def apply_edits(net, edits):
     live-edit API). Changes the simulated network only."""
     for ed in edits:
         k = ed["kind"]
-        if k == "filter":
+        if k == "add":
+            add_node(net, ed)
+        elif k == "remove":
+            remove_node(net, ed["e"])
+        elif k == "filter":
             net.nodes[ed["e"]]["filter"].update(ed["config"])
         elif k == "hub":
             net.nodes[ed["e"]]["hub_dir"] = int(ed["config"]["hub_dir"])
@@ -287,6 +292,39 @@ def apply_edits(net, edits):
             net.nodes[b]["links"][bp] = (a, ap)
         else:
             raise ValueError(f"unknown edit {ed}")
+
+
+PORTS = {"relay": 2, "filter": 2, "hub": 3}
+DEFAULT_FILTER = {"port": 0, "mask": "*.*.*.*", "mask_type": "Filter", "collision": "DropInbound",
+                  "addr": "Dst", "action": "Drop", "op": "Match"}
+
+
+def add_node(net, ed):
+    """{"kind": "add", "id": -1, "type": "relay"|"filter"|"hub", "pos": [x, y, z],
+    "up": [..], "angle": a, "config": {...}}. New nodes use negative ids; they start
+    unconnected (connect them with link edits)."""
+    t = ed["type"]
+    if t not in PORTS:
+        raise ValueError("only relays, filters and hubs can be added")
+    e = int(ed["id"])
+    if e >= 0 or e in net.nodes:
+        raise ValueError(f"new node id {e} must be negative and unused")
+    cfg = ed.get("config") or {}
+    net.nodes[e] = {"type": t, "address": None, "pos": list(ed["pos"]),
+                    "filter": dict(DEFAULT_FILTER, **cfg) if t == "filter" else None,
+                    "hub_dir": int(cfg.get("hub_dir", 0)) if t == "hub" else None,
+                    "tester": None, "links": [(None, None)] * PORTS[t], "infected": False,
+                    "rot": None, "up": ed.get("up"), "angle": ed.get("angle"), "like": ed.get("like"),
+                    "added": True}
+    net.state[e] = [[None, None] for _ in range(PORTS[t])]
+
+
+def remove_node(net, e):
+    for p, (peer, pp) in enumerate(net.nodes[e]["links"]):
+        if peer is not None and pp is not None:
+            net.nodes[peer]["links"][pp] = (None, None)
+    del net.nodes[e]
+    del net.state[e]
 
 
 def run(net, start_tick, ticks):

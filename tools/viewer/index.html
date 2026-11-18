@@ -155,10 +155,30 @@
       <label style="display:block;margin:4px 0"><input type="checkbox" id="simLinks"> port connect / rewire /
         disconnect go to the simulator, not the game</label>
       <div class="row" style="margin-top:6px;gap:6px;display:flex;flex-wrap:wrap;align-items:center">
+        <select id="addType"><option value="relay">relay</option><option value="filter">filter</option><option value="hub">hub</option></select>
+        <button id="addPlace">Add node…</button>
+        <label><input type="checkbox" id="simOverlay" checked> show staged edits on map</label>
+      </div>
+      <div class="row" style="margin-top:6px;gap:6px;display:flex;flex-wrap:wrap;align-items:center">
         <label>ticks <input id="simTicks" type="number" min="1" max="1000" value="200" style="width:70px"></label>
         <button id="simRun">Run</button><button id="simClear">Clear edits</button>
       </div>
       <div id="simOut"></div>
+    </div>
+    <div class="sec">
+      <h2>Export save</h2>
+      <div class="note">Writes a save with the game's current network plus the staged edits (added
+        nodes, links, settings). Player, story and map come from the base save. The slot being
+        overwritten is backed up to backups/ first.</div>
+      <div class="row" style="margin-top:6px;gap:6px;display:flex;flex-wrap:wrap;align-items:center">
+        <label>base <select id="expBase"></select></label>
+        <label>write to <select id="expSlot"></select></label>
+        <label><input type="checkbox" id="expEdits" checked> include staged edits</label>
+      </div>
+      <div class="row" style="margin-top:6px;gap:6px;display:flex">
+        <button id="expPreview">Preview</button><button id="expWrite">Write save</button>
+      </div>
+      <div id="expOut"></div>
     </div>
     <div class="sec">
       <h2>Legend</h2>
@@ -500,6 +520,10 @@ function draw() {
     const r = st.size * dpr * (hl ? 1.5 : 1) * Math.min(1.6, Math.max(0.7, cam.s / 3));
     if (findRe && !matchAddr(n.addr) && n.type === "endpoint") ctx.globalAlpha = 0.35;
     shape(ctx, st.shape, a[0], a[1], r, st.color, hl ? "#ffffff" : null);
+    if (n.sim) {
+      ctx.save(); ctx.setLineDash([3 * dpr, 3 * dpr]); ctx.strokeStyle = "#68d391"; ctx.lineWidth = 1.5 * dpr;
+      ctx.beginPath(); ctx.arc(a[0], a[1], r * 2, 0, Math.PI * 2); ctx.stroke(); ctx.restore();
+    }
     ctx.globalAlpha = 1;
     if (opts.labels && n.type === "endpoint" && n.addr && (cam.s > 1.2 || hl)) {
       ctx.font = `${11 * dpr}px ui-monospace, Consolas, monospace`;
@@ -816,6 +840,7 @@ function renderEditor(force) {
   };
   const u = document.getElementById("edUndo");
   if (u) u.onclick = () => applyEdit(n, kind, ed.undo, true);
+  if (n.sim) { document.getElementById("edSave").style.display = "none"; box.querySelector("h3").textContent += " (planned node)"; }
 }
 async function applyEdit(n, kind, config, isUndo) {
   const E = EDITORS[kind];
@@ -849,11 +874,12 @@ async function linkOp(body) {
   return res.ok ? out : { error: out.error || "error" };
 }
 async function runLinkOps(ops, undoOps, okText) {
-  if (document.getElementById("simLinks").checked && okText !== "Undone.") {
+  const touchesPlanned = ops.some(o => (o.e ?? 0) < 0 || (o.a && o.a[0] < 0) || (o.b && o.b[0] < 0));
+  if ((document.getElementById("simLinks").checked || touchesPlanned) && okText !== "Undone.") {
     for (const op of ops) stageSim(Object.assign({ kind: "link", label: op.op === "connect"
       ? `connect ${describe(op.a[0])} port ${op.a[1]} to ${describe(op.b[0])} port ${op.b[1]}`
       : `disconnect ${describe(op.e)} port ${op.p}` }, op));
-    linkMsg = { text: "Staged in the simulator (not applied to the game).", err: false, undo: null };
+    linkMsg = { text: "Staged in the simulator (not applied to the game).", err: false, undo: null, staged: true };
     return finishLink();
   }
   for (const [i, op] of ops.entries()) {
@@ -899,7 +925,8 @@ function applyLinkTarget(tp) {
 function renderLinkBox(box) {
   if (linkMsg && !linkPick) {
     box.innerHTML = `<div class="ed"><h3>Connection edit</h3><div class="msg${linkMsg.err ? " err" : ""}">${linkMsg.text}</div>`
-      + `<div class="help">The game uses the new link immediately. Cables drawn in the game don't move. Saving in the game after rewiring is untested.</div>`
+      + (linkMsg.staged ? `<div class="help">Only in the simulator and exports; the game is unchanged.</div>`
+         : `<div class="help">The game uses the new link immediately. Cables drawn in the game don't move. Saving in the game after rewiring is untested.</div>`)
       + `<div class="acts">${linkMsg.undo ? `<button id="lkUndo">Undo</button>` : ""}<button id="lkClose">Close</button></div></div>`;
     document.getElementById("lkClose").onclick = () => { linkMsg = null; renderEditor(true); };
     const u = document.getElementById("lkUndo");
@@ -938,15 +965,102 @@ function simDiff(a, b) {
   const ch = Object.keys(b).filter(k => String(a[k]) !== String(b[k])).map(k => `${k} ${a[k]} → ${b[k]}`);
   return ch.join(", ") || "no change";
 }
-function stageSim(ed) { simEdits.push(ed); renderSimEdits(); }
+function stageSim(ed) { simEdits.push(ed); renderSimEdits(); refreshOverlay(); }
 function renderSimEdits() {
   const el = document.getElementById("simEdits");
   el.innerHTML = simEdits.length ? simEdits.map((x, i) => `<div class="pk"><span>${esc(x.label)}</span>`
     + `<button class="lk" data-simdel="${i}">remove</button></div>`).join("")
     : '<div class="empty">No edits staged.</div>';
-  el.querySelectorAll("[data-simdel]").forEach(b => b.onclick = () => { simEdits.splice(+b.dataset.simdel, 1); renderSimEdits(); });
+  el.querySelectorAll("[data-simdel]").forEach(b => b.onclick = () => { simEdits.splice(+b.dataset.simdel, 1); renderSimEdits(); refreshOverlay(); });
 }
-document.getElementById("simClear").onclick = () => { simEdits = []; renderSimEdits(); document.getElementById("simOut").innerHTML = ""; };
+document.getElementById("simClear").onclick = () => { simEdits = []; renderSimEdits(); refreshOverlay(); document.getElementById("simOut").innerHTML = ""; };
+
+// ---- planned nodes and the map overlay ----
+// Staged edits are drawn on top of the live structure (planned nodes get a dashed ring).
+let placeMode = null, nextSimId = -1;
+const DEFAULT_FILTER = { port: 0, mask: "*.*.*.*", mask_type: "Filter", collision: "DropInbound", addr: "Dst", action: "Drop", op: "Match" };
+const PORT_COUNT = { relay: 2, filter: 2, hub: 3 };
+function applyOverlay() {
+  if (!document.getElementById("simOverlay").checked) return;
+  for (const x of simEdits) {
+    if (x.kind === "add") {
+      nodes.set(x.id, { e: x.id, type: x.type, x: x.pos[0], y: x.pos[1], z: x.pos[2], addr: null, sim: true,
+        ports: Array.from({ length: PORT_COUNT[x.type] }, () => [null, null, null]),
+        filter: x.type === "filter" ? Object.assign({}, DEFAULT_FILTER, x.config || {}) : null,
+        hub_dir: x.type === "hub" ? +((x.config || {}).hub_dir || 0) : undefined, tester: null });
+    } else if (x.kind === "link" && x.op === "connect") {
+      const a = nodes.get(x.a[0]), b = nodes.get(x.b[0]);
+      if (a && b) { a.ports[x.a[1]] = [x.b[0], x.b[1], null]; b.ports[x.b[1]] = [x.a[0], x.a[1], null]; }
+    } else if (x.kind === "link" && x.op === "disconnect") {
+      const a = nodes.get(x.e), pp = a && a.ports[x.p];
+      if (pp && pp[0] != null) { const b = nodes.get(pp[0]); if (b && b.ports[pp[1]]) b.ports[pp[1]] = [null, null, null]; a.ports[x.p] = [null, null, null]; }
+    } else if ((x.kind === "filter" || x.kind === "hub") && x.e < 0) {
+      const n = nodes.get(x.e); if (!n) continue;
+      if (x.kind === "filter") n.filter = Object.assign({}, n.filter, x.config); else n.hub_dir = +x.config.hub_dir;
+    }
+  }
+}
+function refreshOverlay() { loadStructure().then(() => { renderInfo(); draw(); }); }
+document.getElementById("simOverlay").onchange = refreshOverlay;
+document.getElementById("addPlace").onclick = () => {
+  placeMode = document.getElementById("addType").value;
+  document.getElementById("simOut").innerHTML = `<div class="note">Tap the map where the new ${placeMode} goes. It takes the height and orientation of the nearest node on screen. <a class="jump" id="addCancel">cancel</a></div>`;
+  document.getElementById("addCancel").onclick = () => { placeMode = null; document.getElementById("simOut").innerHTML = ""; };
+};
+function placeAt(e) {
+  const dpr = window.devicePixelRatio || 1, rect = cv.getBoundingClientRect();
+  const sx = (e.clientX - rect.left) * dpr, sy = (e.clientY - rect.top) * dpr;
+  const p = [(sx - cv.width / 2) / cam.s + cam.x, (sy - cv.height / 2) / cam.s + cam.y];
+  let near = null, bd = Infinity;
+  for (const n of nodes.values()) {
+    if (!inY(n) || n.sim) continue;
+    const q = toScreen(proj(n)), d = (q[0] - sx) ** 2 + (q[1] - sy) ** 2;
+    if (d < bd) { bd = d; near = n; }
+  }
+  if (!near) return;
+  const pos = view === "top" ? [p[0], near.y, p[1]] : view === "side" ? [p[0], -p[1], near.z] : [near.x, -p[1], p[0]];
+  const type = placeMode; placeMode = null;
+  const id = Math.min(nextSimId, ...simEdits.filter(x => x.kind === "add").map(x => x.id - 1));
+  nextSimId = id - 1;
+  stageSim({ kind: "add", id, type, pos: pos.map(v => Math.round(v * 100) / 100), like: near.e,
+             label: `add ${type} #${id} at ${pos.map(v => v.toFixed(1)).join(", ")} (oriented like ${describe(near.e)})` });
+  document.getElementById("simOut").innerHTML = `<div class="note">Planned ${type} #${id} added. Select it to configure it and to connect its ports (connections to planned nodes always go to the simulator).</div>`;
+  setTimeout(() => { const n = nodes.get(id); if (n) select(n); }, 400);
+}
+
+// ---- export ----
+async function loadSlots() {
+  try {
+    const sl = await (await fetch("/api/slots")).json();
+    const opt = (s, def) => `<option value="${s.slot}"${s.slot === def ? " selected" : ""}>slot ${s.slot}${s.modified ? " (" + s.modified.replace("T", " ") + ")" : " (empty)"}</option>`;
+    document.getElementById("expBase").innerHTML = sl.filter(s => s.modified).map(s => opt(s, 0)).join("");
+    document.getElementById("expSlot").innerHTML = sl.map(s => opt(s, sl.find(x => !x.modified)?.slot ?? 1)).join("");
+  } catch (err) {}
+}
+loadSlots();
+async function doExport(write) {
+  const out = document.getElementById("expOut");
+  const base = +document.getElementById("expBase").value, slot = +document.getElementById("expSlot").value;
+  if (write && !confirm(`Write the exported network to slot ${slot}?` + (slot === base ? "\nThis is the base save itself." : "")
+      + "\nThe current slot file is backed up to backups/ first.")) return;
+  out.innerHTML = `<div class="note">${write ? "Writing" : "Building"}…</div>`;
+  const edits = document.getElementById("expEdits").checked ? simEdits.map(({ label, ...x }) => x) : [];
+  let r;
+  try {
+    const res = await fetch("/api/export", { method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ base, slot, edits, write }) });
+    r = await res.json(); if (!res.ok) throw new Error(r.error || "error");
+  } catch (err) { out.innerHTML = `<div class="msg err">${esc(String(err.message || err))}</div>`; return; }
+  const names = { counts: "size", added: "planned nodes added", new_in_game: "built in the game since the base save",
+    removed: "removed since the base save", kept_not_loaded: "kept (not loaded in the game now)", new_links: "new links",
+    removed_links: "removed links", long_links: "links longer than 6 units (the game never makes these)" };
+  out.innerHTML = Object.entries(r.report).map(([k, v]) => `<div class="port"><div class="hd">${esc(names[k] || k)} (${v.length})</div>`
+    + v.slice(0, 20).map(x => `<div>${esc(x)}</div>`).join("") + (v.length > 20 ? `<div class="note">… ${v.length - 20} more</div>` : "") + `</div>`).join("")
+    + (r.written ? `<div class="msg">Written to ${esc(r.written)}${r.backup ? "; previous file backed up to " + esc(r.backup) : ""}. Load slot ${r.slot} in the game to use it.</div>` : `<div class="note">Preview only; nothing written.</div>`);
+  if (r.written) loadSlots();
+}
+document.getElementById("expPreview").onclick = () => doExport(false);
+document.getElementById("expWrite").onclick = () => doExport(true);
 document.getElementById("simRun").onclick = async () => {
   const out = document.getElementById("simOut");
   const ticks = +document.getElementById("simTicks").value || 200;
@@ -1275,6 +1389,7 @@ async function loadStructure() {
     nodes.set(n.e, n); ymn = Math.min(ymn, n.y); ymx = Math.max(ymx, n.y);
   }
   yBounds = [Math.floor(ymn), Math.ceil(ymx)];
+  applyOverlay();
   computeChains();
   setupYRange();
   selected = old != null ? nodes.get(old) || null : null;
@@ -1469,6 +1584,7 @@ function endPointer(e) {
   const wasTap = gesture && gesture.kind === "pan" && !gesture.moved && pointers.size === 0;
   if (pointers.size === 1) startPan([...pointers.values()][0], true);  // pinch -> keep panning, no tap
   else if (pointers.size === 0) { gesture = null; cv.classList.remove("dragging"); }
+  if (wasTap && e.type === "pointerup" && placeMode) { placeAt(e); return; }
   if (wasTap && e.type === "pointerup") {
     const r = e.pointerType === "touch" ? 22 : 10;
     const n = pick(e, r);

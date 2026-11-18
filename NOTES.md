@@ -319,6 +319,30 @@ from the disassembly (re/reply_region.asm, 0x1402f6900-0x1402f7700).
   network with per-(seed, node, tick) randomness; POST /api/sim; viewer "What-if
   simulator" panel ("Try in simulator" on editors, or route port edits there).
 
+## Planned nodes and save export (tools/save_export.py, POST /api/export, GET /api/slots)
+- Save network format: nodes [{pos, up, angle}]; edges [[[a,port],[b,port],kind]]
+  (kind 0..3, meaning unknown, maybe cable style; new edges use 0; every edge in slot 0
+  is <= 6.0 units, the auto-connect range); relays {node, fixed, light}; filters {node,
+  config{port, mask{elements, address_type}, addr, action DropPacket/SendBackPacket, op,
+  collision}, fixed}; hubs {node, fixed, dir}; testers {node, config{address,
+  destination, mode, freq}}; endpoints {node, address, infection, disinfection};
+  antennas/bridges {node}. Digits: Zero/One/Two/Three/Wildcard.
+- Live -> save matching: same type within 0.05 units. Game-owned nodes (endpoints,
+  antennas, bridges, testers) missing from the live game (not loaded) are kept with their
+  links; missing relays/filters/hubs count as removed by the player.
+- Orientation: up = rotation * Y matches the save exactly. Save `angle` = my twist angle
+  + a constant per up direction, learned from matched nodes. Planned nodes copy the
+  up/angle of the node they were placed next to.
+- Export = base save with the network sections rebuilt from the live network + staged
+  edits; other sections copied unchanged. Writing backs up the target slot to backups/.
+  Checked on a scratch copy: all 1206 base nodes and all non-network sections identical,
+  new filter + link appended. NOT yet tested: loading an exported save in the game.
+- Simulator: edits {"kind": "add", "id": -n, "type", "pos", "like", "config"} and
+  {"kind": "remove", "e"}. Viewer: "Add node…" places a planned node with a tap
+  (height and orientation from the nearest node on screen); staged edits are drawn on
+  the map (planned nodes have a dashed ring); links to planned nodes always go to the
+  simulator.
+
 ## Config components
 - HubDirection (1 B): 1 = save `dir: true`, 0 = false (96/96 hubs).
 - FilterConfig (24 B), verified 100/100 filters against the save on every field:
