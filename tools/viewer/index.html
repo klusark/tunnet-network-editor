@@ -317,6 +317,24 @@ function depth3(n) {
   const z1 = Math.sin(orbit.yaw) * dx + Math.cos(orbit.yaw) * dz;
   return Math.sin(orbit.pitch) * dy + Math.cos(orbit.pitch) * z1;
 }
+// Re-pivot on what is in the middle of the screen, without moving the picture: the new
+// centre is the world point under the viewport centre, at the depth of the node nearest
+// to it on screen (or of the old centre if none is close). Then the camera is re-centred.
+function pivotOnViewport() {
+  const cy = Math.cos(orbit.yaw), sy = Math.sin(orbit.yaw), cp = Math.cos(orbit.pitch), sp = Math.sin(orbit.pitch);
+  let D = 0, best = Infinity;
+  const lim = (0.15 * Math.min(cv.width, cv.height) / cam.s) ** 2;
+  for (const n of nodes.values()) {
+    if (!visible(n)) continue;
+    const [px, py] = proj3(n), d = (px - cam.x) ** 2 + (py - cam.y) ** 2;
+    if (d < best && d < lim) { best = d; D = depth3(n); }
+  }
+  const X = cam.x, Y = -cam.y;                    // rotated coordinates of the screen centre
+  const dy = cp * Y + sp * D, z1 = -sp * Y + cp * D;
+  const dx = cy * X + sy * z1, dz = -sy * X + cy * z1;
+  orbit.c = [orbit.c[0] + dx, orbit.c[1] + dy, orbit.c[2] + dz];
+  cam.x = 0; cam.y = 0;
+}
 function centerOrbit() {
   const vis = [...nodes.values()].filter(inY);
   if (!vis.length) return;
@@ -1569,10 +1587,11 @@ document.querySelectorAll("[data-view]").forEach(b => b.onclick = () => {
   fit();
 });
 document.getElementById("spin").onclick = () => {
-  orbit.spin = !orbit.spin; document.getElementById("spin").classList.toggle("on", orbit.spin); requestFrame();
+  orbit.spin = !orbit.spin; if (orbit.spin) pivotOnViewport();
+  document.getElementById("spin").classList.toggle("on", orbit.spin); requestFrame();
 };
-document.getElementById("ortho0").onclick = () => { orbit.pitch = 0; fit(); };
-document.getElementById("ortho1").onclick = () => { orbit.pitch = 0.55; fit(); };
+document.getElementById("ortho0").onclick = () => { pivotOnViewport(); orbit.pitch = 0; draw(); };
+document.getElementById("ortho1").onclick = () => { pivotOnViewport(); orbit.pitch = 0.55; draw(); };
 cv.addEventListener("contextmenu", e => { if (view === "3d") e.preventDefault(); });
 document.getElementById("fit").onclick = fit;
 for (const [id, k] of [["collapse", "collapse"], ["showLabels", "labels"], ["showPackets", "packets"]]) {
@@ -1671,7 +1690,7 @@ cv.addEventListener("pointermove", e => {
       const dx = (e.clientX - gesture.x) * dpr, dy = (e.clientY - gesture.y) * dpr;
       if (Math.abs(dx) + Math.abs(dy) > (e.pointerType === "touch" ? 8 : 3) * dpr) gesture.moved = true;
       if (gesture.moved && view === "3d" && !gesture.forcePan && !e.shiftKey) {  // turn the network
-        if (gesture.yaw0 === undefined) { gesture.yaw0 = orbit.yaw; gesture.pitch0 = orbit.pitch; }
+        if (gesture.yaw0 === undefined) { pivotOnViewport(); gesture.yaw0 = orbit.yaw; gesture.pitch0 = orbit.pitch; }
         orbit.yaw = gesture.yaw0 - dx / dpr * 0.008;
         orbit.pitch = Math.max(-1.5, Math.min(1.5, gesture.pitch0 + dy / dpr * 0.008));
         store("orbitYaw", orbit.yaw); store("orbitPitch", orbit.pitch);
