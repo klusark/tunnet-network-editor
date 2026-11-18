@@ -62,6 +62,18 @@ def flow_rates():
     return rate
 
 
+def bounce_budgets():
+    """(sender, destination) -> smallest bounce budget of its scheduled packets (TTL)."""
+    rules = json.load(open(os.path.join(ROOT, "re", "endpoint_rules.json")))["endpoints"]
+    out = {}
+    for a, x in rules.items():
+        for s in x["slots"].values():
+            if s.get("bounce_budget") is not None:
+                k = (a, s["dst"])
+                out[k] = min(out.get(k, 99), s["bounce_budget"])
+    return out
+
+
 def bounce_limited():
     """(sender, destination) pairs whose packets carry a bounce limit (filters cost them)."""
     rules = json.load(open(os.path.join(ROOT, "re", "endpoint_rules.json")))["endpoints"]
@@ -72,6 +84,7 @@ class Direct(G.Gen):
     def __init__(self, base, merge_collision="DropOutbound"):
         super().__init__(base)
         self.merge_collision = merge_collision
+
         self.dead_masks = []
 
     def generate_direct(self):
@@ -93,24 +106,59 @@ class Direct(G.Gen):
             hub = self.new("hub", [pos[0], pos[1] + 1, pos[2]], label=f"splitter {a}", hub_dir=0)
             self.link(hub, 0, ref, port)
             ends[a] = {"hub": hub, "pos": pos, "lines_in": []}
-        # split chains: heaviest destinations and bounce-limited flows first (each tap they
-        # pass costs a bounce-limited packet one bounce)
+        # split chains. TTL (bounce-limited) destinations go first, lowest budget first, then
+        # the heaviest: every filter a packet passes in the chain costs a TTL packet one
+        # bounce. A sender with many destinations gets a split TREE: first one filter per
+        # cluster (a.b.c.*), then one per endpoint inside the cluster, so the deepest line
+        # is about (clusters + endpoints in a cluster) filters away instead of (all lines).
+        budget = bounce_budgets()
         lines = []
         for a, dsts in sorted(out.items()):
-            order = sorted(dsts, key=lambda d: (-(1 if (a, d) in limited else 0), -dsts[d]))
+            live = [d for d in dsts if d in self.leaves]
+            key = lambda d: (budget.get((a, d), 99), -dsts[d])
             prev, pport = ends[a]["hub"], 1
             pos = ends[a]["pos"]
-            for i, d in enumerate(order):
-                if d not in self.leaves:
-                    continue                      # no such endpoint: dropped at the end
-                tap = self.new("hub", [pos[0] + 0.6 * (i + 1), pos[1] + 2, pos[2]], label=f"split {a} -> {d}", hub_dir=0)
-                f = self.filt([pos[0] + 0.6 * (i + 1), pos[1] + 2.6, pos[2]], d, "Differ", "SendBack", "DropInbound",
-                              label=f"split {a} -> {d}")
-                self.link(prev, pport, tap, 0)
-                self.link(tap, 1, f, 0)
-                prev, pport = tap, 2
-                lines.append((a, d, f, dsts[d], (a, d) in limited))
-            drop = self.filt([pos[0] + 0.6 * (len(order) + 1), pos[1] + 2, pos[2]], "*.*.*.*", "Match", "Drop", "DropInbound",
+            # a linear chain would put some TTL line beyond its budget: use the split tree
+            ttl = sorted(budget[(a, d)] for d in live if (a, d) in budget)
+            needs_tree = any(i + 1 >= b for i, b in enumerate(ttl))
+            if needs_tree:
+                clusters = collections.OrderedDict()
+                for d in sorted(live, key=key):
+                    clusters.setdefault(".".join(d.split(".")[:3]), []).append(d)
+                items = sorted(clusters.items(), key=lambda kv: min(key(d) for d in kv[1]))
+            else:
+                items = [(None, sorted(live, key=key))]
+            col = 0
+            for cl, ds in items:
+                if cl is not None and len(ds) > 1:
+                    # cluster tap: packets for this cluster leave on a sub-chain
+                    col += 1
+                    tap = self.new("hub", [pos[0] + 0.6 * col, pos[1] + 2, pos[2]], label=f"split {a} -> {cl}.*", hub_dir=0)
+                    f = self.filt([pos[0] + 0.6 * col, pos[1] + 2.6, pos[2]], cl + ".*", "Differ", "SendBack", "DropInbound",
+                                  label=f"split {a} -> {cl}.*")
+                    self.link(prev, pport, tap, 0); self.link(tap, 1, f, 0)
+                    prev, pport = tap, 2
+                    sub, sport = f, 1
+                    for j, d in enumerate(ds):
+                        t2 = self.new("hub", [pos[0] + 0.6 * col, pos[1] + 3.2 + 0.6 * j, pos[2]], label=f"split {a} -> {d}", hub_dir=0)
+                        f2 = self.filt([pos[0] + 0.6 * col + 0.3, pos[1] + 3.2 + 0.6 * j, pos[2]], d, "Differ", "SendBack",
+                                       "DropInbound", label=f"split {a} -> {d}")
+                        self.link(sub, sport, t2, 0); self.link(t2, 1, f2, 0)
+                        sub, sport = t2, 2
+                        lines.append((a, d, f2, dsts[d], (a, d) in limited))
+                    end_ = self.filt([pos[0] + 0.6 * col, pos[1] + 3.2 + 0.6 * len(ds), pos[2]], "*.*.*.*", "Match", "Drop",
+                                     "DropInbound", label=f"end of {a}'s {cl}.* lines")
+                    self.link(sub, sport, end_, 0)
+                    continue
+                for d in ds:
+                    col += 1
+                    tap = self.new("hub", [pos[0] + 0.6 * col, pos[1] + 2, pos[2]], label=f"split {a} -> {d}", hub_dir=0)
+                    f = self.filt([pos[0] + 0.6 * col, pos[1] + 2.6, pos[2]], d, "Differ", "SendBack", "DropInbound",
+                                  label=f"split {a} -> {d}")
+                    self.link(prev, pport, tap, 0); self.link(tap, 1, f, 0)
+                    prev, pport = tap, 2
+                    lines.append((a, d, f, dsts[d], (a, d) in limited))
+            drop = self.filt([pos[0] + 0.6 * (col + 1), pos[1] + 2, pos[2]], "*.*.*.*", "Match", "Drop", "DropInbound",
                              label=f"end of {a}'s lines (drops spam / unknown addresses)")
             self.link(prev, pport, drop, 0)
         # merge chains: bounce-limited lines and the heaviest closest to the endpoint (packets
@@ -119,7 +167,7 @@ class Direct(G.Gen):
         for a, d, f, w, lim in lines:
             into[d].append((a, f, w, lim))
         for d, ins in into.items():
-            ins.sort(key=lambda x: (-(1 if x[3] else 0), -x[2]))   # first = closest to the endpoint
+            ins.sort(key=lambda x: (budget.get((x[0], d), 99), -x[2]))   # first = closest to the endpoint
             pos = ends[d]["pos"]
             prev, pport = ends[d]["hub"], 2
             for i, (a, f, w, lim) in enumerate(ins):

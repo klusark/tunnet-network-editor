@@ -441,6 +441,14 @@ from the disassembly (re/reply_region.asm, 0x1402f6900-0x1402f7700).
   covered (no relays: 78.6%, 22394, 205). More merge collisions (2653 vs 1819), but more
   packets get sent: arrivals are spread out in time, so endpoints less often receive on
   their scheduled send tick and skip the send.
+- TTL (bounce-limited) flows first: all 159 TTL losses came from 0.2.0.0, which has 15
+  TTL destinations (budgets 5-8); in a linear split chain the k-th line costs k filter
+  hits. Split chains now order TTL lines first by lowest budget; a sender whose linear
+  chain would put a TTL line past its budget gets a split TREE (one filter per cluster
+  a.b.c.*, then one per endpoint in it); TTL lines also join merge chains nearest the
+  endpoint. Generated networks leave the old tester out (Gen.keep_testers).
+  Result (relays every 6): 83.2% mean flow delivery, 219 flows covered, 23746 packets,
+  zero TTL losses (was 82.1%, 216, 23714, 159 TTL losses).
 
 ## Map voxels in the save (digging)
 - save["chunks"]: 4527 entries [{x,y,z}, rle]; rle = [[count, value], ...] covering 32^3

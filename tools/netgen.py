@@ -55,6 +55,7 @@ class Gen:
         self.sc_ends = collections.defaultdict(dict)
         self.sc_exit_collision = "SendBackOutbound"   # packets bounced back off a busy entry retry
         self.relay_spacing = None         # e.g. 6.0: split every link into cables of at most this length
+        self.keep_testers = False         # generated networks leave the old tester(s) out
         self.notes = []
         bridges = {e: n for e, n in snap.items() if n["type"] == "bridge"}
         outer = {n["address"]: e for e, n in snap.items() if n.get("address", "").startswith("1.")}
@@ -253,7 +254,8 @@ class Gen:
         for lst in TYPE_LISTS:
             for r in base[lst]:
                 old_type[r["node"]], old_entry[r["node"]] = lst, r
-        keep = [i for i in range(len(base["nodes"])) if old_type[i] in ("endpoints", "bridges", "antennas", "testers")]
+        kept_types = ("endpoints", "bridges", "antennas") + (("testers",) if self.keep_testers else ())
+        keep = [i for i in range(len(base["nodes"])) if old_type[i] in kept_types]
         idx = {("old", i): k for k, i in enumerate(keep)}
         out = copy.copy(base)
         out["nodes"] = [base["nodes"][i] for i in keep]
