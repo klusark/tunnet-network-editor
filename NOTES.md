@@ -483,6 +483,81 @@ from the disassembly (re/reply_region.asm, 0x1402f6900-0x1402f7700).
   lost in a merge collision).
 - JSON files written by the tools are pretty-printed (indent 2), incl. exported saves.
 
+## Timetable solver for line delays (tools/timetable.js, tools/timetable.py)
+- In direct wiring nothing waits, so every route has a fixed travel time, and the network
+  reduces to a timetable over endpoints: two packets due at one endpoint on the same tick
+  collide in its merge chain (the line joining farther up the chain survives,
+  DropOutbound), and an endpoint that receives on a scheduled send tick skips that send.
+- timetable.js measures each route once in the full simulator (latency, receiving
+  endpoint, merge position, how the packet looks on arrival e.g. after a bridge), then
+  replays endpoints only, with the same endpoint rules and the same per-(endpoint, tick)
+  random numbers. On the undelayed network it gives exactly the full simulator's score
+  (75.14%), at ~0.35 s per 8192-tick run (vs ~25 s).
+- Search: per line, try 0-7 extra relays; keep the best; only lines into endpoints that
+  collide or skip sends; up to 4 passes. Score = mean over required flows of delivered /
+  SCHEDULED sends (a skipped send counts as lost; flowscore.js reports this as
+  mean_sched next to the old mean_flow, which only counted packets actually sent).
+- Rounds: packet types never seen in the measuring run (replies that only happen with the
+  new timing) have no route and the model drops them; that hid 6 collisions in the first
+  try. timetable.py now re-measures each round's result and merges the routes (latency
+  minus that line's delay), 3 rounds by default.
+- First result (straight-line layout): counting skipped sends 79.0% -> 92.5%, 21% more
+  packets delivered (112755 vs 93292 over 8192 ticks), but 6 flows lost to unseen
+  collisions (fixed by the rounds above).
+
+## Floor layout of generated networks (tools/terrain.py, netgen.route_relays)
+- Floor-mounted nodes (up = 0,1,0) sit exactly on the voxel floor surface (offset 0).
+- terrain.level(x, z, y): on the floor below if (x, y, z) is air (30 units reach); on the
+  floor above if y is in rock and there is floor within 8 units; else stay at y (buried in
+  rock, or over a deep shaft). Chunks missing from the save count as rock.
+- Links are routed level: relays at most 6 apart along the straight xz line, each put on
+  the floor under it; a height change is a vertical drop (relays stacked straight above
+  each other, at most 6 apart); floor steps up to 0.75 are ignored so lines don't jitter.
+  Every cable is either level or vertical. Delay relays split the longest level segment.
+- Endpoint clusters (splitter, split taps and filters, merge hubs and filters) are spread
+  over the room's open floor: a flood fill from the endpoint over a 1.5-unit grid (steps
+  <= 0.75, 1.5 units headroom), each node on the free spot nearest the node it links to,
+  at least 1.2 apart. Nodes that find no free floor fall back to a strip in front of the
+  endpoint (may be in rock).
+- Result: 999 of 1090 cluster nodes on open floor; every cable level or vertical,
+  longest 6.0. Lines BETWEEN rooms still run straight through rock (5837 of 8588 relays
+  are inside rock): following the tunnels needs path finding, and 275 direct lines
+  sharing the same tunnels would stack hundreds of cables in them.
+- tools/layout_check.py save.json reports cable shapes and floor/air/rock per node type.
+
+## Digging tunnels for generated networks (tools/dig.py, tools/tunnels.py)
+- Which voxels the dig tool removes (FUN_140352fc0, the dig system): a voxel is changed
+  only if its value is in the bit mask 0x18000000040B = {0, 1, 3, 10, 43, 44} (or a flag
+  that is probably a debug / upgrade switch is set). Digging 43 gives 44, anything else
+  gives 0 (air); filling writes 10. Hit sounds come from the table at 0x14242e5e8 (index
+  value - 1): 0 "digging", 1 wood, 2 stone, 3 metal, 4 splash (water), 5 patch; values
+  above 21 sound like stone. 1, 2, 3, 4 and 10 sound like digging.
+- "Dirt" for our digging = diggable AND sounds like digging = {1, 3, 10}. 43/44 (16% of
+  stored voxels, two hits, stone sound) count as hard rock and are not dug; wood (14),
+  stone (5, 7, 9, 11, ...), metal (6, 8, 16) and water (18+) block. Chunks the save does
+  not store (the game generates them) also block: digging there would need us to create
+  the whole chunk.
+- Room per node / cable (dig.corridor): 1.0 wide, 1.5 tall standing on the cable's height
+  (level cables) or a 1.0 x 1.0 shaft (vertical cables); the floor under it is kept.
+- Router (tunnels.Router): A* over 1 x 1 unit cells with heights in voxels, cells must be
+  air or dirt for 1.5 units; level steps want a floor under them (a step onto air costs 4
+  extra: off a ledge, over a gap), vertical steps don't; turns cost 3 (a relay each),
+  height costs 2 per unit (one straight drop instead of wandering). Ends snap to the open,
+  supported cell within one voxel (prefab bunker floors are not on the voxel grid).
+  A link keeps its straight floor route when that is diggable; otherwise it is routed;
+  if the search limit (300k) is hit it retries greedier (weight 3, 1.5M). Routes are
+  cached in out/route_cache.json (same map, same node positions).
+- Endpoint clusters use the router's grid too: a breadth-first walk from the endpoint
+  (level steps need a floor or come right off one; vertical steps through shafts), every
+  cell with a floor is a spot; open floor preferred, dirt spots (dug out) cost 3 more.
+  Found because 0.2.0.0 sits on a raised metal platform in a bunker: the room's floor is
+  a 1-unit step down, and without the ledge step its 150-node cluster had 17 spots.
+- Result (direct network, undelayed): 979 links straight, 370 routed around rock, 20 not
+  routable (search limit); 238651 dirt voxels dug (~29800 cubic units); 325 of ~24000
+  nodes + cables still touch something that is not dirt; relays: 9557 on a floor, 1262 in
+  the air (vertical drops), 73 in rock; all 1095 hubs/filters on a floor or in a drop.
+- Not tested: whether the game loads edited chunk data.
+
 ## Map voxels in the save (digging)
 - save["chunks"]: 4527 entries [{x,y,z}, rle]; rle = [[count, value], ...] covering 32^3
   voxels. Chunk = 16 world units, voxel = 0.5 units: voxel = floor(world * 2), chunk =

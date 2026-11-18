@@ -32,16 +32,24 @@ function score(save, ticks = 8192, settle = 300) {
     (per[k] = per[k] || {})[out] = (per[k][out] || 0) + 1;
     sent++; if (out === "delivered") delivered++;
   }
-  const req = new Set();
-  for (const [a, r] of Object.entries(data.endpoint_rules)) for (const s of Object.values(r.slots)) req.add(a + " -> " + s.dst);
-  let sum = 0, covered = 0;
-  for (const k of req) {
+  // required flows, and how many sends each is scheduled for (a send the endpoint skips,
+  // because it received on that tick, counts as lost in mean_sched but not in mean_flow)
+  const req = new Map();
+  for (const [a, r] of Object.entries(data.endpoint_rules))
+    for (const [slot, s] of Object.entries(r.slots)) {
+      let n = 0;
+      for (let t = 1; t <= ticks - settle; t++) if (t % r.cycle === +slot) n++;
+      req.set(a + " -> " + s.dst, (req.get(a + " -> " + s.dst) || 0) + n);
+    }
+  let sum = 0, sumSched = 0, covered = 0;
+  for (const [k, sched] of req) {
     const c = per[k];
     const n = c ? Object.values(c).reduce((x, y) => x + y, 0) : 0;
     const d = c ? (c.delivered || 0) : 0;
-    sum += n ? d / n : 0; if (d) covered++;
+    sum += n ? d / n : 0; sumSched += sched ? Math.min(1, d / sched) : 0; if (d) covered++;
   }
-  return { ticks, mean_flow: sum / req.size, covered, required: req.size, delivered, sent, spam, per_flow: per };
+  return { ticks, mean_flow: sum / req.size, mean_sched: sumSched / req.size, covered, required: req.size,
+           delivered, sent, spam, per_flow: per };
 }
 
 if (require.main === module) {

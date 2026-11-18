@@ -248,6 +248,77 @@ class Gen:
         self.relays_added = sum(1 for n in self.nodes if n["type"] == "relay")
         self.edges = out
 
+    def route_relays(self, spacing, terrain=None, tolerance=0.75, router=None):
+        """Lay every link out on the floor: level runs with relays at most `spacing` apart,
+        each relay put on the floor under it (terrain.level), and every change of height a
+        straight vertical drop (relays stacked above each other). A floor step of up to
+        `tolerance` units is ignored, so lines do not jitter over small bumps. Extra delay
+        relays (edge_extra) split the longest level segment. Each relay adds one tick."""
+        out = []
+        extra = getattr(self, "edge_extra", {})
+        for k, ((a, pa), (b, pb)) in enumerate(self.edges):
+            A, B = self.pos_of(a), self.pos_of(b)
+            pts = self.route_points(A, B, spacing, terrain, tolerance)
+            if router is not None:
+                # the straight run must be diggable (air / dirt); else find a way around
+                if router.ok(A, pts, B):
+                    router.stats["straight"] += 1
+                else:
+                    alt = router.astar(A, B, spacing)
+                    if alt is None and router.disk.get(router.last_key, {}).get("fail") == "search limit":
+                        # open at both ends, just far: greedier search with a bigger budget
+                        alt = router.astar(A, B, spacing, weight=3.0, limit=1500000)
+                    if alt is not None:
+                        pts = alt
+                        router.stats["rerouted"] += 1
+                    else:
+                        router.stats["failed"] += 1
+            n = extra.get(k, 0)
+            if n:
+                chain = [A] + pts + [B]
+                level = lambda i: abs(chain[i][1] - chain[i + 1][1]) < 1e-6
+                _, i = max((math.dist(chain[i], chain[i + 1]) + (1e6 if level(i) else 0), i)
+                           for i in range(len(chain) - 1))
+                P, Q = chain[i], chain[i + 1]
+                mid = [[P[c] + (Q[c] - P[c]) * j / (n + 1) for c in range(3)] for j in range(1, n + 1)]
+                pts = chain[1:i + 1] + mid + chain[i + 1:-1]
+            prev, pport = a, pa
+            for q in pts:
+                r = self.new("relay", q, label="relay")
+                out.append(((prev, pport), (r, 0)))
+                prev, pport = r, 1
+            out.append(((prev, pport), (b, pb)))
+        self.relays_added = sum(1 for n in self.nodes if n["type"] == "relay")
+        self.edges = out
+
+    @staticmethod
+    def route_points(A, B, spacing, terrain, tolerance):
+        """Relay positions between A and B (both excluded): see route_relays."""
+        pts = []
+
+        def vertical(x, z, y0, y1):
+            m = max(1, math.ceil(abs(y1 - y0) / spacing))
+            for j in range(1, m + 1):
+                pts.append([x, y0 + (y1 - y0) * j / m, z])
+
+        y = A[1]
+        dx, dz = B[0] - A[0], B[2] - A[2]
+        n = max(1, math.ceil(math.hypot(dx, dz) / spacing))
+        for i in range(1, n):
+            x, z = A[0] + dx * i / n, A[2] + dz * i / n
+            ny = terrain.level(x, z, y) if terrain else y
+            pts.append([x, y, z])
+            if abs(ny - y) > tolerance:
+                vertical(x, z, y, ny)
+                y = ny
+        if abs(B[1] - y) > 1e-6:
+            last = pts[-1] if pts else A
+            if math.hypot(B[0] - last[0], B[2] - last[2]) > 0.01:
+                pts.append([B[0], y, B[2]])
+            vertical(B[0], B[2], y, B[1])
+            pts.pop()                       # the last point of the drop is B itself
+        return pts
+
     # ---------- output ----------
     def to_save(self):
         base = self.base
