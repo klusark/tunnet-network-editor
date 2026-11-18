@@ -353,6 +353,7 @@ class Gen:
         out.update(lists)
         out["edges"] = [[[idx[a], pa], [idx[b], pb], 0] for (a, pa), (b, pb) in self.edges]
         self.labels = {idx[("new", j)]: n["label"] for j, n in enumerate(self.nodes)}
+        self.idx = idx                    # node ref -> index in the saved nodes list
         return out
 
 
