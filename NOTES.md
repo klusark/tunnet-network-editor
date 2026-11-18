@@ -364,6 +364,18 @@ from the disassembly (re/reply_region.asm, 0x1402f6900-0x1402f7700).
 - Hosting: needs only index.html, sim.js, offline.js, sim_data.json on any static host.
   A claude.ai artifact would need changes (downloads and confirm() are blocked there).
 
+## Map voxels in the save (digging)
+- save["chunks"]: 4527 entries [{x,y,z}, rle]; rle = [[count, value], ...] covering 32^3
+  voxels. Chunk = 16 world units, voxel = 0.5 units: voxel = floor(world * 2), chunk =
+  voxel // 32, index inside a chunk = (z * 32 + y) * 32 + x (x fastest). Checked with node
+  positions: 0.75 units off each node's wall (along `up`) is value 0 for 1187/1206 nodes.
+- Value 0 = air; other values are materials (1 most common, then 43, 6, 18, 16, 8, 7, 15).
+  Which materials the game lets you dig is not known yet.
+- Chunk coords x -5..42, y -5..3, z -2..22; 4527 of the ~10800 possible chunks are
+  stored (the rest are presumably generated when needed). save["chunk_types"]: 97 prefab
+  BunkerRoom chunks (rooms with their endpoints).
+- Not tested: whether the game accepts edited chunk data in a save.
+
 ## Config components
 - HubDirection (1 B): 1 = save `dir: true`, 0 = false (96/96 hubs).
 - FilterConfig (24 B), verified 100/100 filters against the save on every field:
