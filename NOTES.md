@@ -521,6 +521,30 @@ from the disassembly (re/reply_region.asm, 0x1402f6900-0x1402f7700).
   packets delivered (112755 vs 93292 over 8192 ticks), but 6 flows lost to unseen
   collisions (fixed by the rounds above).
 
+## Hybrid wiring (tools/hybridgen.py; timetable.py --hybrid)
+- Direct lines only for TTL-limited flows and flows inside an address group (a.b.c.*);
+  everything else shares trunks. middle: one trunk per region pair (a.b.* > a.b.*), from
+  the source region's hub endpoint (medoid of its group hubs) to the destination's; lean:
+  group > region feed, region trunk, region > group distributor (longer: detours via hubs).
+  A trunk = collector at its start (hub + filter Match <dest mask> SendBack per input,
+  DropOutbound, like an endpoint merge chain), cable, arrival hub (marker), distributor
+  (hub + filter Differ <next mask> SendBack per output, drop at the end). Load cap
+  (packets/tick, heaviest flows of an overfull trunk go direct). TTL senders keep the split
+  tree for their TTL lines; their other flows use trunks.
+- Straight-line cable (before relays): direct 37,791; lean 24,577 (65%); middle 23,898
+  (63%), 52 trunks (busiest 0.41/tick at cap 0.5), 69 flows direct, 206 shared.
+- Timetable model: lines.json has each flow's path [sink, merge position, feeder cable];
+  measure() also records each packet's arrival at every trunk's arrival hub; the model
+  resolves collisions per trunk (same tick at the arrival hub; the input that joined
+  farthest upstream survives) and then at the endpoint as before. Delays are per feeder
+  cable. Matches the full simulator exactly on the undelayed middle network (70.38%).
+- Result, middle, cap 0.5, 3 rounds (94 feeder cables delayed, 229 extra relays), 8192
+  ticks: 91.92% counting skipped sends (direct 92.93%), 237 flows covered (direct 237),
+  112,006 packets (direct 118,377), spam all dropped. Hardware: 8,135 relays (direct
+  11,133, -27%), 704 hubs (556), 734 filters (534), 124,706 dirt voxels dug (238,654,
+  -48%); every cable level or vertical; 85 relays still in rock, 20 links unroutable.
+  Output out/hybrid_middle_final.json, delays tools/hybrid_middle_delays.json.
+
 ## Floor layout of generated networks (tools/terrain.py, netgen.route_relays)
 - Floor-mounted nodes (up = 0,1,0) sit exactly on the voxel floor surface (offset 0).
 - terrain.level(x, z, y): on the floor below if (x, y, z) is air (30 units reach); on the
